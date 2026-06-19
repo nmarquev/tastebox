@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
-import { ImportRecipeResponse, Recipe } from '@/types/recipe';
-import { Loader2, Globe, Clock, Users, ChefHat, X, Check } from 'lucide-react';
+import { Recipe } from '@/types/recipe';
+import { Loader2, Globe, Clock, Users, ChefHat, X, Check, ClipboardPaste } from 'lucide-react';
 import { resolveImageUrl } from '@/utils/api';
+import { ThermomixSetting } from '@/components/ThermomixSetting';
+import { StepDescription, hasInlineThermomix } from '@/components/StepDescription';
 import { EditRecipeModal } from '@/components/EditRecipeModal';
 
 interface ImportRecipeModalProps {
@@ -22,9 +24,17 @@ interface ImportRecipeModalProps {
 export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewRecipe }: ImportRecipeModalProps) => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [importedRecipe, setImportedRecipe] = useState<ImportRecipeResponse['recipe'] | null>(null);
+  const [importedRecipe, setImportedRecipe] = useState<Recipe | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const isOpenRef = useRef(isOpen);
+  const urlInputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
 
   const handleImport = async () => {
     if (!url.trim()) {
@@ -37,18 +47,87 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
     }
 
     setIsLoading(true);
+    cancelledRef.current = false;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
-      const response = await api.import.fromUrl(url);
+      const response = await api.import.fromUrl(url, controller.signal);
+
+      // Si el usuario canceló (aunque la respuesta ya haya llegado), no guardar.
+      if (cancelledRef.current || controller.signal.aborted) {
+        return;
+      }
 
       if (response.success && response.recipe) {
-        setImportedRecipe(response.recipe);
-        toast({
-          title: "¡Receta importada!",
-          description: `Se importó: ${response.recipe.title}`,
+        const recipe = response.recipe;
+        const savedRecipe = await api.recipes.create({
+          title: recipe.title,
+          description: recipe.description,
+          suggestions: recipe.suggestions,
+          images: recipe.images,
+          prepTime: recipe.prepTime,
+          cookTime: recipe.cookTime,
+          servings: recipe.servings,
+          difficulty: recipe.difficulty,
+          tags: recipe.tags,
+          ingredients: recipe.ingredients,
+          instructions: recipe.instructions,
+          sourceUrl: recipe.sourceUrl,
+          author: recipe.author,
+          importedFrom: recipe.importedFrom,
+          recipeType: recipe.recipeType,
+          country: recipe.country,
+          language: recipe.language || 'Español',
+          thermomix: recipe.thermomix,
+          airFryer: recipe.airFryer,
+          glutenFree: recipe.glutenFree,
+          keto: recipe.keto,
+          lowCarb: recipe.lowCarb,
+          vegetarian: recipe.vegetarian,
+          calories: recipe.calories,
+          protein: recipe.protein,
+          carbohydrates: recipe.carbohydrates,
+          fat: recipe.fat,
+          saturatedFat: recipe.saturatedFat,
+          fiber: recipe.fiber,
+          sugar: recipe.sugar,
+          sodium: recipe.sodium
         });
+
+        if (isOpenRef.current) {
+          setImportedRecipe(savedRecipe);
+        }
+        onImportSuccess(savedRecipe);
+        toast({
+          title: "¡Receta importada y guardada!",
+          description: `Se guardó: ${savedRecipe.title}`,
+          action: onViewRecipe ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewRecipe(savedRecipe)}
+            >
+              Ver receta
+            </Button>
+          ) : undefined,
+        });
+
+        // Aviso de paywall (Foodit/Cookidoo sin credenciales): la preparación no se importó.
+        if (response.warning) {
+          toast({
+            title: "Faltó la preparación",
+            description: response.warning,
+            variant: "destructive",
+            duration: 12000,
+          });
+        }
       }
     } catch (error) {
+      // Cancelación del usuario: ya se notificó en handleCancelImport, no mostrar error.
+      if (cancelledRef.current || controller.signal.aborted || (error as { name?: string })?.name === 'AbortError') {
+        return;
+      }
       console.error('Import error:', error);
       toast({
         title: "Error al importar",
@@ -56,56 +135,45 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
         variant: "destructive"
       });
     } finally {
+      if (abortRef.current === controller) abortRef.current = null;
       setIsLoading(false);
     }
   };
 
-  const handleSaveRecipe = async () => {
-    if (!importedRecipe) return;
+  const handleCancelImport = () => {
+    // Marca la cancelación (incondicional), aborta la request y resetea el estado al instante.
+    cancelledRef.current = true;
+    abortRef.current?.abort();
+    setIsLoading(false);
+    toast({ title: "Importación cancelada" });
+  };
 
-    setIsLoading(true);
+  const triggerImport = () => {
+    if (!isLoading) handleImport();
+  };
 
+  const handlePasteUrl = async () => {
     try {
-      const savedRecipe = await api.recipes.create({
-        title: importedRecipe.title,
-        description: importedRecipe.description,
-        images: importedRecipe.images,
-        prepTime: importedRecipe.prepTime,
-        cookTime: importedRecipe.cookTime,
-        servings: importedRecipe.servings,
-        difficulty: importedRecipe.difficulty,
-        tags: importedRecipe.tags,
-        ingredients: importedRecipe.ingredients,
-        instructions: importedRecipe.instructions,
-        sourceUrl: importedRecipe.sourceUrl,
-        recipeType: importedRecipe.recipeType
-      });
+      const clipboardText = await navigator.clipboard.readText();
+      const pastedUrl = clipboardText.trim();
 
-      onImportSuccess(savedRecipe);
-      handleClose();
+      if (!pastedUrl) {
+        toast({
+          title: "Portapapeles vacío",
+          description: "No hay una URL para pegar",
+          variant: "destructive",
+        });
+        return;
+      }
 
+      setUrl(pastedUrl);
+      urlInputRef.current?.focus();
+    } catch {
       toast({
-        title: "¡Receta guardada!",
-        description: "La receta se ha guardado exitosamente en tu colección",
-        action: onViewRecipe ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onViewRecipe(savedRecipe)}
-          >
-            Ver receta
-          </Button>
-        ) : undefined,
+        title: "No se pudo pegar",
+        description: "Permití el acceso al portapapeles o pegá la URL manualmente",
+        variant: "destructive",
       });
-    } catch (error) {
-      console.error('Save error:', error);
-      toast({
-        title: "Error al guardar",
-        description: "No se pudo guardar la receta",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -127,7 +195,10 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
@@ -139,31 +210,52 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           {/* URL Input Section */}
           {!importedRecipe && (
             <div className="space-y-4">
-              <div>
+              <form onSubmit={(event) => event.preventDefault()}>
                 <Label htmlFor="recipe-url">URL de la receta</Label>
                 <div className="flex gap-2 mt-1">
                   <Input
+                    ref={urlInputRef}
                     id="recipe-url"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); triggerImport(); } }}
                     placeholder="https://ejemplo.com/mi-receta"
                     className="flex-1"
                   />
+                  {isLoading ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancelImport}
+                      className="min-w-44"
+                    >
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Cancelar importación
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={triggerImport}
+                      className="min-w-32 flex items-center gap-2 bg-accent text-accent-foreground hover:bg-accent/80 border-0 transition-all duration-200 hover:scale-105 hover:shadow-md"
+                    >
+                      Importar
+                    </Button>
+                  )}
                   <Button
-                    onClick={handleImport}
-                    disabled={isLoading || !url.trim()}
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handlePasteUrl}
+                    disabled={isLoading}
+                    title="Pegar URL"
+                    aria-label="Pegar URL"
+                    className="h-10 w-10 shrink-0"
                   >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Analizando...
-                      </>
-                    ) : (
-                      'Importar'
-                    )}
+                    <ClipboardPaste className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
+              </form>
 
               <div className="text-sm text-muted-foreground">
                 <p>Pega la URL de una receta y nuestro sistema la analizará automáticamente para extraer:</p>
@@ -231,6 +323,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                       </div>
                     ))}
                   </div>
+
                 </div>
               )}
 
@@ -269,6 +362,28 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                       <p className="text-muted-foreground">{importedRecipe.description}</p>
                     )}
                   </div>
+
+                  {(isEditing || importedRecipe.suggestions) && (
+                    <div>
+                      <Label htmlFor="recipe-suggestions">Sugerencias</Label>
+                      {isEditing ? (
+                        <Textarea
+                          id="recipe-suggestions"
+                          value={importedRecipe.suggestions || ''}
+                          onChange={(e) => setImportedRecipe({
+                            ...importedRecipe,
+                            suggestions: e.target.value
+                          })}
+                          rows={4}
+                          placeholder="Tips, consejos o notas de la receta..."
+                        />
+                      ) : (
+                        <p className="whitespace-pre-line text-muted-foreground">
+                          {importedRecipe.suggestions}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4">
@@ -388,6 +503,8 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                 <h4 className="font-medium mb-2">Instrucciones ({importedRecipe.instructions.length} pasos)</h4>
                 <div className="space-y-4">
                   {(() => {
+                    // Si las configuraciones ya están inline en el texto, no mostrar badges debajo.
+                    const settingsInline = importedRecipe.instructions.some(i => hasInlineThermomix(i.description));
                     // Group instructions by section
                     const grouped = new Map<string | null, typeof importedRecipe.instructions>();
 
@@ -417,14 +534,33 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                           <h5 className="font-medium text-primary text-sm mb-2">{section}</h5>
                         )}
                         <div className="space-y-3">
-                          {instructions.map((instruction) => (
-                            <div key={instruction.step} className="flex gap-3">
-                              <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                                {instruction.step}
+                          {instructions.map((instruction) => {
+                            const tm = instruction as any;
+                            const settings: string[] = [];
+                            if (tm.function) settings.push(`🔧 ${tm.function}`);
+                            if (tm.time) settings.push(`⏱️ ${tm.time}`);
+                            if (tm.temperature) settings.push(`🌡️ ${tm.temperature}`);
+                            if (tm.speed) settings.push(`⚡ ${tm.speed}`);
+                            return (
+                              <div key={instruction.step} className="flex gap-3">
+                                <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                                  {instruction.step}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm text-muted-foreground">
+                                    <StepDescription text={instruction.description} />
+                                  </p>
+                                  {settings.length > 0 && !settingsInline && (
+                                    <div className="flex flex-wrap gap-3 mt-1 text-xs text-primary">
+                                      {settings.map((s, idx) => (
+                                        <ThermomixSetting key={idx} text={s} />
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <p className="text-sm text-muted-foreground flex-1">{instruction.description}</p>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     ));
@@ -435,7 +571,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
               {/* Action Buttons */}
               <div className="flex justify-between pt-4 border-t">
                 <Button variant="outline" onClick={handleClose}>
-                  Cancelar
+                  Cerrar
                 </Button>
                 <div className="flex gap-2">
                   <Button
@@ -443,23 +579,17 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                     onClick={() => setIsEditing(true)}
                     disabled={isLoading}
                   >
-                    Editar antes de guardar
+                    Editar receta
                   </Button>
                   <Button
-                    onClick={handleSaveRecipe}
+                    onClick={() => {
+                      if (onViewRecipe) onViewRecipe(importedRecipe);
+                      handleClose();
+                    }}
                     disabled={isLoading}
                   >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Guardando...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4 mr-2" />
-                        Guardar Receta
-                      </>
-                    )}
+                    <Check className="h-4 w-4 mr-2" />
+                    {onViewRecipe ? 'Ver receta' : 'Listo'}
                   </Button>
                 </div>
               </div>
@@ -479,7 +609,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
             setIsEditing(false);
             toast({
               title: "Receta actualizada",
-              description: "Los cambios se guardarán cuando presiones 'Guardar Receta'",
+              description: "Los cambios se guardaron correctamente",
             });
           }}
         />

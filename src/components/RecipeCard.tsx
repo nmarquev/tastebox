@@ -1,12 +1,15 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Users, ChefHat, Edit, Trash2, MoreVertical, Heart, Share, Printer, Download, Play, Pause, ExternalLink, Calculator } from "lucide-react";
+import { Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Recipe } from "@/types/recipe";
+import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
+import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { resolveImageUrl } from "@/utils/api";
 import { isThermomixRecipe } from "@/utils/recipeUtils";
-import { getSiteName, isValidUrl } from "@/utils/siteUtils";
+import { parseCategories } from "@/constants/categories";
+import { getSourceFromUrl, isValidUrl, getRecipeSource } from "@/utils/siteUtils";
 import { downloadRecipePdf, printRecipePdf, shareRecipePdf } from "@/utils/pdfUtils";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -17,22 +20,30 @@ interface RecipeCardProps {
   onEdit?: (recipe: Recipe) => void;
   onDelete?: (recipe: Recipe) => void;
   onToggleFavorite?: (recipe: Recipe) => void;
+  onToggleCooked?: (recipe: Recipe) => void;
   onPlayTTS?: (recipe: Recipe) => void;
   onShowNutrition?: (recipe: Recipe) => void;
-  columns?: 2 | 3 | 4;
+  onSaveToCollection?: (recipe: Recipe) => void;
+  onCategoryClick?: (category: string) => void;
+  isInCollection?: boolean;
+  columns?: 1 | 2 | 3 | 4 | 5;
+  collectionNames?: string[];
   isPlayingTTS?: boolean;
   isGeneratingScript?: boolean;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onSelectionChange?: (recipe: Recipe, modifiers?: { shift?: boolean; ctrl?: boolean }) => void;
 }
 
-export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onPlayTTS, onShowNutrition, columns = 3, isPlayingTTS = false, isGeneratingScript = false }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Fácil": return "bg-secondary text-secondary-foreground";
-      case "Medio": return "bg-accent text-accent-foreground";
-      case "Difícil": return "bg-primary text-primary-foreground";
-      default: return "bg-muted text-muted-foreground";
+  const handleCardClick = (e?: React.MouseEvent) => {
+    if (selectionMode) {
+      e?.preventDefault();
+      onSelectionChange?.(recipe, { shift: e?.shiftKey, ctrl: e?.ctrlKey || e?.metaKey });
+      return;
     }
+    onView(recipe);
   };
 
   const handlePdfAction = async (action: 'share' | 'print' | 'download') => {
@@ -60,26 +71,65 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
   };
 
   const primaryImage = recipe.images?.[0];
-  const hasMultipleImages = recipe.images && recipe.images.length > 1;
+  const categories = parseCategories(recipe.recipeType);
+  const sourceName = getRecipeSource(recipe) || 'Receta propia';
+  // Autor sin el "@" inicial (p. ej. usuarios de Instagram).
+  const categoryCharacters = categories.reduce((total, category) => total + category.length, 0);
+  // Las categorías ahora hacen wrap a varias filas, así que no necesitamos achicar
+  // la fuente de forma agresiva para encajarlas en un renglón: la mantenemos legible.
+  const categoryFontSize = categoryCharacters > 65 ? 10 : categoryCharacters > 42 ? 11 : 12;
+  const compactCategories = categoryCharacters > 42;
+  // En 4 columnas las tarjetas son angostas: achicamos tiempos/porciones para que entren en una línea.
+  const compact = columns >= 4;
+  // En 5 columnas mostramos una tarjeta mínima: imagen, título, fuente y la línea
+  // de tiempos/porciones. Ocultamos badges y categorías para que entre angosta.
+  const minimal = columns === 5;
+  // En 1 columna la tarjeta es horizontal y muestra info adicional a la derecha.
+  const oneCol = columns === 1;
+  const infoIconClass = oneCol ? "h-5 w-5" : compact ? "h-3 w-3" : "h-4 w-4";
   const hasNutritionData = recipe.calories !== null && recipe.calories !== undefined && recipe.calories > 0;
 
   // Get dynamic image height based on columns
   const getImageHeight = () => {
     switch (columns) {
       case 2:
-        return 'h-64'; // Taller for 2 columns
+        return 'h-80';
       case 3:
-        return 'h-48'; // Default height for 3 columns
+        return 'h-64';
       case 4:
-        return 'h-40'; // Shorter for 4 columns
+        return 'h-56';
+      case 5:
+        return 'h-44';
       default:
-        return 'h-48';
+        return 'h-64';
     }
   };
 
   return (
-    <Card className="group overflow-hidden bg-gradient-card shadow-recipe-card hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-      <div className="relative overflow-hidden cursor-pointer" onClick={() => onView(recipe)}>
+    <Card className={`group relative flex h-full overflow-hidden bg-gradient-card shadow-recipe-card transition-all duration-300 hover:shadow-elegant hover:-translate-y-1 ${oneCol ? "flex-col sm:flex-row" : "flex-col"} ${
+      isSelected ? "ring-2 ring-primary ring-offset-2" : ""
+    }`}>
+      {selectionMode && (
+        <button
+          type="button"
+          className="absolute inset-0 z-10 cursor-pointer"
+          onClick={handleCardClick}
+          aria-label={`${isSelected ? "Deseleccionar" : "Seleccionar"} ${recipe.title}`}
+        />
+      )}
+      <div className={`relative overflow-hidden cursor-pointer ${oneCol ? "sm:w-72 sm:shrink-0" : ""}`} onClick={handleCardClick}>
+        {selectionMode && (
+          <span
+            className={`pointer-events-none absolute right-3 bottom-3 z-20 inline-flex h-5 w-5 items-center justify-center rounded-md border-2 shadow-sm ${
+              isSelected
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-white bg-white/90 text-transparent"
+            }`}
+            aria-hidden="true"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </span>
+        )}
         {primaryImage ? (
           <img
             src={resolveImageUrl(primaryImage.url)}
@@ -93,7 +143,8 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             <ChefHat className="h-12 w-12 text-muted-foreground" />
           </div>
         )}
-        <div className="absolute top-3 right-3 flex gap-2">
+        {!minimal && (
+        <div className="absolute top-3 right-3 flex items-center justify-end gap-1.5">
           {onToggleFavorite && (
             <Button
               variant="secondary"
@@ -102,179 +153,334 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 e.stopPropagation();
                 onToggleFavorite(recipe);
               }}
+              title={recipe.featured ? "Quitar de Favoritos" : "Agregar a Favoritos"}
+              aria-label={recipe.featured ? "Quitar de Favoritos" : "Agregar a Favoritos"}
               className={`h-8 w-8 p-0 ${recipe.featured ? 'bg-red-100/50 hover:bg-red-200/50' : 'bg-white/50 hover:bg-white/70'}`}
             >
-              <Heart className={`h-4 w-4 ${recipe.featured ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+              <Heart
+                className={recipe.featured ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+                style={{ width: 20, height: 20 }}
+              />
+            </Button>
+          )}
+          {onToggleCooked && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className={`h-8 w-8 p-0 ${recipe.cooked ? 'bg-green-100/60 hover:bg-green-200/60' : 'bg-white/50 hover:bg-white/70'}`}
+              title={recipe.cooked ? "Marcar como no cocinada" : "Marcar como cocinada"}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleCooked(recipe);
+              }}
+            >
+              <RecipePreparedIcon
+                className={recipe.cooked ? "" : "text-gray-600"}
+                style={{ width: 28, height: 28, color: recipe.cooked ? '#8ebf4c' : undefined }}
+              />
+            </Button>
+          )}
+          {onSaveToCollection && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
+              title="Guardar en una colección"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSaveToCollection(recipe);
+              }}
+            >
+              <Bookmark
+                aria-hidden="true"
+                className={isInCollection ? "fill-primary text-primary" : "text-gray-600"}
+                style={{ width: 20, height: 20 }}
+              />
+            </Button>
+          )}
+          {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(recipe.sourceUrl, '_blank', 'noopener,noreferrer');
+              }}
+              className="h-8 w-8 p-0 bg-white/50 hover:bg-white/70"
+              title={`Ver receta original en ${getSourceFromUrl(recipe.sourceUrl)}`}
+            >
+              <ExternalLink className="h-4 w-4 text-gray-600" />
             </Button>
           )}
           <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="h-8 w-8 p-0 bg-white/50 hover:bg-white/70"
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-8 w-8 p-0 bg-white/50 hover:bg-white/70"
+              >
+                <MoreVertical className="h-4 w-4 text-gray-600" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(`${window.location.origin}/receta/${recipe.id}`, '_blank', 'noopener,noreferrer');
+                }}
+              >
+                <ArrowUpRightFromSquare className="h-4 w-4 mr-2" />
+                Abrir en una nueva pestaña
+              </DropdownMenuItem>
+              {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) && (
+                <DropdownMenuItem onClick={() => window.open(recipe.sourceUrl, '_blank')}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Ver en {getSourceFromUrl(recipe.sourceUrl)}
+                </DropdownMenuItem>
+              )}
+              {onEdit && (
+                <DropdownMenuItem onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(recipe);
+                }}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation();
+                handlePdfAction('download');
+              }} disabled={isPdfLoading}>
+                <Download className="h-4 w-4 mr-2" />
+                {isPdfLoading ? 'Generando...' : 'Descargar'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation();
+                handlePdfAction('print');
+              }} disabled={isPdfLoading}>
+                <Printer className="h-4 w-4 mr-2" />
+                {isPdfLoading ? 'Generando...' : 'Imprimir'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation();
+                handlePdfAction('share');
+              }} disabled={isPdfLoading}>
+                <Send className="h-4 w-4 mr-2" />
+                {isPdfLoading ? 'Generando...' : 'Compartir'}
+              </DropdownMenuItem>
+              {onShowNutrition && (
+                <DropdownMenuItem onClick={(e) => {
+                  e.stopPropagation();
+                  onShowNutrition(recipe);
+                }}>
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Ver Nutrición
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(recipe);
+                  }}
+                  className="text-destructive focus:text-destructive"
                 >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {onShowNutrition && (
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    onShowNutrition(recipe);
-                  }}>
-                    <Calculator className="h-4 w-4 mr-2" />
-                    Ver Nutrición
-                  </DropdownMenuItem>
-                )}
-                {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) && (
-                  <DropdownMenuItem onClick={() => window.open(recipe.sourceUrl, '_blank')}>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Ver en {getSiteName(recipe.sourceUrl)}
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  handlePdfAction('share');
-                }} disabled={isPdfLoading}>
-                  <Share className="h-4 w-4 mr-2" />
-                  {isPdfLoading ? 'Generando...' : 'Compartir'}
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Eliminar
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  handlePdfAction('print');
-                }} disabled={isPdfLoading}>
-                  <Printer className="h-4 w-4 mr-2" />
-                  {isPdfLoading ? 'Generando...' : 'Imprimir'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  handlePdfAction('download');
-                }} disabled={isPdfLoading}>
-                  <Download className="h-4 w-4 mr-2" />
-                  {isPdfLoading ? 'Generando...' : 'Descargar'}
-                </DropdownMenuItem>
-                {onEdit && (
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(recipe);
-                  }}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </DropdownMenuItem>
-                )}
-                {onDelete && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(recipe);
-                    }}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Eliminar
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          <Badge className={getDifficultyColor(recipe.difficulty)}>
-            {recipe.difficulty}
-          </Badge>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        {hasMultipleImages && (
-          <div className="absolute bottom-3 right-3">
-            <Badge variant="secondary" className="text-xs">
-              +{recipe.images.length - 1} fotos
-            </Badge>
-          </div>
         )}
       </div>
-      
-      <CardContent className="p-4 space-y-3">
-        <div className="min-h-[5.5rem]">
-          <h3 className="font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors h-14 leading-7">
+
+      <CardContent className="flex flex-1 cursor-pointer flex-col space-y-3 p-4" onClick={handleCardClick}>
+        <div>
+          <h3 className={`recipe-card-title font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors ${minimal ? "text-sm leading-tight" : oneCol ? "text-2xl leading-8" : "text-lg leading-7"}`}>
             {recipe.title}
           </h3>
-          <p className="text-muted-foreground text-sm line-clamp-2 mt-1 h-10 leading-5">
-            {recipe.description || 'Sin descripción'}
-          </p>
+          {minimal && sourceName && (
+            <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground">
+              {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) ? (
+                <a
+                  href={recipe.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="recipe-source-link hover:underline"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {sourceName}
+                </a>
+              ) : (
+                <span className="recipe-source-link">{sourceName}</span>
+              )}
+            </p>
+          )}
+          {!minimal && (
+            <p className={`mt-1.5 text-muted-foreground ${oneCol ? "text-base" : "text-[13px]"}`}>
+              <span className="font-semibold text-foreground">Fuente:</span>{' '}
+              {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) ? (
+                <a
+                  href={recipe.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="recipe-source-link text-primary hover:underline"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {sourceName}
+                </a>
+              ) : (
+                <span className="recipe-source-link">{sourceName}</span>
+              )}
+            </p>
+          )}
         </div>
-        
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4" />
-            <span>{recipe.prepTime} min</span>
+
+        {!minimal && (
+          <div className={`@container flex items-center flex-wrap text-muted-foreground ${compact ? "gap-x-2 gap-y-1 text-xs" : oneCol ? "gap-x-4 gap-y-1 text-base" : "gap-x-4 gap-y-1 text-sm"}`}>
+            {!!recipe.prepTime && recipe.prepTime > 0 && (
+              <div className="flex items-center gap-1 whitespace-nowrap" title="Tiempo de preparación">
+                <ChefHat className={infoIconClass} />
+                <span><span className="hidden @sm:inline">Prep. </span>{recipe.prepTime} min</span>
+              </div>
+            )}
+            {!!recipe.cookTime && recipe.cookTime > 0 && (
+              <div className="flex items-center gap-1 whitespace-nowrap" title="Tiempo total">
+                <Clock className={infoIconClass} />
+                <span><span className="hidden @sm:inline">Total </span>{(recipe.prepTime || 0) + recipe.cookTime} min</span>
+              </div>
+            )}
+            {!!recipe.servings && recipe.servings > 0 && (
+              <div className="flex items-center gap-1 whitespace-nowrap" title="Porciones">
+                <User className={infoIconClass} />
+                <span><span className="hidden @sm:inline">Porciones </span>{recipe.servings}</span>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            <span>{recipe.servings}</span>
+        )}
+
+        {!minimal && (recipe.thermomix || isThermomixRecipe(recipe) || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.vegetarian) && (
+          <div className={`flex items-center flex-wrap gap-2 text-muted-foreground ${oneCol ? "[&>span]:h-9 [&>span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6" : ""}`}>
+            {(recipe.thermomix || isThermomixRecipe(recipe)) && (
+              <span
+                title="Thermomix"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
+              >
+                <img
+                  src="/thermomix-logo.png"
+                  alt=""
+                  aria-hidden="true"
+                  className="h-6 w-6 object-contain mix-blend-multiply"
+                />
+              </span>
+            )}
+            {recipe.airFryer && (
+              <span
+                title="Air Fryer"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
+              >
+                <img
+                  src="/air-fryer.png"
+                  alt=""
+                  aria-hidden="true"
+                  className="h-5 w-5 object-contain mix-blend-multiply"
+                />
+              </span>
+            )}
+            {recipe.glutenFree && (
+              <span
+                title="Sin Gluten"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
+              >
+                <WheatOff className="h-4 w-4" />
+              </span>
+            )}
+            {recipe.keto && (
+              <span
+                title="Keto"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
+              >
+                <AvocadoIcon className="h-[22px] w-[22px]" />
+              </span>
+            )}
+            {recipe.lowCarb && (
+              <span
+                title="Low Carb"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
+              >
+                <img
+                  src="/logo-saludable.png"
+                  alt=""
+                  aria-hidden="true"
+                  className="h-5 w-5 object-contain grayscale opacity-70"
+                />
+              </span>
+            )}
+            {recipe.vegetarian && (
+              <span
+                title="Vegetariana"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
+              >
+                <Leaf className="h-[18px] w-[18px]" />
+              </span>
+            )}
           </div>
-          {isThermomixRecipe(recipe) && (
-            <div className="flex items-center gap-1">
-              <ChefHat className="h-4 w-4" />
-              <span>Thermomix</span>
+        )}
+
+        {!minimal && categories.length > 0 && (
+        <div className="mt-auto flex items-end gap-2 border-t border-border/60 pt-3">
+          {categories.length > 0 && (
+            <div className="flex min-w-0 flex-1 flex-wrap content-end gap-x-0.5 gap-y-1">
+              {categories.map((cat) => (
+                <Badge
+                  key={cat}
+                  role="button"
+                  tabIndex={0}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onCategoryClick?.(cat);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onCategoryClick?.(cat);
+                  }}
+                  className={`shrink-0 cursor-pointer whitespace-nowrap border-transparent bg-primary/75 text-primary-foreground shadow-sm transition-colors hover:bg-primary ${
+                    compactCategories ? 'px-1.5 py-0' : ''
+                  }`}
+                  style={{ fontSize: `${categoryFontSize}px` }}
+                  title={`Filtrar por ${cat}`}
+                >
+                  {cat}
+                </Badge>
+              ))}
             </div>
           )}
         </div>
-
-        {/* Recipe Type/Category */}
-        {recipe.recipeType && (
-          <div className="mt-2">
-            <Badge variant="secondary" className="text-xs">
-              {recipe.recipeType}
-            </Badge>
-          </div>
         )}
-        
-        <div className="flex flex-wrap gap-1 min-h-[3.5rem] items-start content-start">
-          {(recipe.tags || []).slice(0, 6).map((tag, index) => {
-            // Handle both string tags and object tags from database
-            const tagValue = typeof tag === 'string' ? tag : tag.tag || tag.name || String(tag);
-            const tagKey = typeof tag === 'string' ? tag : `${tag.tagId || tag.id || index}-${tagValue}`;
-
-            return (
-              <Badge key={tagKey} variant="outline" className="text-xs">
-                {tagValue}
-              </Badge>
-            );
-          })}
-          {(recipe.tags || []).length > 6 && (
-            <Badge variant="outline" className="text-xs">
-              +{(recipe.tags || []).length - 6}
-            </Badge>
-          )}
-        </div>
-        
-        <div className="flex gap-2">
-          <Button
-            onClick={() => onView(recipe)}
-            variant="recipe"
-            className="flex-1"
-          >
-            Ver Receta
-          </Button>
-          {onPlayTTS && (
-            <Button
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPlayTTS(recipe);
-              }}
-              className="px-3 h-10 border-orange-200 hover:border-orange-300 hover:bg-orange-50"
-              title={isPlayingTTS ? "Pausar audio" : "Escuchar receta"}
-              disabled={isGeneratingScript}
-            >
-              {isGeneratingScript ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
-              ) : isPlayingTTS ? (
-                <Pause className="h-4 w-4" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-            </Button>
-          )}
-        </div>
       </CardContent>
+
+      {/* Panel derecho (solo en vista de 1 columna): Tipo de receta, Categoría, Colección */}
+      {oneCol && (
+        <div className="shrink-0 space-y-3 border-t p-4 text-sm sm:w-60 sm:border-l sm:border-t-0">
+          <div>
+            <p className="font-semibold text-foreground">Tipo de receta</p>
+            <p className="text-muted-foreground">{recipe.dishType?.trim() || '—'}</p>
+          </div>
+          <div>
+            <p className="font-semibold text-foreground">Categoría</p>
+            <p className="text-muted-foreground">{categories.length > 0 ? categories.join(', ') : '—'}</p>
+          </div>
+          <div>
+            <p className="font-semibold text-foreground">Colección</p>
+            <p className="text-muted-foreground">{collectionNames.length > 0 ? collectionNames.join(', ') : '—'}</p>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

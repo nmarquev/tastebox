@@ -512,10 +512,10 @@ export class ModalPdfService {
         throw new Error('PDF buffer is empty');
       }
 
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
     } catch (error) {
       console.error('Error generando modal PDF:', error);
-      throw new Error(`Error al generate modal PDF: ${error.message}`);
+      throw new Error(`Error al generate modal PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       if (browser) {
         await browser.close();

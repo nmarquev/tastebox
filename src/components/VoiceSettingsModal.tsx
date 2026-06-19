@@ -133,7 +133,10 @@ export const VoiceSettingsModal = ({ isOpen, onClose }: VoiceSettingsModalProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md max-h-[90vh] overflow-y-auto"
+        closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Settings className="h-5 w-5" />

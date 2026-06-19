@@ -259,15 +259,7 @@ export const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoUpdate }: ProfilePh
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="w-4 h-4 mr-2" />
-          Subir archivo
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCameraCapture}
-        >
-          <Camera className="w-4 h-4 mr-2" />
-          Cámara
+          Subir foto
         </Button>
       </div>
 

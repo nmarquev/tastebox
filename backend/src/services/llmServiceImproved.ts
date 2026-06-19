@@ -2,11 +2,63 @@ import OpenAI from 'openai';
 import { z } from 'zod';
 import { RecipeImportResponse } from '../types/recipe';
 import axios from 'axios';
+import { createOpenAIClient } from '../config/openai';
+import { getModel, getVisionModel } from '../config/aiSettings';
+
+// Parseo robusto del JSON devuelto por el LLM. Algunos modelos (DeepSeek, etc.) ignoran
+// response_format:json_object y devuelven el JSON envuelto en fences markdown (```json ... ```)
+// o con texto/razonamiento alrededor. Esto limpia esos casos antes de JSON.parse.
+function parseLlmJson(content: string): any {
+  if (!content) throw new SyntaxError('Respuesta vacía de LLM');
+  let text = content.trim();
+  // 1) Intento directo (caso ideal: JSON puro).
+  try { return JSON.parse(text); } catch { /* sigue */ }
+  // 2) Si viene envuelto en un bloque de código markdown, tomar su contenido.
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fence && fence[1]) {
+    try { return JSON.parse(fence[1].trim()); } catch { /* sigue */ }
+    text = fence[1].trim();
+  }
+  // 3) Extraer el objeto JSON más externo (desde el primer { hasta el último }).
+  const first = text.indexOf('{');
+  const last = text.lastIndexOf('}');
+  if (first !== -1 && last !== -1 && last > first) {
+    return JSON.parse(text.slice(first, last + 1));
+  }
+  throw new SyntaxError('No se encontró un objeto JSON en la respuesta del LLM');
+}
+
+// Detecta si una receta está en inglés o español a partir de su texto (título,
+// ingredientes, pasos). Usa palabras frecuentes de cocina/idioma como marcadores.
+function detectRecipeLanguage(text: string): 'Español' | 'Inglés' {
+  if (!text) return 'Español';
+  const t = ' ' + text.toLowerCase() + ' ';
+  const en = (t.match(/\b(the|and|with|for|cup|cups|tablespoon|teaspoon|minutes|until|add|mix|bake|heat|oven|ounce|ounces|pound|pounds|chopped|sliced|preheat|stir|salt|water|flour|sugar|butter|onion|garlic|chicken|cheese|dough|until)\b/g) || []).length;
+  const es = (t.match(/\b(el|la|los|las|con|para|una|uno|taza|tazas|cucharada|cucharadita|minutos|hasta|agregar|añadir|mezclar|hornear|horno|gramos|sal|agua|harina|az[uú]car|manteca|cebolla|ajo|pollo|queso|masa|picad[oa]|cortad[oa])\b/g) || []).length;
+  return en > es ? 'Inglés' : 'Español';
+}
 
 // Función auxiliar para limpiar etiquetas HTML del texto
+// Cookidoo usa una fuente de íconos: la "velocidad cuchara" es el glifo U+E002 que
+// aparece tras "vel" (en texto plano se pierde y queda "vel " vacío). Lo convertimos a
+// la palabra "cuchara" para que sobreviva a la extracción; el resto de glifos (PUA) se
+// quitan y se colapsan las barras "//" que quedan.
+function normalizeThermomixGlyphs(text: string): string {
+  if (!text) return text;
+  const SPOON = String.fromCharCode(0xE002);   // glifo de velocidad cuchara (Cookidoo)
+  const REVERSE = String.fromCharCode(0xE003); // glifo de giro inverso (Cookidoo)
+  const PUA = new RegExp("[" + String.fromCharCode(0xE000) + "-" + String.fromCharCode(0xF8FF) + "]", "g");
+  const DOUBLE_SLASH = new RegExp("(?<!:)/{2,}", "g"); // // sobrantes (no en URLs)
+  return text
+    .split(REVERSE).join("giro inverso")
+    .split(SPOON).join("cuchara")
+    .replace(PUA, "")
+    .replace(DOUBLE_SLASH, "/");
+}
+
 function cleanHtmlFromText(text: string): string {
   if (!text) return text;
-  return text
+  return normalizeThermomixGlyphs(text)
     .replace(/<nobr>/gi, '')
     .replace(/<\/nobr>/gi, '')
     .replace(/<br\s*\/?>/gi, ' ')
@@ -21,11 +73,677 @@ function cleanHtmlFromText(text: string): string {
     .trim();
 }
 
+function decodeNumericHtmlEntities(text: string): string {
+  return text
+    .replace(/&#(\d+);/g, (_, value) => String.fromCodePoint(Number(value)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, value) => String.fromCodePoint(parseInt(value, 16)));
+}
+
+export function extractInstagramCaption(html: string): string {
+  if (!html) return '';
+
+  const captionMatch = html.match(
+    /<div[^>]*class=["'][^"']*\bCaption\b[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<div[^>]*class=["'][^"']*\bFooter\b/i
+  );
+  if (!captionMatch?.[1]) return '';
+
+  return decodeNumericHtmlEntities(
+    normalizeThermomixGlyphs(captionMatch[1])
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(?:p|li)>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+  )
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
+export function extractSuggestionsFromText(text: string): string[] {
+  if (!text) return [];
+
+  const suggestionHeading = /^(?:[^\p{L}\p{N}]*)?(?:tips?|consejos?|sugerencias?|notas?|trucos?|recomendaciones?|variantes?)(?:\s+de\s+[^:]+)?\s*:?\s*$/iu;
+  const inlineSuggestion = /^(?:[^\p{L}\p{N}]*)?(?:tips?|consejos?|sugerencias?|notas?|trucos?|recomendaciones?|variantes?)(?:\s+de\s+[^:]+)?\s*:\s*(.+)$/iu;
+  const otherSectionHeading = /^(?:ingredientes?|preparaci[oó]n|instrucciones?|procedimiento|para la masa|para el relleno)\s*:?\s*$/i;
+  const suggestions: string[] = [];
+  let inSuggestionSection = false;
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const inlineMatch = line.match(inlineSuggestion);
+    if (inlineMatch?.[1]) {
+      suggestions.push(inlineMatch[1]);
+      inSuggestionSection = false;
+      continue;
+    }
+
+    if (suggestionHeading.test(line)) {
+      inSuggestionSection = true;
+      continue;
+    }
+
+    if (otherSectionHeading.test(line)) {
+      inSuggestionSection = false;
+      continue;
+    }
+
+    if (inSuggestionSection) {
+      if (/^#/.test(line)) {
+        inSuggestionSection = false;
+        continue;
+      }
+      suggestions.push(line);
+    }
+  }
+
+  return sanitizeSuggestions(suggestions);
+}
+
+function parseDurationMinutes(value: string): number | undefined {
+  const hours = value.match(/(\d+)\s*h/i);
+  const minutes = value.match(/(\d+)\s*min/i);
+  if (!hours && !minutes) return undefined;
+  return Number(hours?.[1] || 0) * 60 + Number(minutes?.[1] || 0);
+}
+
+export function normalizeCookidooSummary(
+  description: string | undefined,
+  prepTime: number,
+  cookTime?: number,
+  title = ''
+): { description?: string; cookTime?: number } {
+  if (!description) return { description, cookTime };
+
+  const cleanDescription = cleanHtmlFromText(description);
+  const yieldUnits = 'raciones|porciones|portions|servings|piezas|pieces';
+  const isTimingSummary =
+    /\bprep(?:araci[oó]n)?\.?\s*\d/i.test(cleanDescription)
+    && /\btotal\s*\d/i.test(cleanDescription)
+    && new RegExp(`\\b(?:${yieldUnits})\\b`, 'i').test(cleanDescription);
+
+  if (!isTimingSummary) {
+    return { description: cleanDescription, cookTime };
+  }
+
+  const totalText = cleanDescription.match(
+    new RegExp(`\\btotal\\s+(.+?)(?=[.\\s]+\\d+\\s*(?:${yieldUnits})\\b|$)`, 'i')
+  )?.[1];
+  const totalMinutes = totalText ? parseDurationMinutes(totalText) : undefined;
+  const descriptionPrefix = cleanDescription
+    .split(/\bprep(?:araci[oó]n)?\.?\s*\d/i)[0]
+    .replace(/[.\s]+$/, '')
+    .trim();
+  const remainingDescription = normalizeSuggestion(descriptionPrefix) === normalizeSuggestion(title)
+    ? undefined
+    : descriptionPrefix || undefined;
+
+  return {
+    description: remainingDescription,
+    cookTime: totalMinutes !== undefined
+      ? Math.max(totalMinutes - prepTime, 0)
+      : cookTime,
+  };
+}
+
+type ExtractedIngredient = {
+  name: string;
+  amount: string;
+  unit?: string;
+  section?: string;
+};
+
+type CookidooAlternative = {
+  primary: string;
+  alternative: string;
+};
+
+type CookidooIngredientDescription = {
+  name: string;
+  description: string;
+};
+
+export function extractCookidooIngredientDescriptions(html: string): CookidooIngredientDescription[] {
+  if (!html || !/recipe-ingredient__description/i.test(html)) return [];
+
+  const descriptions: CookidooIngredientDescription[] = [];
+  const blocks = html.match(/<recipe-ingredient\b[^>]*>[\s\S]*?<\/recipe-ingredient>/gi) || [];
+
+  for (const block of blocks) {
+    const nameMatch = block.match(
+      /<span[^>]*class=["'][^"']*\brecipe-ingredient__name\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/i
+    );
+    const descriptionMatch = block.match(
+      /<span[^>]*class=["'][^"']*\brecipe-ingredient__description\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/i
+    );
+    if (!nameMatch || !descriptionMatch) continue;
+
+    const name = cleanHtmlFromText(nameMatch[1]);
+    const description = cleanHtmlFromText(descriptionMatch[1]);
+    if (name && description) descriptions.push({ name, description });
+  }
+
+  return descriptions;
+}
+
+// Cookidoo renders substitutions inside the same ingredient block, while its
+// JSON-LD only contains the primary option.
+export function extractCookidooAlternatives(html: string): CookidooAlternative[] {
+  if (!html || !/recipe-ingredient__alternative/i.test(html)) return [];
+
+  const alternatives: CookidooAlternative[] = [];
+  const blocks = html.match(/<recipe-ingredient\b[^>]*>[\s\S]*?<\/recipe-ingredient>/gi) || [];
+
+  for (const block of blocks) {
+    const primaryMatch = block.match(
+      /<span[^>]*class=["'][^"']*\brecipe-ingredient__name\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/i
+    );
+    const alternativeMatch = block.match(
+      /<span[^>]*class=["'][^"']*\brecipe-ingredient__alternative\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/i
+    );
+    if (!primaryMatch || !alternativeMatch) continue;
+
+    const descriptionMatch = block.match(
+      /<span[^>]*class=["'][^"']*\brecipe-ingredient__description\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/i
+    );
+    const primary = cleanHtmlFromText(`${primaryMatch[1]} ${descriptionMatch?.[1] || ''}`);
+    const alternative = cleanHtmlFromText(alternativeMatch[1]);
+
+    if (primary && alternative) alternatives.push({ primary, alternative });
+  }
+
+  return alternatives;
+}
+
+function normalizeIngredientText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\bde\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function ingredientText(ingredient: ExtractedIngredient): string {
+  return [ingredient.amount, ingredient.unit, ingredient.name].filter(Boolean).join(' ');
+}
+
+function ingredientMatchesText(ingredient: ExtractedIngredient, text: string): boolean {
+  const ingredientNormalized = normalizeIngredientText(ingredientText(ingredient));
+  const textNormalized = normalizeIngredientText(text);
+  return ingredientNormalized === textNormalized
+    || ingredientNormalized.includes(textNormalized)
+    || textNormalized.includes(ingredientNormalized);
+}
+
+export function mergeCookidooIngredientDescriptions(
+  ingredients: ExtractedIngredient[],
+  html: string
+): ExtractedIngredient[] {
+  const descriptions = extractCookidooIngredientDescriptions(html);
+  if (descriptions.length === 0) return ingredients;
+
+  const merged = [...ingredients];
+
+  for (const detail of descriptions) {
+    const nameKey = normalizeIngredientText(detail.name);
+    const descriptionKey = normalizeIngredientText(detail.description);
+    const primaryIndex = merged.findIndex(ingredient => {
+      const ingredientName = normalizeIngredientText(ingredient.name);
+      return ingredientName === nameKey
+        || ingredientName.startsWith(`${nameKey} `)
+        || nameKey.startsWith(`${ingredientName} `);
+    });
+    if (primaryIndex < 0) continue;
+
+    const currentName = merged[primaryIndex].name;
+    if (!normalizeIngredientText(currentName).includes(descriptionKey)) {
+      merged[primaryIndex] = {
+        ...merged[primaryIndex],
+        name: `${currentName}, ${detail.description}`
+      };
+    }
+
+    const duplicateDescriptionIndex = merged.findIndex((ingredient, index) =>
+      index !== primaryIndex
+      && normalizeIngredientText(ingredient.name) === descriptionKey
+      && !ingredient.amount?.trim()
+      && !ingredient.unit?.trim()
+    );
+    if (duplicateDescriptionIndex >= 0) {
+      merged.splice(duplicateDescriptionIndex, 1);
+    }
+  }
+
+  return merged;
+}
+
+export function mergeCookidooAlternativeIngredients(
+  ingredients: ExtractedIngredient[],
+  html: string
+): ExtractedIngredient[] {
+  const pairs = extractCookidooAlternatives(html);
+  if (pairs.length === 0) return ingredients;
+
+  const merged = [...ingredients];
+
+  for (const pair of pairs) {
+    const alternativeText = normalizeIngredientText(pair.alternative);
+    const primaryIndex = merged.findIndex(ingredient => {
+      const currentText = normalizeIngredientText(ingredientText(ingredient));
+      return ingredientMatchesText(ingredient, pair.primary)
+        && !currentText.includes(alternativeText);
+    });
+    if (primaryIndex < 0) continue;
+
+    const alternativeIndex = merged.findIndex((ingredient, index) =>
+      index !== primaryIndex
+      && ingredientMatchesText(ingredient, pair.alternative)
+      && !ingredientMatchesText(ingredient, pair.primary)
+    );
+    const primary = merged[primaryIndex];
+    merged[primaryIndex] = {
+      ...primary,
+      name: `${primary.name} o ${pair.alternative}`,
+    };
+
+    if (alternativeIndex >= 0) merged.splice(alternativeIndex, 1);
+  }
+
+  return merged;
+}
+
+// Convierte el cuerpo del HTML a texto legible: elimina scripts, estilos, head, SVG y
+// comentarios (que son la mayor parte del markup ruidoso) y deja saltos de línea entre
+// bloques. Así el presupuesto de caracteres se gasta en CONTENIDO real, no en markup.
+function htmlToReadableText(html: string): string {
+  if (!html) return '';
+  return normalizeThermomixGlyphs(html)
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<head[\s\S]*?<\/head>/gi, ' ')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<svg[\s\S]*?<\/svg>/gi, ' ')
+    // Forzar salto de línea en cierres/aperturas de bloque para no pegar pasos entre sí
+    .replace(/<\/(p|div|li|ol|ul|h[1-6]|section|article|tr|td|br)>/gi, '\n')
+    .replace(/<(p|div|li|ol|ul|h[1-6]|section|article|tr|br)[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n\s*\n+/g, '\n\n')
+    .trim();
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderedTextToHtml(renderedText?: string): string {
+  if (!renderedText?.trim()) return '';
+
+  const sectionHeading = /^(?:ingredientes?|preparaci[oó]n|instrucciones?|procedimiento|tips?|consejos?|sugerencias?|notas?|trucos?|recomendaciones?|variantes?|informaci[oó]n nutricional)\s*:?\s*$/i;
+  const lines = renderedText
+    .slice(0, 50000)
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  return `<section data-tastebox-rendered-text="true">
+${lines.map(line => sectionHeading.test(line)
+    ? `<h2>${escapeHtml(line)}</h2>`
+    : `<p>${escapeHtml(line)}</p>`
+  ).join('\n')}
+</section>`;
+}
+
+function normalizeSuggestion(value: string): string {
+  return cleanHtmlFromText(value)
+    .replace(/^\s*(?:\d+[.)]|[-*•·▪◦]|â€¢|\.)\s*/, '')
+    .trim();
+}
+
+function suggestionKey(value: string): string {
+  return normalizeSuggestion(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function isSuggestionInterfaceLabel(value: string): boolean {
+  const key = suggestionKey(value);
+  if (!key) return true;
+
+  const exactLabels = new Set([
+    'dispositivos y accesorios',
+    'utensilios',
+    'dificultad',
+    'inf nutricional',
+    'informacion nutricional',
+    'pais',
+    'compartir',
+    'buscar recetas similares',
+    'tambien incluido en',
+    'tambien podria gustarte',
+  ]);
+
+  return exactLabels.has(key)
+    || /^tm(?:\d+)?$/.test(key);
+}
+
+export function sanitizeSuggestions(values: string[]): string[] {
+  const sanitized: string[] = [];
+  const seen = new Set<string>();
+
+  for (const value of values) {
+    const suggestion = normalizeSuggestion(value);
+    const key = suggestionKey(suggestion);
+    if (!suggestion || !key || isSuggestionInterfaceLabel(suggestion) || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    sanitized.push(suggestion);
+  }
+
+  return sanitized;
+}
+
+export function extractSuggestionsFromHtml(html: string): string[] {
+  if (!html) return [];
+
+  const suggestionHeading = '(?:tips?|consejos?|sugerencias?|notas?|trucos?|recomendaciones?|variantes?)';
+  const markedText = normalizeThermomixGlyphs(html)
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<head[\s\S]*?<\/head>/gi, ' ')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<svg[\s\S]*?<\/svg>/gi, ' ')
+    .replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, (_, heading) =>
+      `\n__HEADING__${cleanHtmlFromText(heading)}\n`
+    )
+    // Algunos sitios usan div/span/p con estilo de título en lugar de h1-h6.
+    .replace(
+      new RegExp(`<(?:div|span|p)[^>]*>\\s*(${suggestionHeading})\\s*:?[\\s]*<\\/(?:div|span|p)>`, 'gi'),
+      (_, heading) => `\n__HEADING__${cleanHtmlFromText(heading)}\n`
+    )
+    .replace(/<\/(p|div|li|ol|ul|section|article|tr|td|br)>/gi, '\n')
+    .replace(/<(p|div|li|ol|ul|section|article|tr|br)[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, ' ');
+
+  const headingPattern = /^(tips?|consejos?|sugerencias?|notas?|trucos?|recomendaciones?|variantes?)\s*:?\s*$/i;
+  const suggestions: string[] = [];
+  let inSuggestionSection = false;
+
+  for (const rawLine of markedText.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    if (line.startsWith('__HEADING__')) {
+      const heading = normalizeSuggestion(line.slice('__HEADING__'.length));
+      inSuggestionSection = headingPattern.test(heading);
+      continue;
+    }
+
+    // Encabezado de sección que no quedó envuelto en <h*>/<div>/<p> simple
+    // (p.ej. <p><strong>Tip</strong></p>): una línea corta que es exactamente
+    // la palabra clave también abre la sección de sugerencias.
+    if (headingPattern.test(normalizeSuggestion(line))) {
+      inSuggestionSection = true;
+      continue;
+    }
+
+    if (!inSuggestionSection) continue;
+    const suggestion = normalizeSuggestion(line);
+    if (suggestion) suggestions.push(suggestion);
+  }
+
+  // Notas marcadas con asterisco fuera de una sección formal.
+  const starredParagraphs = html.match(/<(?:p|li)[^>]*>\s*\*+[\s\S]*?<\/(?:p|li)>/gi) || [];
+  starredParagraphs
+    .map(value => normalizeSuggestion(value))
+    .filter(Boolean)
+    .forEach(value => suggestions.push(value));
+
+  return sanitizeSuggestions(suggestions);
+}
+
+function mergeSuggestions(htmlSuggestions: string[], llmSuggestions?: string): string | undefined {
+  const merged = sanitizeSuggestions([
+    ...htmlSuggestions,
+    ...(llmSuggestions || '').split(/\r?\n/),
+  ]);
+
+  return merged.length ? merged.join('\n') : undefined;
+}
+
+// Normaliza el campo "image" de schema.org (string | string[] | ImageObject | array)
+// y devuelve la primera URL válida.
+function firstImageUrl(image: any): string | null {
+  if (!image) return null;
+  if (typeof image === 'string') return image;
+  if (Array.isArray(image)) {
+    for (const it of image) { const u = firstImageUrl(it); if (u) return u; }
+    return null;
+  }
+  if (typeof image === 'object') return image.url || image.contentUrl || null;
+  return null;
+}
+
+// Junta URLs de imagen de la página: og:image / twitter:image (meta tags) + el campo
+// image del JSON-LD Recipe. La conversión a texto borra los <img>, así que sin esto
+// el LLM no vería ninguna imagen. Devuelve hasta 3 URLs absolutas, sin duplicados.
+function extractImageUrls(html: string): string[] {
+  if (!html) return [];
+  const urls: string[] = [];
+  const add = (u?: string | null) => {
+    if (u && /^https?:\/\//i.test(u) && !urls.includes(u)) urls.push(u);
+  };
+
+  // Meta tags og:image / twitter:image (con property o name, en cualquier orden de atributos)
+  const metaRe = /<meta[^>]+(?:property|name)=["'](?:og:image(?::url)?|twitter:image(?::src)?)["'][^>]*>/gi;
+  for (const tag of html.match(metaRe) || []) {
+    add(tag.match(/content=["']([^"']+)["']/i)?.[1]);
+  }
+
+  // image del JSON-LD Recipe
+  const blocks = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+  for (const block of blocks) {
+    const jsonText = block.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '').trim();
+    try {
+      const visit = (node: any) => {
+        if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) { node.forEach(visit); return; }
+        const type = node['@type'];
+        if (type === 'Recipe' || (Array.isArray(type) && type.includes('Recipe'))) add(firstImageUrl(node.image));
+        if (node['@graph']) visit(node['@graph']);
+      };
+      visit(JSON.parse(jsonText));
+    } catch { /* ignorar JSON-LD malformado */ }
+  }
+
+  return dedupeBestImages(urls);
+}
+
+// Clave de "imagen base": ignora el token de tamaño/transform del CDN y el query string,
+// para detectar que dos URLs son la MISMA foto en distinta resolución.
+// Ej: .../upload/t_web_recipe_584x480/img/... y .../upload/t_web_recipe_584x480_1_5x/img/...
+function imageAssetKey(url: string): string {
+  return url
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/[?#].*$/, '')
+    // CDNs tipo Cloudinary/tmecosys: /image/upload/<transform>/resto → quitar el transform
+    .replace(/\/image\/upload\/[^/]+\//, '/image/upload/')
+    // Segmentos de tamaño sueltos: /584x480/ , /w_800/ , /800x600/
+    .replace(/\/(?:w_\d+|h_\d+|\d+x\d+)\//g, '/');
+}
+
+// Puntaje de calidad para elegir, entre duplicados, la versión de mayor resolución.
+function imageQualityScore(url: string): number {
+  const dim = url.match(/(\d{2,5})x(\d{2,5})/);
+  let score = dim ? parseInt(dim[1], 10) * parseInt(dim[2], 10) : 0;
+  // Multiplicadores de escala: _1_5x (1.5x), _2x (2x), @2x, etc.
+  const scale = url.match(/[_@](\d+)(?:_(\d+))?x(?:[/._]|$)/i);
+  if (scale) {
+    const mult = parseFloat(`${scale[1]}.${scale[2] || 0}`);
+    if (mult > 0) score = (score || 1) * mult;
+  }
+  return score;
+}
+
+// Agrupa URLs que son la misma imagen (por asset base) y se queda con la de mayor
+// calidad de cada grupo. Devuelve hasta 3 imágenes DISTINTAS.
+function dedupeBestImages(urls: string[]): string[] {
+  const groups = new Map<string, string>();
+  for (const url of urls) {
+    const key = imageAssetKey(url);
+    const current = groups.get(key);
+    if (!current || imageQualityScore(url) > imageQualityScore(current)) {
+      groups.set(key, url);
+    }
+  }
+  return Array.from(groups.values()).slice(0, 3);
+}
+
+// Extrae la tabla de información nutricional de Cookidoo (componente <rdp-nutritious>),
+// con los valores EXACTOS por porción que muestra la página (incl. grasas saturadas).
+export function extractCookidooNutrition(html: string): Record<string, number> | null {
+  if (!html || !html.includes('rdp-nutritious')) return null;
+  const num = (s: string): number | undefined => {
+    const m = String(s).replace(/ /g, ' ').replace(',', '.').match(/-?\d+(?:\.\d+)?/);
+    return m ? parseFloat(m[0]) : undefined;
+  };
+  const out: Record<string, number> = {};
+  const items = html.split('rdp-nutritious__item').slice(1);
+  for (const it of items) {
+    const name = it.match(/rdp-nutritious__name"[^>]*>\s*([^<]+?)\s*</i)?.[1]?.toLowerCase();
+    const value = it.match(/rdp-nutritious__value"[^>]*>\s*([^<]+?)\s*</i)?.[1];
+    if (!name || !value) continue;
+    let v: number | undefined;
+    if (name.includes('calor')) {
+      // "2074.1 kJ / 495.7 kcal" → preferir kcal
+      const k = value.toLowerCase().match(/([\d.,]+)\s*kcal/);
+      v = k ? parseFloat(k[1].replace(',', '.')) : num(value);
+      if (v !== undefined) out.calories = v;
+    } else if (name.includes('proteína') || name.includes('proteina')) { v = num(value); if (v !== undefined) out.protein = v; }
+    else if (name.includes('carbohidrat')) { v = num(value); if (v !== undefined) out.carbohydrates = v; }
+    else if (name.includes('saturad')) { v = num(value); if (v !== undefined) out.saturatedFat = v; } // antes que "grasa"
+    else if (name.includes('grasa')) { v = num(value); if (v !== undefined) out.fat = v; }
+    else if (name.includes('fibra')) { v = num(value); if (v !== undefined) out.fiber = v; }
+    else if (name.includes('sodio')) { v = num(value); if (v !== undefined) out.sodium = v; }
+    else if (name.includes('azúc') || name.includes('azuc')) { v = num(value); if (v !== undefined) out.sugar = v; }
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+// Extrae datos estructurados schema.org/Recipe de los bloques JSON-LD.
+// La mayoría de los sitios de recetas los incluyen y contienen los ingredientes e
+// instrucciones EXACTOS, por lo que son la fuente más fiable (evita alucinaciones).
+function extractRecipeJsonLd(html: string): string | null {
+  if (!html) return null;
+  const blocks = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  if (!blocks || blocks.length === 0) return null;
+
+  const recipes: any[] = [];
+  const visit = (node: any) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(visit); return; }
+    const type = node['@type'];
+    const isRecipe = type === 'Recipe' || (Array.isArray(type) && type.includes('Recipe'));
+    if (isRecipe) recipes.push(node);
+    if (node['@graph']) visit(node['@graph']);
+  };
+
+  for (const block of blocks) {
+    const jsonText = block.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '').trim();
+    try { visit(JSON.parse(jsonText)); } catch { /* JSON-LD malformado: ignorar */ }
+  }
+
+  if (recipes.length === 0) return null;
+
+  // Devuelve los pasos con su sección REAL (solo si el JSON-LD usa HowToSection).
+  const flattenInstructions = (instr: any, section?: string): { text: string; section?: string }[] => {
+    if (!instr) return [];
+    if (typeof instr === 'string') return [{ text: cleanHtmlFromText(instr), section }];
+    if (Array.isArray(instr)) return instr.flatMap(x => flattenInstructions(x, section));
+    // HowToSection: su "name" es una sección REAL de la receta (ej. "Masa", "Relleno")
+    if (instr.itemListElement) {
+      const name = instr.name ? cleanHtmlFromText(String(instr.name)) : section;
+      return flattenInstructions(instr.itemListElement, name);
+    }
+    const text = instr.text || instr.name;
+    return text ? [{ text: cleanHtmlFromText(String(text)), section }] : [];
+  };
+
+  const out: string[] = [];
+  recipes.forEach((r, i) => {
+    if (recipes.length > 1) out.push(`--- Receta ${i + 1} ---`);
+    if (r.name) out.push(`Título: ${cleanHtmlFromText(String(r.name))}`);
+    const img = firstImageUrl(r.image);
+    if (img) out.push(`Imagen principal: ${img}`);
+    if (r.recipeYield) out.push(`Porciones/Rinde: ${Array.isArray(r.recipeYield) ? r.recipeYield.join(', ') : r.recipeYield}`);
+    if (r.totalTime || r.cookTime || r.prepTime) out.push(`Tiempos: prep=${r.prepTime || '-'} cook=${r.cookTime || '-'} total=${r.totalTime || '-'}`);
+    const ings = Array.isArray(r.recipeIngredient) ? r.recipeIngredient : (r.recipeIngredient ? [r.recipeIngredient] : []);
+    if (ings.length) {
+      out.push('Ingredientes:');
+      ings.forEach((ing: any) => out.push(`- ${cleanHtmlFromText(String(ing))}`));
+    }
+    const steps = flattenInstructions(r.recipeInstructions);
+    if (steps.length) {
+      out.push('Instrucciones (TEXTO EXACTO - transcribir sin modificar):');
+      let curSection: string | undefined;
+      let n = 0;
+      steps.forEach((s) => {
+        if (s.section && s.section !== curSection) {
+          curSection = s.section;
+          out.push(`Sección: ${curSection}`); // sección REAL del origen
+        }
+        out.push(`${++n}. ${s.text}`);
+      });
+    }
+  });
+
+  return out.length ? out.join('\n') : null;
+}
+
 // Esquema de validation para respuesta LLM - VERSIÓN ULTRA RESILIENTE
 const llmResponseSchema = z.object({
   error: z.boolean().optional(),
   title: z.string().min(1).catch('Receta Importada'), // título por defecto
   description: z.string().optional().nullable().transform(val => val || undefined),
+  suggestions: z.union([
+    z.string(),
+    z.array(z.string()).transform(values => values.filter(Boolean).join('\n'))
+  ]).optional().nullable().transform(val => val || undefined),
   images: z.array(z.object({
     url: z.string().url().catch(''), // URLs inválidas se convierten en vacías
     altText: z.string().optional().nullable().transform(val => val || undefined),
@@ -51,7 +769,7 @@ const llmResponseSchema = z.object({
   prepTime: z.number().min(1).nullable().catch(30).transform(val => val ?? 30), // siempre retornar número válido
   cookTime: z.number().nullable().optional().catch(null).transform(val => val === null ? undefined : val),
   servings: z.number().min(1).nullable().catch(4).transform(val => val ?? 4), // siempre retornar número válido
-  difficulty: z.enum(['Fácil', 'Medio', 'Difícil']).nullable().catch('Medio').transform(val => val ?? 'Medio'), // siempre retornar dificultad válida
+  difficulty: z.enum(['Fácil', 'Medio', 'Difícil']).nullable().optional().catch(null).transform(val => val ?? undefined), // vacío si la receta no indica dificultad
   recipeType: z.string().nullable().optional().catch(null).transform(val => val === null || val === '' ? undefined : val),
   tags: z.array(z.string()).max(4).optional().catch([]).transform(val => val || []) // Límite de 4 tags máximo
 });
@@ -60,13 +778,7 @@ export class LLMServiceImproved {
   private openai: OpenAI;
 
   constructor() {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('Variable de entorno OPENAI_API_KEY es requerida');
-    }
-
-    this.openai = new OpenAI({
-      apiKey,
+    this.openai = createOpenAIClient({
       timeout: 60000 // Timeout de 60 segundos para requests LLM
     });
   }
@@ -126,13 +838,18 @@ export class LLMServiceImproved {
 
     try {
       let content: string = '';
+      let instagramUsername: string | undefined;
+      let instagramCanonicalUrl: string | undefined;
 
       if (url.includes('youtube.com') || url.includes('youtu.be')) {
         console.log('📺 Video de YouTube detectado');
         content = await this.extractYouTubeContent(url);
       } else if (url.includes('instagram.com')) {
         console.log('📷 Video de Instagram detectado');
-        content = await this.extractInstagramContent(url);
+        const ig = await this.extractInstagramContent(url);
+        content = ig.content;
+        instagramUsername = ig.username;
+        instagramCanonicalUrl = ig.canonicalUrl;
       } else {
         console.log('🎬 Otra plataforma de video, obteniendo contenido de página');
         try {
@@ -152,6 +869,14 @@ export class LLMServiceImproved {
 
       // Use specialized video prompt
       const recipeData = await this.extractRecipeFromVideoContent(content, url);
+
+      // Instagram: la URL del post no incluye el usuario. Si lo detectamos, reconstruimos
+      // la URL de origen como instagram.com/<usuario>/reel/<código> para que la fuente
+      // muestre el usuario (formato que Instagram soporta y mantiene el enlace al post).
+      if (url.includes('instagram.com')) {
+        recipeData.sourceUrl = instagramCanonicalUrl
+          || this.buildInstagramSourceUrl(url, instagramUsername);
+      }
 
       console.log('✅ Extracción de receta de video completada');
       return recipeData;
@@ -259,15 +984,48 @@ export class LLMServiceImproved {
     }
   }
 
-  private async extractInstagramContent(url: string): Promise<string> {
+  private async extractInstagramContent(url: string): Promise<{
+    content: string;
+    username?: string;
+    canonicalUrl?: string;
+  }> {
     console.log('📷 Obteniendo página de Instagram para caption/contenido...');
 
     try {
-      const html = await this.fetchWebContent(url);
+      const postMatch = url.match(/instagram\.com\/(?:[^/]+\/)?(p|reel|tv)\/([A-Za-z0-9_-]+)/i);
+      let caption = '';
 
-      if (!html || typeof html !== 'string' || html.length === 0) {
+      if (postMatch) {
+        try {
+          const embedUrl = `https://www.instagram.com/${postMatch[1].toLowerCase()}/${postMatch[2]}/embed/captioned/`;
+          const embedHtml = await this.fetchWebContent(embedUrl);
+          caption = extractInstagramCaption(embedHtml);
+          if (caption) {
+            console.log('📝 Caption completo de Instagram obtenido:', caption.length, 'characters');
+          }
+        } catch (captionError) {
+          console.log('⚠️ No se pudo obtener el caption embebido de Instagram');
+        }
+      }
+
+      let html = '';
+      try {
+        html = await this.fetchWebContent(url);
+      } catch (pageError) {
+        if (!caption) throw pageError;
+        console.log('⚠️ Página normal de Instagram no disponible; se usará el caption embebido');
+      }
+
+      if ((!html || typeof html !== 'string' || html.length === 0) && !caption) {
         throw new Error('No se recibió contenido HTML de Instagram');
       }
+
+      const canonicalUrl = html.match(
+        /<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i
+      )?.[1];
+      const username = this.extractInstagramUsername(html)
+        || this.extractInstagramUsername(canonicalUrl || '');
+      if (username) console.log('👤 Usuario de Instagram detectado:', '@' + username);
 
       // Extract Instagram post metadata
       const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
@@ -275,7 +1033,7 @@ export class LLMServiceImproved {
       const ogDescMatch = html.match(/<meta property="og:description" content="([^"]+)"/i);
       const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/i);
 
-      let content = '';
+      let content = caption ? `Instagram caption:\n${caption}\n\n` : '';
 
       if (titleMatch && titleMatch[1]) {
         content += `Title: ${titleMatch[1]}\n\n`;
@@ -381,13 +1139,47 @@ export class LLMServiceImproved {
       }
 
       console.log('📱 Contenido de Instagram extracted:', content.length, 'characters');
-      return content;
+      return { content, username, canonicalUrl };
 
     } catch (error) {
       console.error('Error al extraer contenido de Instagram:', error);
       // Return a fallback content instead of throwing
-      return `Instagram Video URL: ${url}\nNote: Could not extract detailed content. Creating basic recipe from URL information.`;
+      return {
+        content: `Instagram Video URL: ${url}\nNote: Could not extract detailed content. Creating basic recipe from URL information.`,
+        username: undefined,
+        canonicalUrl: undefined,
+      };
     }
+  }
+
+  // Detecta el nombre de usuario (@handle) de una página de Instagram a partir de
+  // varias señales del HTML (datos embebidos y meta tags), de más a menos fiable.
+  private extractInstagramUsername(html: string): string | undefined {
+    if (!html) return undefined;
+    const reserved = new Set(['instagram', 'explore', 'p', 'reel', 'reels', 'tv', 'stories', 'accounts']);
+    const patterns = [
+      /"owner"\s*:\s*\{[^}]*?"username"\s*:\s*"([A-Za-z0-9._]{1,30})"/i,
+      /"user"\s*:\s*\{[^}]*?"username"\s*:\s*"([A-Za-z0-9._]{1,30})"/i,
+      /"username"\s*:\s*"([A-Za-z0-9._]{1,30})"/i,
+      /"alternateName"\s*:\s*"@?([A-Za-z0-9._]{1,30})"/i,
+      /<meta[^>]+property=["']og:title["'][^>]+content=["'][^"']*?\(@([A-Za-z0-9._]{1,30})\)/i,
+      /<meta[^>]+(?:name=["']description["']|property=["']og:description["'])[^>]+content=["'][^"']*?-\s*([A-Za-z0-9._]{1,30})\s+(?:el|on)\s+/i,
+      /instagram\.com\/([A-Za-z0-9._]{1,30})\/(?:p|reel|tv)\//i,
+    ];
+    for (const p of patterns) {
+      const m = html.match(p);
+      if (m && m[1] && !reserved.has(m[1].toLowerCase())) return m[1];
+    }
+    return undefined;
+  }
+
+  // Reconstruye la URL de origen de Instagram incluyendo el usuario, conservando el
+  // tipo (p/reel/tv) y el código del post. Si no hay usuario, devuelve la URL original.
+  private buildInstagramSourceUrl(originalUrl: string, username?: string): string {
+    if (!username) return originalUrl;
+    const m = originalUrl.match(/instagram\.com\/(?:[^/]+\/)?(p|reel|tv)\/([A-Za-z0-9_-]+)/i);
+    if (!m) return originalUrl;
+    return `https://www.instagram.com/${username}/${m[1].toLowerCase()}/${m[2]}/`;
   }
 
   private async extractRecipeFromVideoContent(content: string, sourceUrl: string): Promise<RecipeImportResponse> {
@@ -401,7 +1193,7 @@ export class LLMServiceImproved {
       const videoPrompt = this.buildVideoExtractionPrompt(content);
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: getModel(),
         messages: [
           {
             role: 'system',
@@ -413,6 +1205,7 @@ export class LLMServiceImproved {
 BUSCA información sobre:
 - Ingredientes mencionados en títulos, descripciones o transcripciones
 - Pasos de preparación descritos en el contenido
+- Tips, sugerencias de salsa, consejos, notas y recomendaciones, separados de los pasos
 - Tiempos de cocción o preparación mencionados
 - Número de porciones
 - Dificultad (si se menciona)
@@ -421,6 +1214,7 @@ IMPORTANTE para videos:
 - Si solo tienes el título/descripción, infiere los ingredientes básicos
 - Para ingredientes sin cantidades específicas, usa "al gusto"
 - Crea pasos básicos de preparación basados en el tipo de receta
+- Conserva las sugerencias explícitas en "suggestions"; no las conviertas en instrucciones
 - Si no hay información completa, proporciona una receta básica funcional
 
 La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
@@ -444,7 +1238,7 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
 
       let parsedResponse: any;
       try {
-        parsedResponse = JSON.parse(responseContent);
+        parsedResponse = parseLlmJson(responseContent);
       } catch (parseError) {
         console.error('❌ JSON Parse Error:', parseError);
         console.error('📄 Raw response:', responseContent.substring(0, 500));
@@ -465,18 +1259,33 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
 
       // Clean title by removing emojis
       const cleanedTitle = this.cleanRecipeTitle(validatedData.title || 'Receta de Video');
+      const suggestions = mergeSuggestions(
+        extractSuggestionsFromText(content),
+        validatedData.suggestions
+      );
+      const suggestionKeys = new Set(
+        (suggestions || '')
+          .split(/\r?\n/)
+          .map(suggestionKey)
+          .filter(Boolean)
+      );
+      const instructions = (validatedData.instructions || [])
+        .filter(inst => inst.description && typeof inst.step === 'number')
+        .filter(inst => !suggestionKeys.has(suggestionKey(inst.description)))
+        .map((inst, index) => ({ ...inst, step: index + 1 }));
 
       return {
         title: cleanedTitle,
         description: validatedData.description || '',
+        suggestions,
         prepTime: validatedData.prepTime || 0,
         cookTime: validatedData.cookTime || 0,
         servings: validatedData.servings || 1,
-        difficulty: validatedData.difficulty || 'Medio',
+        difficulty: validatedData.difficulty,
         recipeType: validatedData.recipeType,
         images: (validatedData.images || []).filter(img => img.url && typeof img.order === 'number') as any[],
         ingredients: (validatedData.ingredients || []).filter(ing => ing.name && ing.amount) as any[],
-        instructions: (validatedData.instructions || []).filter(inst => inst.description && typeof inst.step === 'number') as any[],
+        instructions: instructions as any[],
         tags: validatedData.tags || []
       };
 
@@ -497,6 +1306,11 @@ IMPORTANTE para imágenes:
 - Las imágenes de thumbnails de videos son válidas para recetas
 - Usa order: 1 para la imagen principal del thumbnail
 
+IMPORTANTE para sugerencias:
+- Extrae todos los tips, consejos, notas, recomendaciones, variantes y sugerencias de salsa.
+- No los incluyas como pasos de preparación.
+- Devuelve cada sugerencia en un elemento independiente del array "suggestions".
+
 Si el contenido es limitado (solo título/descripción), crea una receta básica pero completa basándote en:
 - El tipo de plato mencionado
 - Ingredientes comunes para ese tipo de comida
@@ -506,6 +1320,7 @@ Formato JSON requerido:
 {
   "title": "Título exacto o inferido del plato",
   "description": "Descripción breve del plato",
+  "suggestions": ["Primer tip o sugerencia", "Segunda recomendación"],
   "images": [
     {
       "url": "URL_del_thumbnail_si_está_disponible",
@@ -698,7 +1513,7 @@ ${truncatedContent}`;
     console.log('\n=== 🤖 LLM REQUEST START ===');
     console.log('📍 Source URL:', sourceUrl);
     console.log('📝 HTML Content Length:', html.length, 'characters');
-    console.log('🎯 Model:', 'gpt-4o-mini');
+    console.log('🎯 Model:', getModel());
     console.log('🌡️ Temperature:', 0.1);
     console.log('📄 Max Tokens:', 4000);
     console.log('\n📋 SYSTEM PROMPT:');
@@ -715,6 +1530,8 @@ EXTRAE los datos EXACTAMENTE como aparecen:
 - Ingredientes: nombres completos, no omitas ninguno
 - Instrucciones: copia el texto exacto
 - Tiempos y porciones: valores exactos mencionados
+- Sugerencias: extrae todos los tips, consejos, notas, trucos, recomendaciones o variantes que pertenezcan a la receta
+- No mezcles las sugerencias con las instrucciones de preparación
 
 IMÁGENES: Busca hasta 3 URLs de imágenes de comida
 
@@ -728,8 +1545,14 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
     let parsedResponse: any;
     let responseContent: string | undefined;
     try {
+      // El LLM ocasionalmente devuelve JSON inválido o respuesta vacía (error transitorio).
+      // Reintentamos hasta 3 veces antes de fallar.
+      const maxAttempts = 3;
+      let parseErr: any;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+       try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: getModel(),
         messages: [
           {
             role: 'system',
@@ -752,8 +1575,8 @@ EXTRAE los datos EXACTAMENTE como aparecen:
 - Si hay párrafos largos, divídelos en pasos lógicos
 - NUNCA generes comentarios como "instrucciones no visibles" o "preparación típica basada en..."
 - SOLO incluye pasos de cocina reales: "Mezclar", "Hornear", "Añadir", etc.
-- Si no hay instrucciones visibles, genera pasos básicos SIN comentarios explicativos
-- Cada step debe ser una acción concreta de cocina
+- 🚫 NUNCA inventes pasos: si no hay instrucciones visibles en el contenido, devuelve "instructions": [] (vacío). Es preferible vacío a inventado.
+- Cada step debe ser una acción concreta de cocina presente en el texto
 
 IMÁGENES: Busca hasta 3 URLs de imágenes de comida
 
@@ -784,10 +1607,17 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
 
       // Parse and validate response
       console.log('🔄 Parsing JSON response...');
-      try {
-        parsedResponse = JSON.parse(responseContent);
-      } catch (parseError) {
-        throw new SyntaxError('JSON inválido respuesta de LLM');
+      parsedResponse = parseLlmJson(responseContent);
+      parseErr = undefined;
+      break; // parseo OK → salir del bucle de reintentos
+       } catch (attemptError) {
+         // Reintentar ante respuesta vacía / JSON inválido / error transitorio de la API.
+         parseErr = attemptError;
+         console.log(`⚠️ Respuesta inválida del LLM (intento ${attempt}/${maxAttempts}): ${attemptError instanceof Error ? attemptError.message : attemptError}`);
+       }
+      } // fin bucle de reintentos
+      if (parseErr || !parsedResponse) {
+        throw new SyntaxError('Formato de respuesta inválido de LLM tras varios intentos');
       }
 
       console.log('🔍 Parsed response keys:', Object.keys(parsedResponse));
@@ -829,25 +1659,176 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
         console.log('  - Secciones de instrucciones:', instructionSections);
       }
 
+      // Guarda anti-alucinación para Cookidoo: su página pública NO trae los pasos
+      // (están detrás de login). Si no llegaron pasos reales, NO devolvemos inventados:
+      // damos un error accionable que guía al usuario a usar la extensión ya logueado.
+      const isCookidooSource = sourceUrl?.includes('cookidoo') || false;
+      const placeholderDescriptions = ['preparar según la receta original', 'paso de preparación', 'seguir las instrucciones'];
+      const realInstructions = validatedData.instructions.filter(inst =>
+        inst.description &&
+        !placeholderDescriptions.some(p => inst.description.toLowerCase().startsWith(p))
+      );
+      if (isCookidooSource && realInstructions.length === 0) {
+        throw new Error('Esta receta de Cookidoo no incluye los pasos de preparación en su página pública (requieren login/suscripción). Para importarla con la preparación completa: abrí la receta en Cookidoo ya logueado y usá el botón de la extensión TasteBox, que lee la página tal como la ves.');
+      }
+
       // Clean title to remove emojis
       const cleanTitle = this.cleanRecipeTitle(validatedData.title);
+
+      // Imágenes: lo que devolvió el LLM + fallback robusto desde el HTML (og:image /
+      // JSON-LD), por si el modelo no las incluyó. Así nunca quedamos sin imagen.
+      let images = this.deduplicateImages(validatedData.images || []).filter(img => img.url && img.url.trim() !== '');
+      if (images.length === 0) {
+        const fallback = extractImageUrls(html);
+        if (fallback.length > 0) {
+          console.log(`🖼️ LLM no devolvió imágenes; usando ${fallback.length} del HTML (og:image/JSON-LD)`);
+          images = fallback.map((url, i) => ({ url, altText: cleanTitle, order: i + 1 })) as any[];
+        }
+      }
+
+      // Nutrición exacta de Cookidoo (si está en el HTML). Para otros sitios queda
+      // undefined y la app la calcula con IA bajo demanda como hasta ahora.
+      const nutrition = extractCookidooNutrition(html) || undefined;
+      if (nutrition) {
+        console.log('🥗 Nutrición Cookidoo extraída:', nutrition);
+      }
+
+      // Es receta Thermomix si viene de Cookidoo o si algún paso tiene una configuración
+      // EXCLUSIVA de Thermomix: velocidad (vel/Mariposa/Turbo) o temperatura Varoma.
+      // OJO: time/temperature/function NO sirven como señal porque cualquier receta común
+      // tiene tiempos de cocción y temperaturas de horno (ej. "180°C por 30 min").
+      const isCookidooRecipe = /cookidoo/i.test(sourceUrl || '');
+      const hasThermomixEvidence = validatedData.instructions.some(instruction => {
+        const evidence = [
+          instruction.description,
+          instruction.function,
+          instruction.speed,
+          instruction.temperature
+        ].filter(Boolean).join(' ');
+
+        return /\b(?:thermomix|tm[3567]\b|varoma|giro inverso|vel(?:ocidad)?\s*(?:cuchara|\d+)|mariposa|turbo)\b/i.test(evidence);
+      });
+      const thermomix = isCookidooRecipe || hasThermomixEvidence;
+      const instructions = thermomix
+        ? validatedData.instructions
+        : validatedData.instructions.map(instruction => ({
+            ...instruction,
+            function: undefined,
+            time: undefined,
+            temperature: undefined,
+            speed: undefined
+          }));
+
+      // País (Cookidoo: componente <rdp-country>) e idioma (JSON-LD inLanguage).
+      const countryMatch = html.match(/rdp-country__country"[^>]*>\s*([^<]+?)\s*</i);
+      const country = countryMatch ? cleanHtmlFromText(countryMatch[1]) : undefined;
+      // Idioma: 1) atributo <html lang>, 2) JSON-LD inLanguage, 3) <meta og:locale>.
+      const langDeclared =
+        html.match(/<html[^>]*\blang=["']([^"']+)["']/i)?.[1]
+        || html.match(/"inLanguage"\s*:\s*"([^"]+)"/i)?.[1]
+        || html.match(/property=["']og:locale["'][^>]*content=["']([^"']+)["']/i)?.[1];
+      let language: string | undefined;
+      if (langDeclared) {
+        const l = langDeclared.toLowerCase();
+        if (l.startsWith('es')) language = 'Español';
+        else if (l.startsWith('en')) language = 'Inglés';
+      }
+      // Si la página no declara un idioma reconocido, lo detectamos del contenido de la
+      // receta (salida del LLM) + una muestra del texto crudo de la página (idioma original).
+      if (!language) {
+        const rawSample = cleanHtmlFromText(html.slice(0, 12000));
+        language = detectRecipeLanguage([
+          cleanTitle,
+          validatedData.description,
+          ...validatedData.ingredients.map(i => i.name),
+          ...validatedData.instructions.map(s => s.description),
+          rawSample,
+        ].filter(Boolean).join(' '));
+      }
+      console.log('🌐 Idioma detectado:', language, '(declarado:', langDeclared || 'no', ')');
+
+      // Sin gluten: por las etiquetas extraídas o por las keywords de la página.
+      const keywordsStr = html.match(/"keywords"\s*:\s*"([^"]*)"/i)?.[1] || '';
+      const glutenFree = validatedData.tags.some(t => /sin gluten|gluten[\s-]?free|libre de gluten/i.test(t))
+        || /sin gluten|gluten[\s-]?free|libre de gluten/i.test(keywordsStr);
+
+      // Keto / cetogénica: por etiquetas o keywords.
+      const keto = validatedData.tags.some(t => /keto|cetog[eé]nic/i.test(t))
+        || /keto|cetog[eé]nic/i.test(keywordsStr);
+
+      // Saludable (campo lowCarb): low carb / bajo en carbohidratos, o baja en calorías.
+      const healthyRegex = /low[\s-]?carb|bajo en carbo|low[\s-]?cal(?:orie)?s?|baj[ao] en cal(?:or[ií]as)?|hipocal[oó]ric[ao]/i;
+      const healthyEvidence = [
+        cleanTitle,
+        validatedData.description,
+        ...validatedData.tags,
+        keywordsStr
+      ].filter(Boolean).join(' ');
+      const lowCarb = healthyRegex.test(healthyEvidence);
+
+      const vegetarian = validatedData.tags.some(t => /vegetarian[ao]?/i.test(t))
+        || /vegetarian[ao]?/i.test(keywordsStr);
+
+      const airFryerEvidence = [
+        cleanTitle,
+        validatedData.description,
+        ...validatedData.instructions.map(instruction => instruction.description),
+        ...validatedData.tags,
+        keywordsStr
+      ].filter(Boolean).join(' ');
+      const airFryer = /\b(?:freidora\s+de\s+aire|freidora\s+sin\s+aceite|air[\s-]?fryer)\b/i.test(airFryerEvidence);
+
+      const ingredients = isCookidooSource
+        ? mergeCookidooAlternativeIngredients(
+            mergeCookidooIngredientDescriptions(
+              validatedData.ingredients.filter(ing => ing.name && ing.amount) as ExtractedIngredient[],
+              html
+            ),
+            html
+          )
+        : validatedData.ingredients.filter(ing => ing.name && ing.amount);
+      const suggestions = mergeSuggestions(
+        extractSuggestionsFromHtml(html),
+        validatedData.suggestions
+      );
+      const cookidooSummary = isCookidooSource
+        ? normalizeCookidooSummary(
+            validatedData.description,
+            validatedData.prepTime,
+            validatedData.cookTime,
+            cleanTitle
+          )
+        : {
+            description: validatedData.description,
+            cookTime: validatedData.cookTime,
+          };
 
       // Transform to our interface
       return {
         title: cleanTitle,
-        description: validatedData.description,
-        images: this.deduplicateImages(validatedData.images || []).filter(img => img.url && img.url.trim() !== '') as any[], // filter out empty URLs and duplicates
-        ingredients: validatedData.ingredients.filter(ing => ing.name && ing.amount).map((ing, index) => ({
+        description: cookidooSummary.description,
+        suggestions,
+        images: images as any[],
+        ingredients: ingredients.map((ing, index) => ({
           ...ing,
           order: index + 1
         })) as any[],
-        instructions: validatedData.instructions.filter(inst => inst.description && typeof inst.step === 'number').sort((a, b) => a.step - b.step) as any[],
+        instructions: instructions.filter(inst => inst.description && typeof inst.step === 'number').sort((a, b) => a.step - b.step) as any[],
         prepTime: validatedData.prepTime,
-        cookTime: validatedData.cookTime,
+        cookTime: cookidooSummary.cookTime,
         servings: validatedData.servings,
         difficulty: validatedData.difficulty,
         recipeType: validatedData.recipeType,
-        tags: validatedData.tags
+        country,
+        language,
+        tags: validatedData.tags,
+        thermomix,
+        airFryer,
+        glutenFree,
+        keto,
+        lowCarb,
+        vegetarian,
+        nutrition
       };
     } catch (error: any) {
       console.log('\n❌ ERROR IN LLM PROCESSING');
@@ -877,11 +1858,35 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
   }
 
   private buildExtractionPrompt(html: string, sourceUrl?: string): string {
-    // Truncate HTML if too long to avoid token limits
-    const maxHtmlLength = 20000;
-    const truncatedHtml = html.length > maxHtmlLength
-      ? html.substring(0, maxHtmlLength) + '...[truncated]'
-      : html;
+    // 1) Datos estructurados JSON-LD (fuente más fiable: ingredientes/pasos EXACTOS).
+    //    Se ponen al inicio y NUNCA se truncan, así siempre llegan completos al modelo.
+    const jsonLd = extractRecipeJsonLd(html);
+
+    // 2) HTML convertido a texto legible (sin scripts/estilos/head) para que el
+    //    presupuesto de caracteres se gaste en contenido real y no en markup ruidoso.
+    const readable = htmlToReadableText(html);
+
+    // Truncar el TEXTO (no el HTML crudo): así caben muchísimos más pasos reales.
+    const maxTextLength = 24000;
+    const truncatedHtml = readable.length > maxTextLength
+      ? readable.substring(0, maxTextLength) + '...[truncado]'
+      : readable;
+
+    const structuredBlock = jsonLd
+      ? `\n🟢 DATOS ESTRUCTURADOS (JSON-LD schema.org/Recipe) — FUENTE PRIORITARIA Y FIABLE.
+Usa ESTO como verdad para la LISTA de ingredientes (cuáles y cuántos) y para las instrucciones. Transcribe los pasos EXACTAMENTE como aparecen aquí.
+⚠️ IMPORTANTE: el JSON-LD a veces lista el ingrediente SIN su forma de preparación (ej: "1 Taza Zanahorias"), pero el cuerpo de la página de abajo SÍ la incluye (ej: "1 Taza Zanahorias Rallada"). En esos casos COMPLETA cada ingrediente con su corte/estado tomándolo del cuerpo de la página: "cortada en cubos", "rallada", "cortada finamente", "en rodajas", etc. NO descartes ese detalle. Empareja cada ingrediente del JSON-LD con su línea correspondiente en la página para enriquecerlo.
+También usa el contenido de la página de abajo para completar datos que falten (imágenes, secciones).
+${jsonLd}\n`
+      : '';
+
+    // 3) Imágenes: la conversión a texto borra los <img>, así que las extraemos aparte
+    //    (og:image + JSON-LD) y se las damos explícitas al modelo para el array images.
+    const imageUrls = extractImageUrls(html);
+    const imagesBlock = imageUrls.length
+      ? `\n🖼️ IMÁGENES DE LA RECETA — incluí estas URLs EXACTAS en el array "images" (order 1,2,3):
+${imageUrls.map((u, i) => `${i + 1}. ${u}`).join('\n')}\n`
+      : '';
 
     // Check if this is a Cookidoo recipe
     const isCookidoo = sourceUrl?.includes('cookidoo.international') || false;
@@ -901,7 +1906,18 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
   * ⚠️ CRÍTICO: Si la cantidad YA incluye unidad (ej: "40g"), NO dupliques en unit
   * Formato correcto: {"name": "mantequilla", "amount": "40", "unit": "g"}
   * Formato INCORRECTO: {"amount": "40 g", "unit": "g"} → resultaría en "40 g g"
-- INGREDIENTES: Nombres COMPLETOS y EXACTOS, no omitas ninguno
+- INGREDIENTES: Nombres COMPLETOS y EXACTOS, no omitas ninguno. Copia el ingrediente TAL CUAL
+  aparece en la página.
+  * ⚠️ CONSERVA SIEMPRE la forma/estado de preparación que acompaña al ingrediente dentro de "name":
+    "cortado en cubos", "picado", "rallado", "en rodajas", "en juliana", "fileteado", "molido",
+    "tamizado", "a temperatura ambiente", "sin piel", "desmenuzado", "blando", "frío", "en trozos", etc.
+  * NUNCA elimines ni resumas esos detalles: forman parte del nombre del ingrediente.
+  * Ejemplos correctos:
+    - "2 dientes de ajo picados" → {"name": "dientes de ajo picados", "amount": "2", "unit": ""}
+    - "200 g de queso rallado" → {"name": "queso rallado", "amount": "200", "unit": "g"}
+    - "1 cebolla cortada en cubos" → {"name": "cebolla cortada en cubos", "amount": "1", "unit": ""}
+    - "100 g de manteca a temperatura ambiente" → {"name": "manteca a temperatura ambiente", "amount": "100", "unit": "g"}
+  * Ejemplo INCORRECTO (NO hagas esto): "1 cebolla cortada en cubos" → {"name": "cebolla", ...} (perdiste "cortada en cubos")
 - INSTRUCCIONES: Transcribe SIN MODIFICAR, mantén el texto original, LIMPIA tags HTML
 - TIEMPOS/PORCIONES: Valores EXACTOS o estimaciones mencionadas
 
@@ -911,6 +1927,15 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
 - Si un paso tiene sub-pasos o detalles, inclúyelos completos
 - Verifica que no falten pasos en la secuencia (ej: si ves 1,2,4 busca el 3)
 - Mantén orden exacto y numeración como aparece
+
+💡 SUGERENCIAS/TIPS - CAPTURA TODOS LOS ITEMS:
+- Extrae TODOS los tips, consejos, notas, trucos, recomendaciones y variantes que pertenezcan a la receta.
+- Incluye CADA item por separado, sin importar cómo esté marcado: viñetas/bullets (•, -, *),
+  números (1., 2.), guiones, o párrafos con asterisco (*). Un encabezado tipo "Tip", "Consejos",
+  "Notas" suele agrupar VARIOS items: captúralos TODOS, no solo el primero o el último.
+- Coloca cada uno como un elemento independiente del array "suggestions" (NO los unifiques en uno solo).
+- Transcribe el texto tal cual; quita únicamente el marcador inicial (•, -, *, número).
+- NO mezcles las sugerencias con las instrucciones de preparación.
 
 ${isCookidoo ? `
 🚨 COOKIDOO/THERMOMIX ESPECIAL:
@@ -923,10 +1948,12 @@ Esta es una receta de Cookidoo.international (Thermomix). EXTRACCIÓN MEJORADA:
    - Busca iconos de personas (👥, 🍽️) con números cerca
    - Formato JSON: "servings": 8 (número entero)
 
-2. INSTRUCCIONES - Si están vacías/incompletas:
-   - COMPLETA usando tu conocimiento de recetas Thermomix
-   - Basándote en ingredientes, genera pasos lógicos
-   - NO dejes instrucciones vacías
+2. INSTRUCCIONES - SOLO TRANSCRIBE LO QUE ESTÉ EN EL CONTENIDO:
+   - 🚫 PROHIBIDO INVENTAR: las páginas públicas de Cookidoo NO incluyen los pasos
+     de preparación (están detrás de login/suscripción).
+   - Si NO encuentras pasos de preparación reales en el contenido, devuelve
+     "instructions": [] (array VACÍO). NO los generes de memoria ni los deduzcas
+     de los ingredientes. Es preferible vacío a inventado.
 
 3. CONFIGURACIONES THERMOMIX (NUEVO - MUY IMPORTANTE):
    Cada paso puede tener hasta 4 datos Thermomix. Busca en el TEXTO del paso:
@@ -959,29 +1986,15 @@ Esta es una receta de Cookidoo.international (Thermomix). EXTRACCIÓN MEJORADA:
      "speed": "3"
    }
 
-4. SECCIONES/RECETAS MULTIPARTE - CRÍTICO PARA COOKIDOO:
-   Las recetas de Cookidoo SIEMPRE tienen secciones (ej: "Panecillos", "Paté", "Montaje").
-
-   🔍 CÓMO DETECTAR SECCIONES:
-   - Busca títulos/subtítulos en el HTML: <h2>, <h3>, <strong>, texto en negrita
-   - Patrones comunes: "Para X", "Ingredientes de Y", "Preparación de Z"
-   - Ejemplos: "Panecillos integrales", "Paté de shiitake", "Montaje", "Base", "Relleno"
-
-   ✅ ASIGNACIÓN OBLIGATORIA:
-   - CADA ingrediente DEBE tener su "section" (nombre de la sección a la que pertenece)
-   - CADA instrucción DEBE tener su "section" (nombre de la sección a la que pertenece)
-   - Las secciones deben coincidir entre ingredientes e instrucciones
-   - Si REALMENTE no hay secciones (muy raro), usa "section": null
-
-   📋 Ejemplo correcto:
-   ingredients: [
-     {"name": "harina", "amount": "500", "unit": "g", "section": "Panecillos"},
-     {"name": "setas", "amount": "200", "unit": "g", "section": "Paté"}
-   ]
-   instructions: [
-     {"step": 1, "description": "Mezclar harina...", "section": "Panecillos"},
-     {"step": 2, "description": "Sofreír setas...", "section": "Paté"}
-   ]
+4. SECCIONES - SOLO SI EXISTEN DE VERDAD (NO INVENTAR):
+   🚫 NO agrupes los ingredientes en secciones salvo que el contenido tenga subtítulos
+      EXPLÍCITOS que separen la LISTA DE INGREDIENTES (ej. un encabezado "Para la masa" justo
+      encima de un subconjunto de ingredientes).
+   🚫 NUNCA deduzcas las secciones a partir de los pasos de preparación ni del tipo de receta.
+   - Si la lista de ingredientes aparece plana (sin esos subtítulos), deja "section": null en
+     TODOS los ingredientes. Repórtalos en el MISMO ORDEN en que aparecen, tal cual.
+   - Para las instrucciones, usa "section" SOLO si los pasos vienen agrupados bajo títulos
+     explícitos en el origen; si no, "section": null.
 
 5. TAGS - SOLO 3-4 RELEVANTES:
    - Ingrediente principal (ej: "pollo", "chocolate")
@@ -989,15 +2002,29 @@ Esta es una receta de Cookidoo.international (Thermomix). EXTRACCIÓN MEJORADA:
    - Característica especial (ej: "sin gluten", "vegano")
    - NO incluyas nombres de recetas similares
    - Máximo 4 tags
+
+6. INGREDIENTES ALTERNATIVOS:
+   - La clase "recipe-ingredient__alternative" indica un reemplazo, no otro
+     ingrediente acumulativo.
+   - Devuelve ambas opciones como un solo ingrediente unido con "o", conservando
+     las dos cantidades.
+   - Ejemplo: "10 g de levadura fresca" y "5 g de levadura seca" deben quedar
+     como una sola fila: "10 g de levadura fresca o 5 g de levadura seca".
+
+7. ACLARACIONES DE INGREDIENTES:
+   - La clase "recipe-ingredient__description" es una aclaración del ingrediente
+     inmediatamente anterior, NO es un ingrediente nuevo.
+   - Agrégala al final del nombre del mismo ingrediente.
+   - Ejemplo: "150 g de cebolla" + "en cuartos" debe quedar como una sola fila:
+     amount "150", unit "g", name "cebolla, en cuartos".
 ` : ''}
 
 ⭐ IMÁGENES: Busca hasta 3 URLs de imágenes de comida/cocina.
 
-📦 RECETAS MULTIPARTE (si aplica):
-Si la receta tiene múltiples componentes (ej: plato + salsa + guarnición):
-- DETECTA secciones por títulos: "Plato principal", "Salsa", "Acompañamiento", "Para la base", etc.
-- ASIGNA cada ingrediente a su sección usando campo "section"
-- Si NO hay secciones, usa "section": null
+📦 SECCIONES (si aplica):
+- Usa "section" SOLO si el origen tiene subtítulos EXPLÍCITOS que agrupan los ingredientes/pasos.
+- 🚫 NO inventes secciones ni las deduzcas de los pasos. Si la lista es plana, "section": null en todos
+  y manténlos en su orden original.
 
 ⚠️ INSTRUCCIONES - MUY IMPORTANTE:
 1. **EXTRAE TODOS LOS PASOS NUMERADOS** - Si hay 11 pasos numerados, debes devolver exactamente 11 pasos
@@ -1005,16 +2032,23 @@ Si la receta tiene múltiples componentes (ej: plato + salsa + guarnición):
    - Si ves "15 seg/vel 10" → time: "15 seg", speed: "vel 10"
    - Si ves "5 min/100°" → time: "5 min", temperature: "100°"
    - Si ves "2 min/80°/vel 3" → time: "2 min", temperature: "80°", speed: "vel 3"
+   - "giro inverso" y "vel cuchara" SON parte de la velocidad: inclúyelos TAL CUAL en speed.
+     Ej: "5 min/120°C/giro inverso/vel cuchara" → time: "5 min", temperature: "120°C", speed: "giro inverso vel cuchara"
    - Si NO encuentras configuraciones, deja los campos como null
    - NO es obligatorio que todos los pasos tengan configuraciones Thermomix
-3. **LIMPIA EL TEXTO**:
-   - Elimina configuraciones Thermomix de la descripción después de parsearlas
-   - Ejemplo: "Agregar harina. 15 seg/vel 10" → description: "Agregar harina", time: "15 seg", speed: "vel 10"
+3. **MANTÉN LAS CONFIGURACIONES DENTRO DE LA DESCRIPCIÓN** (MUY IMPORTANTE):
+   - Las configuraciones Thermomix (tiempos/velocidades/temperaturas, ej. "20 seg/vel 5",
+     "5 min/120°C/giro inverso/vel cuchara") deben quedar DENTRO de la descripción, EN EL MISMO
+     LUGAR donde aparecen en el original. NO las borres ni las muevas al final.
+   - Además, copia esos mismos valores en los campos time/temperature/speed (para clasificación interna).
+   - Ejemplo: description "Coloque la harina y mezcle 20 seg/vel 5. Reserve." (texto IGUAL al original),
+     y además time: "20 seg", speed: "vel 5".
 
 Extrae en formato JSON exacto:
 {
   "title": "Título EXACTO de la receta tal como aparece",
   "description": "Descripción tal como está escrita (máximo 200 caracteres)",
+  "suggestions": ["Primer tip o consejo exacto", "Segunda nota o recomendación"],
   "images": [
     {
       "url": "URL_completa_absoluta_de_imagen",
@@ -1050,7 +2084,7 @@ Extrae en formato JSON exacto:
   "prepTime": tiempo_en_minutos_exacto,
   "cookTime": tiempo_cocción_en_minutos_si_existe,
   "servings": número_exacto_porciones,
-  "difficulty": "Fácil|Medio|Difícil" (inferir del contexto),
+  "difficulty": "Fácil|Medio|Difícil" SOLO si la receta lo indica explícitamente; si no, null (NO inventes),
   "recipeType": "tipo_de_receta_si_se_menciona",
   "tags": ["etiquetas_relevantes_basadas_en_contenido"]
 }
@@ -1068,13 +2102,20 @@ Extrae en formato JSON exacto:
 2. Verifica que tu JSON tenga exactamente ese número de pasos
 3. Busca patrones como "X min/Y°/vel Z" en cada paso y extrae las configuraciones
 
-Contenido HTML:
+${structuredBlock}${imagesBlock}
+Contenido de la página (texto):
 ${truncatedHtml}`;
   }
 
   // For compatibility with existing code
-  async extractRecipeFromHtml(html: string, sourceUrl: string): Promise<RecipeImportResponse> {
-    return this.extractRecipeWithLLM(html, sourceUrl);
+  async extractRecipeFromHtml(
+    html: string,
+    sourceUrl: string,
+    renderedText?: string
+  ): Promise<RecipeImportResponse> {
+    const renderedHtml = renderedTextToHtml(renderedText);
+    const combinedHtml = renderedHtml ? `${html}\n${renderedHtml}` : html;
+    return this.extractRecipeWithLLM(combinedHtml, sourceUrl);
   }
 
   /**
@@ -1187,7 +2228,7 @@ Responde SOLO con un JSON válido con este formato exacto:
       console.log(`🖼️ Enviando ${pages.length} page images to GPT-4o-mini for multimodal analysis`);
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: getVisionModel(),
         messages,
         max_completion_tokens: 8000,
         response_format: { type: 'json_object' }
@@ -1208,7 +2249,7 @@ Responde SOLO con un JSON válido con este formato exacto:
                          content.match(/```\n(.*)\n```/s) ||
                          content.match(/\{[\s\S]*\}/);
         const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
-        jsonResponse = JSON.parse(jsonString);
+        jsonResponse = parseLlmJson(jsonString);
       } catch (parseError) {
         console.error('❌ Error al parse GPT-5-mini JSON response:', parseError);
         console.log('Raw response sample:', content.substring(0, 500));
@@ -1220,7 +2261,7 @@ Responde SOLO con un JSON válido con este formato exacto:
       }
 
       console.log(`✅ Successfully extracted ${jsonResponse.recipes.length} recipes from PDF pages`);
-      jsonResponse.recipes.forEach((recipe, index) => {
+      jsonResponse.recipes.forEach((recipe: any, index: number) => {
         console.log(`  ${index + 1}. "${recipe.title}" (${recipe.ingredients?.length || 0} ingredients, ${recipe.instructions?.length || 0} steps, hasImage: ${recipe.hasImage})`);
       });
 
@@ -1298,7 +2339,7 @@ ${documentText}
 `;
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: getModel(),
         messages: [{ role: 'user', content: prompt }],
         max_completion_tokens: 8000,
         response_format: { type: 'json_object' }
@@ -1314,7 +2355,7 @@ ${documentText}
       // Parse the JSON response
       let jsonResponse;
       try {
-        jsonResponse = JSON.parse(content);
+        jsonResponse = parseLlmJson(content);
       } catch (parseError) {
         console.error('❌ Error al parse LLM JSON response:', parseError);
         console.log('Raw response sample:', content.substring(0, 500));
@@ -1326,7 +2367,7 @@ ${documentText}
       }
 
       console.log(`✅ Successfully extracted ${jsonResponse.recipes.length} recipes from document`);
-      jsonResponse.recipes.forEach((recipe, index) => {
+      jsonResponse.recipes.forEach((recipe: any, index: number) => {
         console.log(`  ${index + 1}. "${recipe.title}" (${recipe.ingredients?.length || 0} ingredients, ${recipe.instructions?.length || 0} steps)`);
       });
 
@@ -1361,12 +2402,12 @@ ${documentText}
       const prompt = this.buildTextExtractionPrompt(text, options);
 
       console.log('\n=== 🤖 TEXT EXTRACTION LLM REQUEST START ===');
-      console.log('🎯 Model: gpt-5-mini');
+      console.log('🎯 Model:', getModel());
       console.log('🌡️ Temperature: 0.1');
       console.log('📄 Max Tokens: 4000');
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: getModel(),
         messages: [
           {
             role: 'system',
@@ -1411,7 +2452,7 @@ Si el texto no contiene una receta válida, responde: {"error": true}`
       console.log('🔄 Parsing JSON response...');
       let parsedResponse: any;
       try {
-        parsedResponse = JSON.parse(responseContent);
+        parsedResponse = parseLlmJson(responseContent);
       } catch (parseError) {
         console.error('❌ JSON Parse Error:', parseError);
         throw new SyntaxError('JSON inválido respuesta de LLM');
@@ -1445,6 +2486,7 @@ Si el texto no contiene una receta válida, responde: {"error": true}`
       return {
         title: cleanTitle,
         description: validatedData.description,
+        suggestions: validatedData.suggestions,
         images: (validatedData.images || []).filter(img => img.url && typeof img.order === 'number') as any[], // DOCX typically won't have images
         ingredients: validatedData.ingredients.filter(ing => ing.name && ing.amount).map((ing, index) => ({
           ...ing,
@@ -1456,6 +2498,12 @@ Si el texto no contiene una receta válida, responde: {"error": true}`
         servings: validatedData.servings,
         difficulty: validatedData.difficulty,
         recipeType: validatedData.recipeType,
+        language: detectRecipeLanguage([
+          cleanTitle,
+          validatedData.description,
+          ...validatedData.ingredients.map(i => i.name),
+          ...validatedData.instructions.map(s => s.description),
+        ].filter(Boolean).join(' ')),
         tags: validatedData.tags
       };
 
@@ -1491,7 +2539,7 @@ Si el texto no contiene una receta válida, responde: {"error": true}`
       console.log('📏 Prompt longitud:', prompt.length, 'characters');
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: getModel(),
         messages: [
           {
             role: 'system',
@@ -1557,7 +2605,10 @@ ${contextHint}${titleHint}
 📋 INSTRUCCIONES DE EXTRACCIÓN:
 - Busca patrones típicos: título, ingredientes, preparación/instrucciones
 - Extrae cantidades EXACTAS como aparecen ("200g", "1 cucharada", "al gusto")
-- Incluye TODOS los ingredientes mencionados sin omitir ninguno
+- Incluye TODOS los ingredientes mencionados sin omitir ninguno, copiados TAL CUAL
+- ⚠️ CONSERVA dentro de "name" la forma/estado de preparación del ingrediente ("picado",
+  "rallado", "cortado en cubos", "en rodajas", "en juliana", "a temperatura ambiente", etc.).
+  NUNCA elimines esos detalles. Ej: "1 cebolla cortada en cubos" → {"name": "cebolla cortada en cubos", "amount": "1", "unit": ""}
 - Captura TODOS los pasos de preparación en orden
 - Si hay tiempos mencionados, extráelos exactamente
 - Si hay número de porciones, extráelo
@@ -1644,7 +2695,7 @@ Responde SOLO con JSON, valores POR PORCIÓN:
 }`;
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: getModel(),
         messages: [
           {
             role: 'system',
@@ -1668,7 +2719,7 @@ Responde SOLO con JSON, valores POR PORCIÓN:
 
       let parsedResponse;
       try {
-        parsedResponse = JSON.parse(content);
+        parsedResponse = parseLlmJson(content);
       } catch (parseError) {
         console.error('❌ JSON parse error:', parseError);
         throw new Error('JSON inválido respuesta de AI');
@@ -1822,7 +2873,7 @@ Responde ÚNICAMENTE con JSON válido en este formato:
 NO agregues explicaciones antes o después del JSON. Responde solo con el JSON válido.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: getModel(),
         messages: [
           {
             role: 'system',
@@ -1846,7 +2897,7 @@ NO agregues explicaciones antes o después del JSON. Responde solo con el JSON v
 
       let parsedResponse;
       try {
-        parsedResponse = JSON.parse(content);
+        parsedResponse = parseLlmJson(content);
       } catch (parseError) {
         console.error('❌ JSON parse error:', parseError);
         throw new Error('JSON inválido respuesta de AI');
@@ -1908,27 +2959,24 @@ NO agregues explicaciones antes o después del JSON. Responde solo con el JSON v
   }
 
   private deduplicateImages(images: any[]): any[] {
-    const seen = new Set<string>();
-    const unique: any[] = [];
+    // Agrupa por "asset base" (misma foto en distinta resolución) y se queda con la
+    // versión de mayor calidad de cada grupo. Mantiene el orden de aparición.
+    const bestByKey = new Map<string, any>();
+    const order: string[] = [];
 
     for (const image of images) {
       if (!image?.url) continue;
-
-      // Normalize URL for comparison (remove protocol, query params, etc.)
-      const normalizedUrl = image.url
-        .toLowerCase()
-        .replace(/^https?:\/\//, '')
-        .replace(/[?#].*$/, '');
-
-      if (!seen.has(normalizedUrl)) {
-        seen.add(normalizedUrl);
-        unique.push({
-          ...image,
-          order: unique.length + 1 // Reorder after deduplication
-        });
+      const key = imageAssetKey(image.url);
+      const current = bestByKey.get(key);
+      if (!current) {
+        order.push(key);
+        bestByKey.set(key, image);
+      } else if (imageQualityScore(image.url) > imageQualityScore(current.url)) {
+        bestByKey.set(key, image); // misma imagen, mejor calidad → reemplazar
       }
     }
 
+    const unique = order.map((key, i) => ({ ...bestByKey.get(key), order: i + 1 }));
     console.log(`🖼️ Images deduplication: ${images.length} → ${unique.length}`);
     return unique;
   }

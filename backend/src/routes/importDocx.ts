@@ -160,8 +160,46 @@ router.post('/extract', authenticateToken, async (req: AuthRequest, res) => {
     const processedRecipes: DocxExtractedRecipe[] = detectionResult.recipes.map(recipe => ({
       id: recipe.id,
       title: recipe.title,
-      content: recipe.content
+      content: recipe.content,
+      estimatedData: recipe.estimatedData
     }));
+
+    // Asignar a cada receta la imagen del documento que aparece más cerca de su título
+    // (sirve tanto si la imagen está a la izquierda como a la derecha de la receta).
+    try {
+      const content = await docxProcessor.getProcessedContent(fileId);
+      const htmlText = (content.htmlText || '').toLowerCase();
+      const imagePositions = content.imagePositions || [];
+
+      if (htmlText && imagePositions.length > 0 && processedRecipes.length > 0) {
+        // Offset del título de cada receta (buscando en orden de aparición).
+        let cursor = 0;
+        const offsets = processedRecipes.map(r => {
+          const t = (r.title || '').trim().toLowerCase();
+          if (!t) return -1;
+          const idx = htmlText.indexOf(t, cursor);
+          if (idx >= 0) cursor = idx + t.length;
+          return idx;
+        });
+        const validOffsets = offsets.map((o, i) => ({ i, o })).filter(x => x.o >= 0);
+
+        // Cada imagen se asigna a la receta cuyo título está más cerca.
+        imagePositions.forEach((pos, imgIdx) => {
+          let best = -1;
+          let bestDist = Infinity;
+          for (const { i, o } of validOffsets) {
+            const d = Math.abs(pos - o);
+            if (d < bestDist) { bestDist = d; best = i; }
+          }
+          if (best >= 0 && processedRecipes[best].imageIndex === undefined) {
+            processedRecipes[best].imageIndex = imgIdx; // primera (más cercana) imagen de esa receta
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('⚠️ No se pudieron asociar imágenes a las recetas:', e);
+    }
+    processedRecipes.forEach(r => { if (r.imageIndex === undefined) r.imageIndex = -1; });
 
     const response: DocxExtractResponse = {
       success: true,

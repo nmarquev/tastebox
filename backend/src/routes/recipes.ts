@@ -2,26 +2,48 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { detectImportSource, getAuthorFromSourceUrl, importSources } from '../utils/importSource';
+import { getRecipeTags } from '../utils/recipeTags';
+import { normalizeInstructionDescription, normalizeRecipeTitle } from '../utils/recipeText';
+import { ImageService } from '../services/imageService';
+import { sanitizeSuggestionText } from '../utils/suggestions';
+import { mentionsGlutenFree } from '../utils/dietaryFeatures';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+const imageService = new ImageService();
 
 // Validation schemas
 const createRecipeSchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
-  prepTime: z.number().min(1),
+  description: z.string().nullable().optional(),
+  suggestions: z.string().nullable().optional(),
+  prepTime: z.number().optional().nullable(),
   cookTime: z.number().optional().nullable(),
-  servings: z.number().min(1),
-  difficulty: z.enum(['Fácil', 'Medio', 'Difícil']),
+  servings: z.number().optional().nullable(),
+  difficulty: z.enum(['Fácil', 'Medio', 'Difícil']).optional().nullable(),
   recipeType: z.string().optional().nullable(),
-  sourceUrl: z.string().url().optional(),
+  dishType: z.string().optional().nullable(),
+  country: z.string().optional().nullable(),
+  language: z.string().optional().nullable(),
+  sourceUrl: z.string().optional(),
+  source: z.string().nullable().optional(),
+  author: z.string().nullable().optional(),
+  createdAt: z.coerce.date().optional(),
+  importedFrom: z.enum(importSources).optional(),
+  thermomix: z.boolean().optional(),
+  airFryer: z.boolean().optional(),
+  glutenFree: z.boolean().optional(),
+  keto: z.boolean().optional(),
+  lowCarb: z.boolean().optional(),
+  vegetarian: z.boolean().optional(),
 
   // Nutritional information (optional)
   calories: z.number().optional().nullable(),
   protein: z.number().optional().nullable(),
   carbohydrates: z.number().optional().nullable(),
   fat: z.number().optional().nullable(),
+  saturatedFat: z.number().optional().nullable(),
   fiber: z.number().optional().nullable(),
   sugar: z.number().optional().nullable(),
   sodium: z.number().optional().nullable(),
@@ -30,7 +52,7 @@ const createRecipeSchema = z.object({
     url: z.string(),
     localPath: z.string().optional().nullable(),
     order: z.number(),
-    altText: z.string().optional()
+    altText: z.string().nullable().optional()
   })).max(3),
   ingredients: z.array(z.object({
     name: z.string().min(1),
@@ -48,26 +70,43 @@ const createRecipeSchema = z.object({
     section: z.string().nullable().optional().transform(val => val ?? undefined) // Section for multi-part recipes
   })),
   tags: z.array(z.string()),
+  autoTags: z.boolean().optional(), // false = no autogenerar etiquetas desde ingredientes
   featured: z.boolean().optional(),
+  cooked: z.boolean().optional(),
   locution: z.string().optional().nullable()
 });
 
 // Update recipe schema (more flexible for updates)
 const updateRecipeSchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
-  prepTime: z.number().min(1),
+  description: z.string().nullable().optional(),
+  suggestions: z.string().nullable().optional(),
+  prepTime: z.number().optional().nullable(),
   cookTime: z.number().optional().nullable(),
-  servings: z.number().min(1),
-  difficulty: z.enum(['Fácil', 'Medio', 'Difícil']),
+  servings: z.number().optional().nullable(),
+  difficulty: z.enum(['Fácil', 'Medio', 'Difícil']).optional().nullable(),
   recipeType: z.string().optional().nullable(),
-  sourceUrl: z.string().url().optional(),
+  dishType: z.string().optional().nullable(),
+  country: z.string().optional().nullable(),
+  language: z.string().optional().nullable(),
+  sourceUrl: z.string().optional(),
+  source: z.string().nullable().optional(),
+  author: z.string().nullable().optional(),
+  createdAt: z.coerce.date().optional(),
+  importedFrom: z.enum(importSources).optional(),
+  thermomix: z.boolean().optional(),
+  airFryer: z.boolean().optional(),
+  glutenFree: z.boolean().optional(),
+  keto: z.boolean().optional(),
+  lowCarb: z.boolean().optional(),
+  vegetarian: z.boolean().optional(),
 
   // Nutritional information (optional)
   calories: z.number().optional().nullable(),
   protein: z.number().optional().nullable(),
   carbohydrates: z.number().optional().nullable(),
   fat: z.number().optional().nullable(),
+  saturatedFat: z.number().optional().nullable(),
   fiber: z.number().optional().nullable(),
   sugar: z.number().optional().nullable(),
   sodium: z.number().optional().nullable(),
@@ -76,7 +115,7 @@ const updateRecipeSchema = z.object({
     url: z.string(),
     localPath: z.string().optional().nullable(),
     order: z.number(),
-    altText: z.string().optional()
+    altText: z.string().nullable().optional()
   })).max(3),
   ingredients: z.array(z.object({
     name: z.string().min(1),
@@ -101,6 +140,7 @@ const updateRecipeSchema = z.object({
     })
   ])),
   featured: z.boolean().optional(),
+  cooked: z.boolean().optional(),
   locution: z.string().optional().nullable()
 });
 
@@ -120,6 +160,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
           orderBy: { step: 'asc' }
         },
         tags: {
+          orderBy: { order: 'asc' },
           include: {
             tag: true
           }
@@ -176,6 +217,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
           orderBy: { step: 'asc' }
         },
         tags: {
+          orderBy: { order: 'asc' },
           include: {
             tag: true
           }
@@ -224,19 +266,53 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     console.log('📝 Instructions type and sample:', typeof req.body.instructions, Array.isArray(req.body.instructions), req.body.instructions?.slice(0, 2));
 
     const data = createRecipeSchema.parse(req.body);
+    const glutenFree = data.glutenFree === true || mentionsGlutenFree(data);
+    // Si autoTags es false, no autogeneramos etiquetas desde los ingredientes
+    // (pasamos ingredientes vacíos): solo se usan las etiquetas provistas.
+    const recipeTags = getRecipeTags(
+      data.tags,
+      data.autoTags === false ? [] : data.ingredients,
+      data.title,
+      {
+        glutenFree,
+        lowCarb: data.lowCarb,
+        keto: data.keto,
+        vegetarian: data.vegetarian,
+      }
+    );
+    let recipeImages = data.images;
+    if (recipeImages.length === 0 && data.importedFrom) {
+      const fallbackImage = await imageService.findAndStoreRecipeImage(data.title);
+      if (fallbackImage) recipeImages = [fallbackImage];
+    }
 
     // Create recipe with related data
     const recipe = await prisma.recipe.create({
       data: {
-        title: data.title,
+        title: normalizeRecipeTitle(data.title),
         description: data.description,
+        suggestions: sanitizeSuggestionText(data.suggestions),
         prepTime: data.prepTime,
         cookTime: data.cookTime,
         servings: data.servings,
         difficulty: data.difficulty,
         recipeType: data.recipeType,
+        dishType: data.dishType,
+        country: data.country,
+        language: data.language?.trim() || 'Español',
         sourceUrl: data.sourceUrl,
+        source: data.source?.trim() || null,
+        author: data.author?.trim() || getAuthorFromSourceUrl(data.sourceUrl),
+        createdAt: data.createdAt,
+        importedFrom: data.importedFrom ?? detectImportSource(data.sourceUrl),
         featured: data.featured,
+        cooked: data.cooked,
+        thermomix: data.thermomix,
+        airFryer: data.airFryer,
+        glutenFree,
+        keto: data.keto,
+        lowCarb: data.lowCarb,
+        vegetarian: data.vegetarian,
         locution: data.locution,
 
         // Nutritional information
@@ -244,13 +320,14 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         protein: data.protein,
         carbohydrates: data.carbohydrates,
         fat: data.fat,
+        saturatedFat: data.saturatedFat,
         fiber: data.fiber,
         sugar: data.sugar,
         sodium: data.sodium,
 
         userId: req.user!.id,
         images: {
-          create: data.images.map(img => ({
+          create: recipeImages.map(img => ({
             url: img.url,
             localPath: img.localPath,
             order: img.order,
@@ -269,7 +346,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         instructions: {
           create: data.instructions.map(inst => ({
             step: inst.step,
-            description: inst.description,
+            description: normalizeInstructionDescription(inst.description),
             time: inst.time,
             temperature: inst.temperature,
             speed: inst.speed,
@@ -277,7 +354,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
           }))
         },
         tags: {
-          create: data.tags.map(tagName => ({
+          create: recipeTags.map((tagName, index) => ({
+            order: index + 1,
             tag: {
               connectOrCreate: {
                 where: { name: tagName },
@@ -292,6 +370,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         ingredients: true,
         instructions: true,
         tags: {
+          orderBy: { order: 'asc' },
           include: {
             tag: true
           }
@@ -339,6 +418,16 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
 
     console.log('📝 Validating request body...');
     const data = updateRecipeSchema.parse(req.body);
+    const glutenFree = data.glutenFree === true || mentionsGlutenFree(data);
+    const requestedTags = data.tags.map(tag =>
+      typeof tag === 'string' ? tag : tag.tag
+    );
+    const recipeTags = getRecipeTags(requestedTags, data.ingredients, data.title, {
+      glutenFree,
+      lowCarb: data.lowCarb,
+      keto: data.keto,
+      vegetarian: data.vegetarian,
+    });
     console.log('📝 Validation successful!');
 
     // Check if recipe belongs to user
@@ -357,15 +446,33 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
     const recipe = await prisma.recipe.update({
       where: { id: req.params.id },
       data: {
-        title: data.title,
+        title: normalizeRecipeTitle(data.title),
         description: data.description,
+        suggestions: sanitizeSuggestionText(data.suggestions),
         prepTime: data.prepTime,
         cookTime: data.cookTime,
         servings: data.servings,
         difficulty: data.difficulty,
         recipeType: data.recipeType,
+        dishType: data.dishType,
+        country: data.country,
+        language: data.language,
         sourceUrl: data.sourceUrl,
+        source: data.source !== undefined ? (data.source?.trim() || null) : undefined,
+        author: data.author?.trim()
+          || existingRecipe.author
+          || getAuthorFromSourceUrl(data.sourceUrl ?? existingRecipe.sourceUrl),
+        createdAt: data.createdAt,
+        importedFrom: data.importedFrom
+          ?? (data.sourceUrl ? detectImportSource(data.sourceUrl) : undefined),
         featured: data.featured,
+        cooked: data.cooked,
+        thermomix: data.thermomix,
+        airFryer: data.airFryer,
+        glutenFree,
+        keto: data.keto,
+        lowCarb: data.lowCarb,
+        vegetarian: data.vegetarian,
         locution: data.locution,
 
         // Nutritional information
@@ -373,6 +480,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
         protein: data.protein,
         carbohydrates: data.carbohydrates,
         fat: data.fat,
+        saturatedFat: data.saturatedFat,
         fiber: data.fiber,
         sugar: data.sugar,
         sodium: data.sodium,
@@ -400,7 +508,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
           deleteMany: {},
           create: data.instructions.map(inst => ({
             step: inst.step,
-            description: inst.description,
+            description: normalizeInstructionDescription(inst.description),
             time: inst.time,
             temperature: inst.temperature,
             speed: inst.speed,
@@ -409,9 +517,9 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
         },
         tags: {
           deleteMany: {},
-          create: data.tags.map(tagData => {
-            const tagName = typeof tagData === 'string' ? tagData : tagData.tag;
+          create: recipeTags.map((tagName, index) => {
             return {
+              order: index + 1,
               tag: {
                 connectOrCreate: {
                   where: { name: tagName },
@@ -427,6 +535,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
         ingredients: true,
         instructions: true,
         tags: {
+          orderBy: { order: 'asc' },
           include: {
             tag: true
           }

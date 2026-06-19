@@ -2,20 +2,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { ChefHat, FileText, Zap, ArrowRight } from "lucide-react";
+import { ChefHat, FileText, ArrowRight, RotateCcw } from "lucide-react";
 import { DocxUploadResponse, PageRange } from "@/types/docx";
 
 interface RecipeExtractorProps {
   uploadData: DocxUploadResponse;
   selectedPages: PageRange;
-  onExtract: () => void;
+  onRestart: () => void;
   loading: boolean;
 }
 
 export const RecipeExtractor = ({
   uploadData,
   selectedPages,
-  onExtract,
+  onRestart,
   loading
 }: RecipeExtractorProps) => {
   const pagesCount = selectedPages.end - selectedPages.start + 1;
@@ -23,9 +23,13 @@ export const RecipeExtractor = ({
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold">Listo para extraer recetas</h3>
+        <h3 className="text-lg font-semibold">
+          {loading ? 'Extrayendo recetas...' : 'Listo para volver a intentar'}
+        </h3>
         <p className="text-muted-foreground">
-          Procesaremos las páginas {selectedPages.start} a {selectedPages.end} para detectar y extraer recetas automáticamente
+          {loading
+            ? 'Procesando...'
+            : `No se pudo completar el procesamiento de las páginas ${selectedPages.start} a ${selectedPages.end}.`}
         </p>
       </div>
 
@@ -86,28 +90,18 @@ export const RecipeExtractor = ({
         </Alert>
       )}
 
-      {/* Action Button */}
-      <div className="flex justify-center">
+      {/* Action Buttons */}
+      {!loading && <div className="flex flex-wrap justify-center gap-3">
         <Button
           size="lg"
-          onClick={onExtract}
-          disabled={loading}
+          onClick={onRestart}
           className="px-8"
         >
-          {loading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              Procesando...
-            </>
-          ) : (
-            <>
-              <ChefHat className="h-4 w-4 mr-2" />
-              Extraer Recetas
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </>
-          )}
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Reintentar
+          <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
-      </div>
+      </div>}
     </div>
   );
 };

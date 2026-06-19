@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Filter, ChevronDown, X, Heart, ChefHat } from "lucide-react";
 import { Recipe } from "@/components/RecipeCard";
+import { getSourceFromUrl } from "@/utils/siteUtils";
 
 export interface RecipeFilters {
   difficulty: string[];
@@ -15,7 +16,19 @@ export interface RecipeFilters {
   recipeTypes: string[];
   tags: string[];
   featured?: boolean;
+  cookedOnly?: boolean;
   thermomixOnly?: boolean;
+  airFryerOnly?: boolean;
+  glutenFreeOnly?: boolean;
+  ketoOnly?: boolean;
+  lowCarbOnly?: boolean;
+  vegetarianOnly?: boolean;
+  ingredients?: string[];
+  collectionId?: string;
+  sources?: string[];
+  dishType?: string; // selección única (panel izquierdo / galería)
+  dishTypes?: string[]; // selección múltiple (bloque de filtros)
+  author?: string;
 }
 
 interface FilterPanelProps {
@@ -40,6 +53,11 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
   )).sort();
   const maxPrepTime = Math.max(...recipes.map(r => r.prepTime), 180);
   const maxCookTime = Math.max(...recipes.map(r => r.cookTime || 0), 120);
+  const allSources = Array.from(new Set(
+    recipes
+      .map(recipe => recipe.sourceUrl ? getSourceFromUrl(recipe.sourceUrl) : '')
+      .filter(source => source.length > 0)
+  )).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 
   const handleDifficultyChange = (difficulty: string, checked: boolean) => {
     const newDifficulties = checked 
@@ -77,6 +95,18 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
     });
   };
 
+  const handleSourceChange = (source: string, checked: boolean) => {
+    const current = filters.sources || [];
+    const newSources = checked
+      ? [...current, source]
+      : current.filter(s => s !== source);
+
+    onFiltersChange({
+      ...filters,
+      sources: newSources.length > 0 ? newSources : undefined
+    });
+  };
+
   const handleRecipeTypeChange = (recipeType: string, checked: boolean) => {
     const newTypes = checked
       ? [...filters.recipeTypes, recipeType]
@@ -111,7 +141,8 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
     (filters.cookTimeRange?.[0] ?? 0) > 0 ||
     (filters.cookTimeRange?.[1] ?? 120) < maxCookTime ||
     filters.featured === true ||
-    filters.thermomixOnly === true;
+    filters.thermomixOnly === true ||
+    (filters.sources?.length ?? 0) > 0;
 
   return (
     <Card className="w-full">
@@ -238,9 +269,9 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
               />
             </div>
 
-            {/* Recipe Type Filter */}
+            {/* Category Filter */}
             <div>
-              <Label className="text-xs font-medium mb-2 block">Tipo de Receta</Label>
+              <Label className="text-xs font-medium mb-2 block">Categoría</Label>
               <div className="flex flex-wrap gap-1">
                 {allRecipeTypes.map((recipeType) => (
                   <div key={recipeType} className="flex items-center space-x-1">
@@ -265,7 +296,7 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
 
             {/* Tags Filter */}
             <div>
-              <Label className="text-xs font-medium mb-2 block">Categorías</Label>
+              <Label className="text-xs font-medium mb-2 block">Etiquetas</Label>
               <div className="grid grid-cols-1 gap-1 max-h-24 overflow-y-auto">
                 {allTags.slice(0, 10).map((tag) => (
                   <div key={tag} className="flex items-center space-x-1">
@@ -277,7 +308,7 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
                       }
                       className="h-3 w-3"
                     />
-                    <Label 
+                    <Label
                       htmlFor={`tag-${tag}`}
                       className="text-xs cursor-pointer truncate"
                     >
@@ -287,6 +318,33 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
                 ))}
               </div>
             </div>
+
+            {/* Source Filter */}
+            {allSources.length > 0 && (
+              <div>
+                <Label className="text-xs font-medium mb-2 block">Fuente</Label>
+                <div className="grid grid-cols-1 gap-1 max-h-24 overflow-y-auto">
+                  {allSources.map((source) => (
+                    <div key={source} className="flex items-center space-x-1">
+                      <Checkbox
+                        id={`source-${source}`}
+                        checked={(filters.sources || []).includes(source)}
+                        onCheckedChange={(checked) =>
+                          handleSourceChange(source, checked as boolean)
+                        }
+                        className="h-3 w-3"
+                      />
+                      <Label
+                        htmlFor={`source-${source}`}
+                        className="text-xs cursor-pointer truncate"
+                      >
+                        {source}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </CollapsibleContent>
       </Collapsible>

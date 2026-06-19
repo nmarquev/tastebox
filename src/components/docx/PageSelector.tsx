@@ -17,15 +17,17 @@ interface PageSelectorProps {
 
 export const PageSelector = ({ uploadData, onPageSelect, loading }: PageSelectorProps) => {
   const [startPage, setStartPage] = useState(1);
-  const [endPage, setEndPage] = useState(Math.min(uploadData.totalPages, 5)); // Default to first 5 pages
+  const [endPage, setEndPage] = useState(uploadData.totalPages); // Por defecto, procesar hasta la última página
   const [preview, setPreview] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState('');
 
   useEffect(() => {
-    // Load initial preview
-    loadPreview();
-  }, []);
+    // Cargar/actualizar el preview al montar y cada vez que cambia el rango (con debounce).
+    const timer = setTimeout(() => { loadPreview(); }, 350);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startPage, endPage]);
 
   const loadPreview = async () => {
     if (!uploadData.fileId) return;
@@ -70,10 +72,6 @@ export const PageSelector = ({ uploadData, onPageSelect, loading }: PageSelector
     }
   };
 
-  const handlePreviewUpdate = () => {
-    loadPreview();
-  };
-
   const handleProceed = () => {
     if (startPage <= endPage && startPage >= 1 && endPage <= uploadData.totalPages) {
       onPageSelect({ start: startPage, end: endPage });
@@ -84,28 +82,27 @@ export const PageSelector = ({ uploadData, onPageSelect, loading }: PageSelector
   const pagesCount = endPage - startPage + 1;
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold">Selecciona las páginas a procesar</h3>
-        <p className="text-muted-foreground">
-          El documento tiene <span className="font-medium">{uploadData.totalPages} páginas</span>.
-          Elige el rango que quieres procesar para encontrar recetas.
+    <div className="space-y-4">
+      <div className="text-center">
+        <h3 className="text-sm font-semibold">Selecciona las páginas a procesar</h3>
+        <p className="text-xs text-muted-foreground">
+          El documento tiene <span className="font-medium">{uploadData.totalPages} páginas</span>. Elegí el rango a procesar.
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-4">
         {/* Page Range Selector */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+          <CardHeader className="pb-3 pt-4">
+            <CardTitle className="flex items-center space-x-2 text-lg">
               <BookOpen className="h-5 w-5" />
               <span>Rango de Páginas</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start-page">Página inicial</Label>
+          <CardContent className="space-y-2.5 pb-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="start-page" className="text-xs">Página inicial</Label>
                 <Input
                   id="start-page"
                   type="number"
@@ -113,10 +110,11 @@ export const PageSelector = ({ uploadData, onPageSelect, loading }: PageSelector
                   max={uploadData.totalPages}
                   value={startPage}
                   onChange={(e) => handleStartPageChange(e.target.value)}
+                  className="h-9"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="end-page">Página final</Label>
+              <div className="space-y-1">
+                <Label htmlFor="end-page" className="text-xs">Página final</Label>
                 <Input
                   id="end-page"
                   type="number"
@@ -124,17 +122,16 @@ export const PageSelector = ({ uploadData, onPageSelect, loading }: PageSelector
                   max={uploadData.totalPages}
                   value={endPage}
                   onChange={(e) => handleEndPageChange(e.target.value)}
+                  className="h-9"
                 />
               </div>
             </div>
 
             {isValidRange && (
               <div className="text-sm text-muted-foreground">
-                Se procesarán <span className="font-medium">{pagesCount} página{pagesCount !== 1 ? 's' : ''}</span>
+                Se procesarán <span className="font-medium">{pagesCount} página{pagesCount !== 1 ? 's' : ''}</span>.
                 {pagesCount > 10 && (
-                  <span className="text-amber-600 font-medium">
-                    {' '}(procesamiento puede tardar más tiempo)
-                  </span>
+                  <span className="text-amber-600 font-medium"> (puede tardar más tiempo)</span>
                 )}
               </div>
             )}
@@ -147,57 +144,18 @@ export const PageSelector = ({ uploadData, onPageSelect, loading }: PageSelector
               </Alert>
             )}
 
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePreviewUpdate}
-                disabled={!isValidRange || previewLoading}
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                {previewLoading ? "Cargando..." : "Vista Previa"}
-              </Button>
-            </div>
-
-            {/* Quick Selection Buttons */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Selecciones rápidas:</Label>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => { setStartPage(1); setEndPage(Math.min(5, uploadData.totalPages)); }}
-                >
-                  Primeras 5
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => { setStartPage(1); setEndPage(Math.min(10, uploadData.totalPages)); }}
-                >
-                  Primeras 10
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => { setStartPage(1); setEndPage(uploadData.totalPages); }}
-                >
-                  Todas ({uploadData.totalPages})
-                </Button>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
         {/* Preview */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+          <CardHeader className="pb-3 pt-4">
+            <CardTitle className="flex items-center space-x-2 text-lg">
               <Eye className="h-5 w-5" />
               <span>Vista Previa del Contenido</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-4">
             {previewError && (
               <Alert variant="destructive">
                 <AlertDescription>{previewError}</AlertDescription>
@@ -207,7 +165,7 @@ export const PageSelector = ({ uploadData, onPageSelect, loading }: PageSelector
             <Textarea
               value={preview || uploadData.preview}
               readOnly
-              className="min-h-[300px] font-mono text-sm resize-none"
+              className="min-h-[150px] font-mono text-xs resize-none"
               placeholder={previewLoading ? "Cargando vista previa..." : "Vista previa del contenido aparecerá aquí"}
             />
 
@@ -228,7 +186,7 @@ export const PageSelector = ({ uploadData, onPageSelect, loading }: PageSelector
           disabled={!isValidRange || loading}
           className="px-8"
         >
-          Procesar Páginas {startPage}-{endPage}
+          Procesar las páginas
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </div>

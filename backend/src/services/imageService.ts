@@ -45,6 +45,118 @@ export class ImageService {
     return results;
   }
 
+  async findAndStoreRecipeImage(title: string): Promise<{
+    originalUrl: string;
+    localPath: string;
+    url: string;
+    order: number;
+    altText?: string;
+  } | null> {
+    try {
+      console.log(`🔎 Buscando imagen de respaldo para: "${title}"`);
+
+      const titleWithoutModifiers = title
+        .replace(/\([^)]*\)/g, ' ')
+        .replace(/\b(?:caser[oa]s?|f[aá]cil|r[aá]pid[oa]|sin gluten|a la crema|thermomix|tm\d+)\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const simplifiedTitle = titleWithoutModifiers
+        .replace(/\b(?:de|del|la|las|el|los|con|y)\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      // Buscamos a través del título, sesgando hacia fotos de comida/plato para
+      // mejorar la relevancia. Probamos primero el título completo con contexto
+      // gastronómico y dejamos las variantes simplificadas como último recurso.
+      const bases = Array.from(new Set([title, titleWithoutModifiers, simplifiedTitle])).filter(Boolean);
+      const queries = Array.from(new Set([
+        ...bases.map(b => `${b} receta plato de comida`),
+        ...bases.map(b => `${b} comida`),
+        ...bases,
+      ])).filter(Boolean);
+
+      for (const query of queries) {
+        const openverseParams = new URLSearchParams({
+          q: query,
+          page_size: '10',
+          mature: 'false',
+        });
+        const openverseResponse = await fetch(`https://api.openverse.org/v1/images/?${openverseParams}`, {
+          headers: {
+            'User-Agent': 'TasteBox/2.0 recipe-image-search',
+            'Accept': 'application/json',
+          },
+        });
+        if (!openverseResponse.ok) continue;
+
+        const openverseData = await openverseResponse.json() as {
+          results?: Array<{ title?: string; url?: string; thumbnail?: string }>;
+        };
+        for (const image of openverseData.results || []) {
+          const imageUrl = image.url || image.thumbnail;
+          if (!imageUrl) continue;
+          const stored = await this.downloadSingleImage(imageUrl, 1);
+          if (stored) return { ...stored, altText: image.title || title };
+        }
+      }
+
+      for (const query of queries) {
+        const params = new URLSearchParams({
+          action: 'query',
+          format: 'json',
+          generator: 'search',
+          gsrsearch: query,
+          gsrnamespace: '6',
+          gsrlimit: '10',
+          prop: 'imageinfo',
+          iiprop: 'url|mime',
+          iiurlwidth: '1200',
+          origin: '*',
+        });
+        const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`, {
+          headers: {
+            'User-Agent': 'TasteBox/2.0 recipe-image-search',
+            'Accept': 'application/json',
+          },
+        });
+        if (!response.ok) continue;
+
+        const data = await response.json() as {
+          query?: {
+            pages?: Record<string, {
+              title?: string;
+              imageinfo?: Array<{
+                url?: string;
+                thumburl?: string;
+                mime?: string;
+              }>;
+            }>;
+          };
+        };
+        const pages = Object.values(data.query?.pages || {});
+        const candidates = pages
+          .map(page => ({
+            title: page.title?.replace(/^File:/i, '') || title,
+            info: page.imageinfo?.[0],
+          }))
+          .filter(candidate =>
+            candidate.info
+            && ['image/jpeg', 'image/png', 'image/webp'].includes(candidate.info.mime || '')
+          );
+
+        for (const candidate of candidates) {
+          const imageUrl = candidate.info?.thumburl || candidate.info?.url;
+          if (!imageUrl) continue;
+          const stored = await this.downloadSingleImage(imageUrl, 1);
+          if (stored) return { ...stored, altText: candidate.title };
+        }
+      }
+    } catch (error) {
+      console.error('Error buscando imagen de respaldo:', error);
+    }
+
+    return null;
+  }
+
   private async downloadSingleImage(imageUrl: string, order: number): Promise<{
     originalUrl: string;
     localPath: string;

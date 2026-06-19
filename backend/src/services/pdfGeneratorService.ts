@@ -339,10 +339,10 @@ export class PdfGeneratorService {
       }
 
       console.log('✅ PDF generated successfully, size:', pdfBuffer.length, 'bytes');
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
     } catch (error) {
       console.error('Error generando PDF:', error);
-      throw new Error(`Error al generate PDF: ${error.message}`);
+      throw new Error(`Error al generate PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       if (browser) {
         await browser.close();

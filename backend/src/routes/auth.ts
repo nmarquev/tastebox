@@ -87,7 +87,7 @@ router.post('/register', async (req, res) => {
       throw new Error('JWT_SECRET no configurado');
     }
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '30d' });
 
     res.status(201).json({
       user,
@@ -140,7 +140,7 @@ router.post('/login', async (req, res) => {
       throw new Error('JWT_SECRET no configurado');
     }
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '30d' });
 
     // Establecer cookie HTTP-only segura para acceso con bookmarklet
     // En desarrollo: sameSite 'lax' + secure false para permitir localhost y HTTP
@@ -149,7 +149,7 @@ router.post('/login', async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // true en prod (HTTPS), false en dev
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
     });
 
     res.json({

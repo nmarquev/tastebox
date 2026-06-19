@@ -179,6 +179,7 @@ export const PdfImportModal = ({ isOpen, onClose, onRecipeSaved }: PdfImportModa
         servings: currentRecipe.estimatedData?.servings || 4,
         difficulty: currentRecipe.estimatedData?.difficulty || 'Medio',
         recipeType: currentRecipe.estimatedData?.recipeType || 'Otro',
+        importedFrom: 'doc' as const,
         tags: currentRecipe.estimatedData?.tags || [],
         images: currentRecipe.thumbnailUrl ? [{
           url: currentRecipe.thumbnailUrl,

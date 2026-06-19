@@ -111,6 +111,48 @@ export const printRecipePdf = async (recipe: Recipe): Promise<void> => {
   }
 };
 
+export const printRecipesPdf = async (recipes: Recipe[], options: { title?: string; header?: string; footer?: string; pageNumber?: boolean } = {}): Promise<void> => {
+  if (!recipes.length) {
+    throw new Error('Seleccioná al menos una receta');
+  }
+
+  const token = localStorage.getItem('auth_token');
+  if (!token) {
+    throw new Error('No hay token de autenticación');
+  }
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    throw new Error('No se pudo abrir la ventana de impresión');
+  }
+  printWindow.document.write('<p style="font-family: sans-serif">Preparando recetas para imprimir...</p>');
+
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/pdf/recipes`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ recipeIds: recipes.map(recipe => recipe.id), title: options.title, header: options.header, footer: options.footer, pageNumber: options.pageNumber }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'No se pudo generar el PDF combinado');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    printWindow.location.href = url;
+    printWindow.onload = () => printWindow.print();
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+  } catch (error) {
+    printWindow.close();
+    throw error;
+  }
+};
+
 /**
  * Share recipe PDF
  */

@@ -1,7 +1,7 @@
 // Configuration for TasteBox API
 const CONFIG = {
   // Development mode - set to false for production
-  isDevelopment: false,
+  isDevelopment: true,
 
   // Default configuration for development
   defaultDevelopment: {

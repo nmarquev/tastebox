@@ -90,11 +90,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   switch (request.action) {
     case 'checkAuth':
-      sendResponse({
-        isAuthenticated,
-        authToken
-      });
-      break;
+      // MV3 service workers are ephemeral: in-memory state is lost when the worker
+      // is torn down. Reload (and re-verify) the token from storage before replying,
+      // otherwise the popup shows the login screen on every new window/session.
+      checkAuthStatus()
+        .then(() => sendResponse({ isAuthenticated, authToken }))
+        .catch(() => sendResponse({ isAuthenticated: false, authToken: null }));
+      return true; // Keep channel open for async response
 
     case 'login':
       handleLogin(request.email, request.password)
@@ -109,7 +111,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case 'importRecipe':
-      handleImportRecipe(request.url, request.html)
+      handleImportRecipe(request.url, request.html, request.title, request.renderedText)
         .then(result => sendResponse(result))
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
@@ -185,11 +187,18 @@ async function handleLogout() {
 }
 
 // Handle recipe import
-async function handleImportRecipe(url, html) {
+async function handleImportRecipe(url, html, title, renderedText) {
   if (!isAuthenticated || !authToken) {
     return {
       success: false,
       error: 'Not authenticated'
+    };
+  }
+
+  if (!html || html.length < 100) {
+    return {
+      success: false,
+      error: 'No se pudo leer el contenido de la página. Recargala e intentá de nuevo.'
     };
   }
 
@@ -207,17 +216,16 @@ async function handleImportRecipe(url, html) {
     console.log('🔧 Import using environment:', isDev ? 'Development' : 'Production');
     console.log('🌐 API URL:', CONFIG.getApiUrl());
 
-    // Use /api/import (same as web app) instead of /api/import-html
-    // This ensures consistent extraction with better results
-    const response = await fetch(`${CONFIG.getApiUrl()}/api/import`, {
+    // Use /api/import-html with the rendered DOM captured in the browser.
+    // This both PERSISTS the recipe and gives better extraction (sees JS-rendered,
+    // authenticated content that a server-side fetch cannot reach).
+    const response = await fetch(CONFIG.getEndpoint('importHtml'), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        url  // Only send URL, let backend fetch HTML with proper User-Agent
-      }),
+      body: JSON.stringify({ html, renderedText: renderedText || '', url, title: title || '' }),
       credentials: 'include'
     });
 
@@ -231,7 +239,7 @@ async function handleImportRecipe(url, html) {
     } else {
       return {
         success: false,
-        error: data.message || 'Import failed'
+        error: data.error || data.message || 'Import failed'
       };
     }
   } catch (error) {

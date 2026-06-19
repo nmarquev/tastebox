@@ -4,8 +4,15 @@
 let importButton = null;
 let isAuthenticated = false;
 
+const isTasteBoxPage =
+  window.location.hostname === 'tastebox.beweb.com.ar'
+  || window.location.hostname === 'localhost'
+  || window.location.hostname === '127.0.0.1';
+
 // Initialize on page load
-initialize();
+if (!isTasteBoxPage) {
+  initialize();
+}
 
 function initialize() {
   console.log('TasteBox content script loaded');
@@ -31,6 +38,7 @@ function initialize() {
 function detectRecipe() {
   const url = window.location.href;
   const html = document.documentElement.outerHTML;
+  const renderedText = collectRenderedText(document);
 
   // Check for recipe indicators in the page
   const hasRecipeSchema = !!document.querySelector('[itemtype*="Recipe"]');
@@ -62,6 +70,7 @@ function detectRecipe() {
   return {
     url,
     html,
+    renderedText,
     likelyRecipe,
     metadata: {
       title,
@@ -70,6 +79,32 @@ function detectRecipe() {
       hasJSON: hasRecipeJSON
     }
   };
+}
+
+function collectRenderedText(rootDocument) {
+  const parts = [];
+  const add = (value) => {
+    const text = String(value || '').trim();
+    if (text) parts.push(text);
+  };
+
+  add(rootDocument.body?.innerText);
+
+  rootDocument.querySelectorAll('*').forEach((element) => {
+    if (element.shadowRoot) {
+      add(element.shadowRoot.textContent);
+    }
+  });
+
+  rootDocument.querySelectorAll('iframe').forEach((iframe) => {
+    try {
+      add(iframe.contentDocument?.body?.innerText);
+    } catch {
+      // Cross-origin iframes cannot be read by the content script.
+    }
+  });
+
+  return [...new Set(parts)].join('\n\n');
 }
 
 // Show floating import button if recipe detected
@@ -87,13 +122,10 @@ function createImportButton() {
 
   importButton = document.createElement('div');
   importButton.id = 'tastebox-import-button';
+  const logoUrl = chrome.runtime.getURL('icons/logo-white.png');
   importButton.innerHTML = `
     <div class="tastebox-fab">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <img src="${logoUrl}" alt="TasteBox" width="26" height="26" style="display:block;object-fit:contain" />
       <span class="tastebox-tooltip">Import to TasteBox</span>
     </div>
   `;
@@ -121,7 +153,8 @@ async function handleImportClick() {
   chrome.runtime.sendMessage({
     action: 'importRecipe',
     url: recipeData.url,
-    html: recipeData.html
+    html: recipeData.html,
+    renderedText: recipeData.renderedText
   }, (response) => {
     importButton.classList.remove('loading');
 

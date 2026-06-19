@@ -53,7 +53,7 @@ router.get('/test-pdf', async (req, res) => {
     console.error('❌ Error en test PDF simple:', error);
     res.status(500).json({
       error: 'Error generando PDF de prueba simple',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
 });
@@ -103,7 +103,7 @@ router.get('/test-recipe-pdf', async (req, res) => {
     console.error('❌ Error en test PDF con servicio real:', error);
     res.status(500).json({
       error: 'Error generando PDF con servicio real',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
 });
@@ -171,7 +171,7 @@ router.get('/test-pdfkit', async (req, res) => {
     console.error('❌ Error en test PDFKit:', error);
     res.status(500).json({
       error: 'Error generando PDF con PDFKit',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
 });

@@ -7,18 +7,21 @@ import { Recipe, Instruction } from "@/types/recipe";
  * @returns true si es una receta de Thermomix, false en caso contrario
  */
 export function isThermomixRecipe(recipe: Recipe): boolean {
-  if (!recipe.instructions || recipe.instructions.length === 0) {
-    return false;
-  }
+  if (recipe.thermomix === true) return true;
+  if (!recipe.instructions?.length) return false;
 
-  // Verificar si algún paso tiene configuraciones de Thermomix
   return recipe.instructions.some(instruction => {
     const settings = instruction.thermomixSettings;
-    return settings && (
-      (settings.time && settings.time.trim() !== '') ||
-      (settings.temperature && settings.temperature.trim() !== '') ||
-      (settings.speed && settings.speed.trim() !== '')
-    );
+    if (!settings) return false;
+
+    const evidence = [
+      instruction.description,
+      settings.function,
+      settings.speed,
+      settings.temperature
+    ].filter(Boolean).join(' ');
+
+    return /\b(?:thermomix|tm[3567]\b|varoma|giro inverso|vel(?:ocidad)?\s*(?:cuchara|\d+)|mariposa|turbo)\b/i.test(evidence);
   });
 }
 
@@ -29,12 +32,16 @@ export function isThermomixRecipe(recipe: Recipe): boolean {
  */
 export function hasThermomixSettings(instruction: Instruction): boolean {
   const settings = instruction.thermomixSettings;
-  return settings && (
-    (settings.function && settings.function.trim() !== '') ||
-    (settings.time && settings.time.trim() !== '') ||
-    (settings.temperature && settings.temperature.trim() !== '') ||
-    (settings.speed && settings.speed.trim() !== '')
-  );
+  if (!settings) return false;
+
+  const evidence = [
+    instruction.description,
+    settings.function,
+    settings.speed,
+    settings.temperature
+  ].filter(Boolean).join(' ');
+
+  return /\b(?:thermomix|tm[3567]\b|varoma|giro inverso|vel(?:ocidad)?\s*(?:cuchara|\d+)|mariposa|turbo)\b/i.test(evidence);
 }
 
 /**

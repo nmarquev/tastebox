@@ -3,6 +3,14 @@ import { z } from 'zod';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { LLMServiceImproved } from '../services/llmServiceImproved';
 import { ImageService } from '../services/imageService';
+import { CookidooService } from '../services/cookidooService';
+import { getCookidooCredentials } from '../config/cookidooSettings';
+import { FooditService } from '../services/fooditService';
+import { getFooditCredentials } from '../config/fooditSettings';
+import { detectImportSource, getAuthorFromSourceUrl } from '../utils/importSource';
+import { sanitizeSuggestionText } from '../utils/suggestions';
+import { mentionsGlutenFree } from '../utils/dietaryFeatures';
+import type { RecipeImage } from '../types/recipe';
 
 const router = express.Router();
 
@@ -14,6 +22,8 @@ const importUrlSchema = z.object({
 // Initialize services
 const llmService = new LLMServiceImproved();
 const imageService = new ImageService();
+const cookidooService = new CookidooService();
+const fooditService = new FooditService();
 
 // Import recipe from URL
 router.post('/', authenticateToken, async (req: AuthRequest, res) => {
@@ -22,15 +32,53 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
 
     console.log(`Starting recipe import from: ${url}`);
 
-    // Step 1: Extract recipe data with LLM
-    console.log('Extracting recipe data with LLM...');
-    const recipeData = await llmService.extractRecipeFromUrl(url);
+    // Step 1: Extract recipe data with LLM.
+    // Cookidoo oculta la preparación detrás del login: si la URL es de Cookidoo y hay
+    // credenciales configuradas, el servidor inicia sesión y baja el HTML autenticado
+    // (con los pasos reales). Si no hay credenciales, cae al flujo normal (que avisará
+    // que faltan los pasos).
+    const hostname = new URL(url).hostname;
+    const isCookidoo = /cookidoo\./i.test(hostname);
+    const cookidooCreds = isCookidoo ? getCookidooCredentials() : null;
+
+    // Foodit (La Nación) esconde la preparación y los tips detrás de un paywall por
+    // sesión. Con credenciales configuradas, el servidor inicia sesión (Auth0, vía
+    // navegador headless) y lee el HTML completo. Sin credenciales, cae al flujo normal.
+    const isFoodit = /foodit\.lanacion\.com\.ar$/i.test(hostname);
+    const fooditCreds = isFoodit ? getFooditCredentials() : null;
+
+    let recipeData;
+    if (isCookidoo && cookidooCreds) {
+      console.log('🔐 Cookidoo detectado con credenciales: usando extracción autenticada...');
+      recipeData = await cookidooService.extractRecipeWithAuth(url, cookidooCreds);
+    } else if (isFoodit && fooditCreds) {
+      console.log('🔐 Foodit detectado con credenciales: usando extracción autenticada...');
+      recipeData = await fooditService.extractRecipeWithAuth(url, fooditCreds);
+    } else {
+      if (isCookidoo) {
+        console.log('⚠️ Cookidoo sin credenciales configuradas: la preparación puede no estar disponible.');
+      }
+      if (isFoodit) {
+        console.log('⚠️ Foodit sin credenciales configuradas: los tips/preparación pueden no estar disponibles (paywall).');
+      }
+      console.log('Extracting recipe data with LLM...');
+      recipeData = await llmService.extractRecipeFromUrl(url);
+    }
 
     console.log(`Extracted recipe: ${recipeData.title}`);
     console.log(`Found ${recipeData.images.length} images`);
 
+    // Aviso al usuario: receta de Foodit sin credenciales y sin pasos → la preparación
+    // quedó detrás del paywall. Le explicamos cómo traerla completa.
+    let warning: string | undefined;
+    if (isFoodit && !fooditCreds && (recipeData.instructions?.length ?? 0) < 2) {
+      warning = 'Esta receta de Foodit (La Nación) tiene la preparación detrás del paywall, por eso no se importaron los pasos. Para traerlos completos, configurá tus credenciales de Foodit en Ajustes o importala con la extensión de Chrome de TasteBox.';
+    } else if (isCookidoo && !cookidooCreds && (recipeData.instructions?.length ?? 0) < 2) {
+      warning = 'Esta receta de Cookidoo tiene la preparación detrás del paywall, por eso no se importaron los pasos. Configurá tus credenciales de Cookidoo en Ajustes para traerlos completos.';
+    }
+
     // Step 2: Download and process images
-    let processedImages = [];
+    let processedImages: Array<Pick<RecipeImage, 'url' | 'localPath' | 'order' | 'altText'>> = [];
     if (recipeData.images.length > 0) {
       console.log('Downloading and processing images...');
       try {
@@ -47,12 +95,32 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     const responseData = {
       title: recipeData.title,
       description: recipeData.description,
+      suggestions: sanitizeSuggestionText(recipeData.suggestions),
       prepTime: recipeData.prepTime,
       cookTime: recipeData.cookTime,
       servings: recipeData.servings,
       difficulty: recipeData.difficulty,
       recipeType: recipeData.recipeType,
-      sourceUrl: url,
+      country: recipeData.country,
+      language: recipeData.language || 'Español',
+      sourceUrl: recipeData.sourceUrl || url,
+      author: getAuthorFromSourceUrl(recipeData.sourceUrl || url),
+      importedFrom: detectImportSource(recipeData.sourceUrl || url),
+      thermomix: recipeData.thermomix ?? false,
+      airFryer: recipeData.airFryer ?? false,
+      glutenFree: recipeData.glutenFree === true || mentionsGlutenFree(recipeData),
+      keto: recipeData.keto ?? false,
+      lowCarb: recipeData.lowCarb ?? false,
+      vegetarian: recipeData.vegetarian ?? false,
+      // Nutrición exacta (Cookidoo). Si no hay, queda undefined y se calcula luego.
+      calories: recipeData.nutrition?.calories,
+      protein: recipeData.nutrition?.protein,
+      carbohydrates: recipeData.nutrition?.carbohydrates,
+      fat: recipeData.nutrition?.fat,
+      saturatedFat: recipeData.nutrition?.saturatedFat,
+      fiber: recipeData.nutrition?.fiber,
+      sugar: recipeData.nutrition?.sugar,
+      sodium: recipeData.nutrition?.sodium,
       images: processedImages.map(img => ({
         url: img.url,
         localPath: img.localPath,
@@ -79,7 +147,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     res.json({
       success: true,
       recipe: responseData,
-      preview: true // Indicates this needs user confirmation before saving
+      preview: true, // Indicates this needs user confirmation before saving
+      ...(warning ? { warning } : {})
     });
 
   } catch (error) {

@@ -1,0 +1,1190 @@
+[
+  {
+    "model": "deepseek/deepseek-v4-flash",
+    "url": "https://cookidoo.international/recipes/recipe/es/r57645",
+    "elapsed_s": 100.2,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Tortillas de maíz",
+        "description": "Un mundo de recetas Thermomix®. Cookidoo® le trae deliciosos platos de todo el mundo.",
+        "prepTime": 60,
+        "cookTime": 90,
+        "servings": 15,
+        "difficulty": "Fácil",
+        "recipeType": "Básicos",
+        "sourceUrl": "https://cookidoo.international/recipes/recipe/es/r57645",
+        "images": [
+          {
+            "url": "/uploads/recipe-1a493abe-d464-4062-b3b5-f930abbabefd-1.jpg",
+            "localPath": "recipe-1a493abe-d464-4062-b3b5-f930abbabefd-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          },
+          {
+            "url": "/uploads/recipe-92be4a93-f2c2-4bb2-9bdd-f6e83ef5b11c-2.jpg",
+            "localPath": "recipe-92be4a93-f2c2-4bb2-9bdd-f6e83ef5b11c-2.jpg",
+            "order": 2,
+            "altText": "Recipe image 2"
+          },
+          {
+            "url": "/uploads/recipe-c9dc286a-037b-4ceb-acd4-d9cbff5133c5-3.jpg",
+            "localPath": "recipe-c9dc286a-037b-4ceb-acd4-d9cbff5133c5-3.jpg",
+            "order": 3,
+            "altText": "Recipe image 3"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "agua",
+            "amount": "500",
+            "unit": "g",
+            "section": null,
+            "order": 1
+          },
+          {
+            "name": "sal",
+            "amount": "1",
+            "unit": "cucharadita",
+            "section": null,
+            "order": 2
+          },
+          {
+            "name": "harina de maíz nixtamalizado",
+            "amount": "400",
+            "unit": "g",
+            "section": null,
+            "order": 3
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Colocar el agua y la sal en el vaso.",
+            "time": "2 min",
+            "temperature": "100°C",
+            "speed": "vel 1",
+            "function": "Calentar",
+            "section": null
+          },
+          {
+            "step": 2,
+            "description": "Agregar la harina de maíz nixtamalizado.",
+            "time": "30 seg",
+            "speed": "vel 3",
+            "function": "Mezclar",
+            "section": null
+          },
+          {
+            "step": 3,
+            "description": "Amasar.",
+            "time": "2 min",
+            "speed": "vel Espiga",
+            "function": "Amasar",
+            "section": null
+          },
+          {
+            "step": 4,
+            "description": "Retirar la masa del vaso, formar una bola y cubrir con un paño húmedo. Dejar reposar 10 minutos.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 5,
+            "description": "Dividir la masa en 15 porciones y formar bolitas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 6,
+            "description": "Colocar cada bolita entre dos plásticos y presionar con una prensa para tortillas o con un rodillo para formar tortillas delgadas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 7,
+            "description": "Calentar una sartén o comal a fuego medio-alto y cocer las tortillas aproximadamente 1 minuto por cada lado, hasta que estén ligeramente doradas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 8,
+            "description": "Servir calientes.",
+            "function": null,
+            "section": null
+          }
+        ],
+        "tags": [
+          "maíz",
+          "tortillas",
+          "básicos"
+        ]
+      },
+      "preview": true
+    }
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash",
+    "url": "https://www.paulinacocina.net/budin-de-naranja/8585",
+    "elapsed_s": 26.2,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Budín de naranja: el que siempre sale bien",
+        "description": "Este budín de naranja es súper fácil de hacer y sinceramente no falla nunca. La receta es súper versatil y se puede usar para budín con otras frutas",
+        "prepTime": 15,
+        "cookTime": 40,
+        "servings": 8,
+        "difficulty": "Fácil",
+        "recipeType": "Budín y Tortas",
+        "sourceUrl": "https://www.paulinacocina.net/budin-de-naranja/8585",
+        "images": [
+          {
+            "url": "/uploads/recipe-9e8684ab-1b6a-47f2-be6c-120b33631bbc-1.jpg",
+            "localPath": "recipe-9e8684ab-1b6a-47f2-be6c-120b33631bbc-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "huevos",
+            "amount": "3",
+            "section": null,
+            "order": 1
+          },
+          {
+            "name": "azúcar",
+            "amount": "1 taza",
+            "section": null,
+            "order": 2
+          },
+          {
+            "name": "harina leudante",
+            "amount": "2 tazas",
+            "section": null,
+            "order": 3
+          },
+          {
+            "name": "jugo de naranja",
+            "amount": "1 pocillo",
+            "section": null,
+            "order": 4
+          },
+          {
+            "name": "aceite",
+            "amount": "1/2 pocillo",
+            "section": null,
+            "order": 5
+          },
+          {
+            "name": "ralladura de naranja",
+            "amount": "al gusto",
+            "section": null,
+            "order": 6
+          },
+          {
+            "name": "esencia de vainilla",
+            "amount": "al gusto",
+            "section": null,
+            "order": 7
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Batir los huevos con el azúcar hasta que estén bien blancos y espumosos.",
+            "function": "Batir",
+            "section": null
+          },
+          {
+            "step": 2,
+            "description": "Sin dejar de batir, a velocidad baja, agregar de a poco el aceite, las ralladuras, el jugo de naranja y la esencia de vainilla.",
+            "function": "Batir",
+            "section": null
+          },
+          {
+            "step": 3,
+            "description": "Incorporar la harina de a poco mezclando suavemente con movimientos envolventes.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 4,
+            "description": "Enmantecar y enharinar un molde para budín y verter la preparación.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 5,
+            "description": "Cocinar en horno moderado por 40 minutos o hasta que al insertar un palito salga seco.",
+            "time": "40 min",
+            "temperature": "moderado",
+            "function": "Hornear",
+            "section": null
+          },
+          {
+            "step": 6,
+            "description": "Dejar enfriar y desmoldar.",
+            "function": null,
+            "section": null
+          }
+        ],
+        "tags": [
+          "budín",
+          "naranja",
+          "fácil",
+          "postre"
+        ]
+      },
+      "preview": true
+    }
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash",
+    "url": "https://cookpad.com/ar/recetas/17124999",
+    "elapsed_s": 27.7,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Budín Vegano De Manzana (Paulina Cocina Adaptado)",
+        "description": "Tomé la receta de Paulina cocina y la adapté para hacerla vegana y sin tacc",
+        "prepTime": 10,
+        "cookTime": 20,
+        "servings": 4,
+        "difficulty": "Fácil",
+        "recipeType": "Postre",
+        "sourceUrl": "https://cookpad.com/ar/recetas/17124999?ref=search&search_term=paulina+cocina",
+        "images": [
+          {
+            "url": "/uploads/recipe-2e15f9aa-6849-487f-89a2-5aa4e4cc200c-1.jpg",
+            "localPath": "recipe-2e15f9aa-6849-487f-89a2-5aa4e4cc200c-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "chía o lino",
+            "amount": "5",
+            "unit": "cdas",
+            "section": null,
+            "order": 1
+          },
+          {
+            "name": "azúcar de mascabo",
+            "amount": "70",
+            "unit": "gr",
+            "section": null,
+            "order": 2
+          },
+          {
+            "name": "aceite",
+            "amount": "70",
+            "unit": "ml",
+            "section": null,
+            "order": 3
+          },
+          {
+            "name": "harinas (usé maizena, de garbanzos y de lino)",
+            "amount": "250",
+            "unit": "gr",
+            "section": null,
+            "order": 4
+          },
+          {
+            "name": "leche vegetal",
+            "amount": "100",
+            "unit": "ml",
+            "section": null,
+            "order": 5
+          },
+          {
+            "name": "manzana",
+            "amount": "1",
+            "section": null,
+            "order": 6
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Mezclar 5 cdas de chía o lino con 100 ml de agua y dejar reposar 10 minutos hasta que se activen las semillas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 2,
+            "description": "Mezclar con el azúcar y batir hasta que espume. Luego agregar el aceite de a poco mientras se sigue batiendo.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 3,
+            "description": "Agregar las harinas hasta unir bien y que no queden grumos. Se puede hacer a mano o con procesadora.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 4,
+            "description": "Se le puede agregar la mitad de la manzana que usamos para decorar, cortada o rallada.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 5,
+            "description": "Si es necesario, agregarle leche o jugo a la mezcla hasta que tenga la consistencia propia de tortas (líquida pero espesa). Yo usé 100cc aprox pero depende de lo que absorban las harinas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 6,
+            "description": "Enmantecar el molde y, en lugar de enharinar, espolvorear con azúcar (de la misma forma que cuando enharinamos). Ya podemos ir precalentando el horno.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 7,
+            "description": "Cortar la manzana en láminas finas y colocar una capa en la base del molde.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 8,
+            "description": "Colocar en el molde la mitad de la mezcla del budín. Encima, otra capa de láminas de manzana. Completar con el resto de la mezcla.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 9,
+            "description": "Llevar a horno 180º unos 20 minutos o hasta que se vea dorado por arriba.",
+            "function": null,
+            "section": null
+          }
+        ],
+        "tags": []
+      },
+      "preview": true
+    }
+  },
+  {
+    "model": "openai/gpt-4o-mini",
+    "url": "https://cookidoo.international/recipes/recipe/es/r57645",
+    "elapsed_s": 9,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Tortillas de maíz",
+        "description": "Un mundo de recetas Thermomix®. Cookidoo® le trae deliciosos platos de todo el mundo.",
+        "prepTime": 60,
+        "cookTime": 90,
+        "servings": 15,
+        "difficulty": "Fácil",
+        "recipeType": "Básicos",
+        "sourceUrl": "https://cookidoo.international/recipes/recipe/es/r57645",
+        "images": [
+          {
+            "url": "/uploads/recipe-73dd5a70-65c7-4708-9479-5bfa7da9cc5b-1.jpg",
+            "localPath": "recipe-73dd5a70-65c7-4708-9479-5bfa7da9cc5b-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "agua",
+            "amount": "500",
+            "unit": "g",
+            "section": null,
+            "order": 1
+          },
+          {
+            "name": "sal",
+            "amount": "1",
+            "unit": "cucharadita",
+            "section": null,
+            "order": 2
+          },
+          {
+            "name": "harina de maíz nixtamalizado",
+            "amount": "400",
+            "unit": "g",
+            "section": null,
+            "order": 3
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Preparar según la receta original",
+            "function": null,
+            "section": null
+          }
+        ],
+        "tags": [
+          "maíz",
+          "tortillas",
+          "básicos",
+          "sin gluten"
+        ]
+      },
+      "preview": true
+    }
+  },
+  {
+    "model": "openai/gpt-4o-mini",
+    "url": "https://www.paulinacocina.net/budin-de-naranja/8585",
+    "elapsed_s": 13.1,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Budín de naranja: el que siempre sale bien - Paulina Cocina",
+        "description": "Este budín de naranja es súper fácil de hacer y sinceramente no falla nunca. La receta es súper versatil y se puede usar para budín con otras frutas",
+        "prepTime": 15,
+        "cookTime": 45,
+        "servings": 8,
+        "difficulty": "Fácil",
+        "recipeType": "Postre",
+        "sourceUrl": "https://www.paulinacocina.net/budin-de-naranja/8585",
+        "images": [
+          {
+            "url": "/uploads/recipe-e26c4753-80a7-4f67-8e3b-2c110e22fbbe-1.jpg",
+            "localPath": "recipe-e26c4753-80a7-4f67-8e3b-2c110e22fbbe-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "naranja",
+            "amount": "2",
+            "order": 1,
+            "section": null
+          },
+          {
+            "name": "azúcar",
+            "amount": "200",
+            "unit": "g",
+            "order": 2,
+            "section": null
+          },
+          {
+            "name": "huevos",
+            "amount": "3",
+            "order": 3,
+            "section": null
+          },
+          {
+            "name": "harina leudante",
+            "amount": "200",
+            "unit": "g",
+            "order": 4,
+            "section": null
+          },
+          {
+            "name": "aceite",
+            "amount": "100",
+            "unit": "ml",
+            "order": 5,
+            "section": null
+          },
+          {
+            "name": "ralladura de naranja",
+            "amount": "al gusto",
+            "order": 6,
+            "section": null
+          },
+          {
+            "name": "esencia de vainilla",
+            "amount": "al gusto",
+            "order": 7,
+            "section": null
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Precalentar el horno a 180°C.",
+            "temperature": "180°C",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 2,
+            "description": "En un bol, batir los huevos con el azúcar hasta que estén espumosos.",
+            "function": "Batir",
+            "section": null
+          },
+          {
+            "step": 3,
+            "description": "Agregar el aceite, el zumo de naranja, la ralladura y la esencia de vainilla.",
+            "function": "Agregar",
+            "section": null
+          },
+          {
+            "step": 4,
+            "description": "Incorporar la harina leudante tamizada y mezclar hasta obtener una masa homogénea.",
+            "function": "Mezclar",
+            "section": null
+          },
+          {
+            "step": 5,
+            "description": "Verter la mezcla en un molde previamente enmantecado.",
+            "function": "Verter",
+            "section": null
+          },
+          {
+            "step": 6,
+            "description": "Llevar al horno y cocinar durante 45 minutos o hasta que al insertar un palillo, este salga limpio.",
+            "time": "45 min",
+            "function": "Hornear",
+            "section": null
+          }
+        ],
+        "tags": [
+          "budín",
+          "naranja",
+          "postre",
+          "fácil"
+        ]
+      },
+      "preview": true
+    }
+  },
+  {
+    "model": "openai/gpt-4o-mini",
+    "url": "https://cookpad.com/ar/recetas/17124999",
+    "elapsed_s": 27.3,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Budín vegano de manzana (Paulina cocina adaptado)",
+        "description": "Tomé la receta de Paulina cocina y la adapté para hacerla vegana y sin tacc",
+        "prepTime": 30,
+        "servings": 4,
+        "difficulty": "Fácil",
+        "recipeType": "Postre",
+        "sourceUrl": "https://cookpad.com/ar/recetas/17124999?ref=search&search_term=paulina+cocina",
+        "images": [
+          {
+            "url": "/uploads/recipe-6aa9f518-7873-44be-a277-12381d664cd8-1.jpg",
+            "localPath": "recipe-6aa9f518-7873-44be-a277-12381d664cd8-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          },
+          {
+            "url": "/uploads/recipe-c3a5e003-08bf-45be-bfd9-5581d1110344-2.jpg",
+            "localPath": "recipe-c3a5e003-08bf-45be-bfd9-5581d1110344-2.jpg",
+            "order": 2,
+            "altText": "Recipe image 2"
+          },
+          {
+            "url": "/uploads/recipe-36702a15-50ab-4a3b-be12-3ac3d878432f-3.jpg",
+            "localPath": "recipe-36702a15-50ab-4a3b-be12-3ac3d878432f-3.jpg",
+            "order": 3,
+            "altText": "Recipe image 3"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "chía o lino",
+            "amount": "5",
+            "unit": "cdas",
+            "section": null,
+            "order": 1
+          },
+          {
+            "name": "azúcar de mascabo",
+            "amount": "70",
+            "unit": "gr",
+            "section": null,
+            "order": 2
+          },
+          {
+            "name": "aceite",
+            "amount": "70",
+            "unit": "ml",
+            "section": null,
+            "order": 3
+          },
+          {
+            "name": "harinas (usé maizena, de garbanzos y de lino)",
+            "amount": "250",
+            "unit": "gr",
+            "section": null,
+            "order": 4
+          },
+          {
+            "name": "leche vegetal",
+            "amount": "100",
+            "unit": "ml",
+            "section": null,
+            "order": 5
+          },
+          {
+            "name": "manzana",
+            "amount": "al gusto",
+            "section": null,
+            "order": 6
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Mezclar 5 cdas de chía o lino con 100 ml de agua y dejar reposar 10 minutos hasta que se activen las semillas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 2,
+            "description": "Mezclar con el azúcar y batir hasta que espume. Luego agregar el aceite de a poco mientras se sigue batiendo.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 3,
+            "description": "Agregar las harinas hasta unir bien y que no queden grumos. Se puede hacer a mano o con procesadora.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 4,
+            "description": "Se le puede agregar la mitad de la manzana que usamos para decorar, cortada o rallada.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 5,
+            "description": "Si es necesario, agregarle leche o jugo a la mezcla hasta que tenga la consistencia propia de tortas (líquida pero espesa). Yo usé 100cc aprox pero depende de lo que absorban las harinas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 6,
+            "description": "Enmantecar el molde y, en lugar de enharinar, espolvorear con azúcar (de la misma forma que cuando enharinamos). Ya podemos ir precalentando el horno.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 7,
+            "description": "Cortar la manzana en láminas finas y colocar una capa en la base del molde.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 8,
+            "description": "Colocar en el molde la mitad de la mezcla del budín. Encima, otra capa de láminas de manzana. Completar con el resto de la mezcla.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 9,
+            "description": "Llevar a horno 180º unos 20 minutos o hasta que se vea dorado por arriba.",
+            "time": "20",
+            "temperature": "180º",
+            "function": null,
+            "section": null
+          }
+        ],
+        "tags": [
+          "vegan",
+          "postre",
+          "manzana",
+          "sin gluten"
+        ]
+      },
+      "preview": true
+    }
+  },
+  {
+    "model": "google/gemini-2.5-flash-lite",
+    "url": "https://cookidoo.international/recipes/recipe/es/r57645",
+    "elapsed_s": 6.3,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Tortillas de maíz",
+        "description": "Un mundo de recetas Thermomix®. Cookidoo® le trae deliciosos platos de todo el mundo. Con miles de recetas e ideas, encontrará la mejor inspiración culinaria cada vez que inicie sesión.",
+        "prepTime": 30,
+        "servings": 15,
+        "difficulty": "Medio",
+        "recipeType": "Básicos",
+        "sourceUrl": "https://cookidoo.international/recipes/recipe/es/r57645",
+        "images": [
+          {
+            "url": "/uploads/recipe-b9e6c537-c883-49f7-9f06-900175f9759e-1.jpg",
+            "localPath": "recipe-b9e6c537-c883-49f7-9f06-900175f9759e-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          },
+          {
+            "url": "/uploads/recipe-c7d77193-0c11-4c2e-b7a1-7700022c3d17-2.jpg",
+            "localPath": "recipe-c7d77193-0c11-4c2e-b7a1-7700022c3d17-2.jpg",
+            "order": 2,
+            "altText": "Recipe image 2"
+          },
+          {
+            "url": "/uploads/recipe-942395b0-14e9-4949-93e8-e7e586dbfa65-3.jpg",
+            "localPath": "recipe-942395b0-14e9-4949-93e8-e7e586dbfa65-3.jpg",
+            "order": 3,
+            "altText": "Recipe image 3"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "agua",
+            "amount": "500",
+            "unit": "g",
+            "section": null,
+            "order": 1
+          },
+          {
+            "name": "sal",
+            "amount": "1",
+            "unit": "cucharadita",
+            "section": null,
+            "order": 2
+          },
+          {
+            "name": "harina de maíz nixtamalizado",
+            "amount": "400",
+            "unit": "g",
+            "section": null,
+            "order": 3
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Preparar según la receta original",
+            "function": null,
+            "section": null
+          }
+        ],
+        "tags": [
+          "maíz",
+          "tortillas",
+          "mexicana"
+        ]
+      },
+      "preview": true
+    }
+  },
+  {
+    "model": "google/gemini-2.5-flash-lite",
+    "url": "https://www.paulinacocina.net/budin-de-naranja/8585",
+    "elapsed_s": 3.6,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Budín de naranja: el que siempre sale bien - Paulina Cocina",
+        "description": "Este budín de naranja es súper fácil de hacer y sinceramente no falla nunca. La receta es súper versatil y se puede usar para budín con otras frutas",
+        "prepTime": 30,
+        "servings": 4,
+        "difficulty": "Medio",
+        "recipeType": "Tortas y Budines",
+        "sourceUrl": "https://www.paulinacocina.net/budin-de-naranja/8585",
+        "images": [
+          {
+            "url": "/uploads/recipe-150986cb-58f5-4375-8632-68128e419e81-1.jpg",
+            "localPath": "recipe-150986cb-58f5-4375-8632-68128e419e81-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "Ingredientes no especificados",
+            "amount": "al gusto",
+            "section": null,
+            "order": 1
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Preparar según la receta original",
+            "function": null,
+            "section": null
+          }
+        ],
+        "tags": [
+          "azúcar",
+          "harina leudante",
+          "huevos"
+        ]
+      },
+      "preview": true
+    }
+  },
+  {
+    "model": "google/gemini-2.5-flash-lite",
+    "url": "https://cookpad.com/ar/recetas/17124999",
+    "elapsed_s": 8,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Budín Vegano De Manzana (Paulina Cocina Adaptado) Receta de Vegana Sinfiltro",
+        "description": "Disfrutá de un budín vegano de manzana, fácil y delicioso. ¡Guardada ya por más de 40 personas y lista en 1 hora!",
+        "prepTime": 30,
+        "servings": 4,
+        "difficulty": "Medio",
+        "recipeType": "Postre",
+        "sourceUrl": "https://cookpad.com/ar/recetas/17124999?ref=search&search_term=paulina+cocina",
+        "images": [
+          {
+            "url": "/uploads/recipe-2f09ff80-5b6b-489f-8639-9d5dbf99bec2-1.jpg",
+            "localPath": "recipe-2f09ff80-5b6b-489f-8639-9d5dbf99bec2-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "chía o lino",
+            "amount": "5",
+            "unit": "cdas",
+            "section": null,
+            "order": 1
+          },
+          {
+            "name": "azúcar de mascabo",
+            "amount": "70",
+            "unit": "gr",
+            "section": null,
+            "order": 2
+          },
+          {
+            "name": "aceite",
+            "amount": "70",
+            "unit": "ml",
+            "section": null,
+            "order": 3
+          },
+          {
+            "name": "harinas (usé maizena, de garbanzos y de lino)",
+            "amount": "250",
+            "unit": "gr",
+            "section": null,
+            "order": 4
+          },
+          {
+            "name": "leche vegetal",
+            "amount": "100",
+            "unit": "ml",
+            "section": null,
+            "order": 5
+          },
+          {
+            "name": "manzana",
+            "amount": "1",
+            "section": null,
+            "order": 6
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Mezclar 5 cdas de chía o lino con 100 ml de agua y dejar reposar 10 minutos hasta que se activen las semillas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 2,
+            "description": "Mezclar con el azúcar y batir hasta que espume. Luego agregar el aceite de a poco mientras se sigue batiendo.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 3,
+            "description": "Agregar las harinas hasta unir bien y que no queden grumos. Se puede hacer a mano o con procesadora.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 4,
+            "description": "Se le puede agregar la mitad de la manzana que usamos para decorar, cortada o rallada.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 5,
+            "description": "Si es necesario, agregarle leche o jugo a la mezcla hasta que tenga la consistencia propia de tortas (líquida pero espesa). Yo usé 100cc aprox pero depende de lo que absorban las harinas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 6,
+            "description": "Enmantecar el molde y, en lugar de enharinar, espolvorear con azúcar (de la misma forma que cuando enharinamos). Ya podemos ir precalentando el horno.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 7,
+            "description": "Cortar la manzana en láminas finas y colocar una capa en la base del molde.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 8,
+            "description": "Colocar en el molde la mitad de la mezcla del budín. Encima, otra capa de láminas de manzana.Completar con el resto de la mezcla.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 9,
+            "description": "Llevar a horno 180º unos 20 minutos o hasta que se vea dorado por arriba.",
+            "temperature": "180º",
+            "function": null,
+            "section": null
+          }
+        ],
+        "tags": []
+      },
+      "preview": true
+    }
+  },
+  {
+    "model": "qwen/qwen3.5-flash-02-23",
+    "url": "https://cookidoo.international/recipes/recipe/es/r57645",
+    "elapsed_s": 27.5,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Tortillas de maíz",
+        "description": "Tortillas de maíz tradicionales preparadas con harina de maíz nixtamalizado. Una receta básica ideal para acompañar platillos mexicanos.",
+        "prepTime": 60,
+        "cookTime": 90,
+        "servings": 15,
+        "difficulty": "Fácil",
+        "recipeType": "Básicos",
+        "sourceUrl": "https://cookidoo.international/recipes/recipe/es/r57645",
+        "images": [
+          {
+            "url": "/uploads/recipe-daa4f148-4152-4a15-89eb-693946c0fcdc-1.jpg",
+            "localPath": "recipe-daa4f148-4152-4a15-89eb-693946c0fcdc-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          },
+          {
+            "url": "/uploads/recipe-a245c7ba-3dd9-4a7a-9067-fbd1318d8c0e-2.jpg",
+            "localPath": "recipe-a245c7ba-3dd9-4a7a-9067-fbd1318d8c0e-2.jpg",
+            "order": 2,
+            "altText": "Recipe image 2"
+          },
+          {
+            "url": "/uploads/recipe-e809b190-ea09-4f31-9214-9c9e98cc5718-3.jpg",
+            "localPath": "recipe-e809b190-ea09-4f31-9214-9c9e98cc5718-3.jpg",
+            "order": 3,
+            "altText": "Recipe image 3"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "agua",
+            "amount": "500",
+            "unit": "g",
+            "section": null,
+            "order": 1
+          },
+          {
+            "name": "sal",
+            "amount": "1",
+            "unit": "cucharadita",
+            "section": null,
+            "order": 2
+          },
+          {
+            "name": "harina de maíz nixtamalizado",
+            "amount": "400",
+            "unit": "g",
+            "section": null,
+            "order": 3
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Verter agua y sal en el vaso",
+            "time": "30 seg",
+            "speed": "3",
+            "function": "Mezclar",
+            "section": null
+          },
+          {
+            "step": 2,
+            "description": "Añadir harina de maíz y amasar",
+            "time": "2 min",
+            "speed": "Espiga",
+            "function": "Amasar",
+            "section": null
+          },
+          {
+            "step": 3,
+            "description": "Dejar reposar la masa",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 4,
+            "description": "Formar las tortillas",
+            "function": "Amasar",
+            "section": null
+          },
+          {
+            "step": 5,
+            "description": "Cocinar en sartén caliente",
+            "time": "1 min",
+            "function": "Cocinar",
+            "section": null
+          }
+        ],
+        "tags": [
+          "maíz",
+          "tradicional",
+          "mexicano",
+          "vegano"
+        ]
+      },
+      "preview": true
+    }
+  },
+  {
+    "model": "qwen/qwen3.5-flash-02-23",
+    "url": "https://www.paulinacocina.net/budin-de-naranja/8585",
+    "elapsed_s": 6.4,
+    "response": {
+      "success": false,
+      "error": "Error al extraer receta: No valid recipe found on this page"
+    }
+  },
+  {
+    "model": "qwen/qwen3.5-flash-02-23",
+    "url": "https://cookpad.com/ar/recetas/17124999",
+    "elapsed_s": 23.3,
+    "response": {
+      "success": true,
+      "recipe": {
+        "title": "Budín vegano de manzana (Paulina cocina adaptado)",
+        "description": "Tomé la receta de Paulina cocina y la adapté para hacerla vegana y sin tacc",
+        "prepTime": 60,
+        "cookTime": 20,
+        "servings": 4,
+        "difficulty": "Fácil",
+        "recipeType": "Postre",
+        "sourceUrl": "https://cookpad.com/ar/recetas/17124999?ref=search&search_term=paulina+cocina",
+        "images": [
+          {
+            "url": "/uploads/recipe-e0bb41f8-e9de-4175-9186-e705690f973b-1.jpg",
+            "localPath": "recipe-e0bb41f8-e9de-4175-9186-e705690f973b-1.jpg",
+            "order": 1,
+            "altText": "Recipe image 1"
+          }
+        ],
+        "ingredients": [
+          {
+            "name": "chía o lino",
+            "amount": "5",
+            "unit": "cdas",
+            "section": null,
+            "order": 1
+          },
+          {
+            "name": "azúcar de mascabo",
+            "amount": "70",
+            "unit": "gr",
+            "section": null,
+            "order": 2
+          },
+          {
+            "name": "aceite",
+            "amount": "70",
+            "unit": "ml",
+            "section": null,
+            "order": 3
+          },
+          {
+            "name": "harinas (usé maizena, de garbanzos y de lino)",
+            "amount": "250",
+            "unit": "gr",
+            "section": null,
+            "order": 4
+          },
+          {
+            "name": "leche vegetal",
+            "amount": "100",
+            "unit": "ml",
+            "section": null,
+            "order": 5
+          },
+          {
+            "name": "manzana",
+            "amount": "1",
+            "section": null,
+            "order": 6
+          }
+        ],
+        "instructions": [
+          {
+            "step": 1,
+            "description": "Mezclar 5 cdas de chía o lino con 100 ml de agua y dejar reposar 10 minutos hasta que se activen las semillas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 2,
+            "description": "Mezclar con el azúcar y batir hasta que espume. Luego agregar el aceite de a poco mientras se sigue batiendo.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 3,
+            "description": "Agregar las harinas hasta unir bien y que no queden grumos. Se puede hacer a mano o con procesadora.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 4,
+            "description": "Se le puede agregar la mitad de la manzana que usamos para decorar, cortada o rallada.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 5,
+            "description": "Si es necesario, agregarle leche o jugo a la mezcla hasta que tenga la consistencia propia de tortas (líquida pero espesa). Yo usé 100cc aprox pero depende de lo que absorban las harinas.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 6,
+            "description": "Enmantecar el molde y, en lugar de enharinar, espolvorear con azúcar (de la misma forma que cuando enharinamos). Ya podemos ir precalentando el horno.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 7,
+            "description": "Cortar la manzana en láminas finas y colocar una capa en la base del molde.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 8,
+            "description": "Colocar en el molde la mitad de la mezcla del budín. Encima, otra capa de láminas de manzana. Completar con el resto de la mezcla.",
+            "function": null,
+            "section": null
+          },
+          {
+            "step": 9,
+            "description": "Llevar a horno 180º unos 20 minutos o hasta que se vea dorado por arriba.",
+            "time": "20 min",
+            "temperature": "180°",
+            "function": null,
+            "section": null
+          }
+        ],
+        "tags": []
+      },
+      "preview": true
+    }
+  }
+]

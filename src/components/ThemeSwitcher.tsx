@@ -12,8 +12,9 @@ const themes: { value: Theme; label: string }[] = [
   { value: 'carrot', label: 'Carrot' },
   { value: 'violetas', label: 'Violetas' },
   { value: 'tierra', label: 'Tierra' },
-  { value: 'pop', label: 'Pop' },
-  { value: 'frutilla', label: 'Frutilla' }
+  { value: 'frutilla', label: 'Frutilla' },
+  { value: 'aguamarina', label: 'Aguamarina' },
+  { value: 'pasteles', label: 'Pasteles' }
 ];
 
 export const ThemeSwitcher = () => {

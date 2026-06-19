@@ -46,3 +46,9 @@ backend/uploads/
 # PM2 ecosystem (específico por entorno)
 ecosystem.config.cjs
 ecosystem.config.js
+
+# AI model runtime override (local/per-entorno)
+backend/config/ai-settings.json
+
+# Credenciales de Cookidoo (contraseña cifrada) - nunca commitear
+backend/config/cookidoo-settings.json

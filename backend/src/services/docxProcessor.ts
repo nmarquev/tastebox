@@ -1,4 +1,5 @@
 import * as mammoth from 'mammoth';
+import JSZip from 'jszip';
 import { randomUUID } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
@@ -54,17 +55,40 @@ export class DocxProcessor {
       console.log(`📏 Extracted text longitud: ${fullText.length} characters`);
       console.log(`🖼️ Extracted ${images.length} images from DOCX`);
 
-      // Split into pages (approximate - DOCX doesn't have strict page breaks)
-      const pages = this.splitIntoPages(fullText);
+      // Calcular la posición (offset en texto plano) de cada imagen dentro del documento,
+      // partiendo el HTML por las etiquetas <img> y midiendo el texto previo a cada una.
+      // Así sabemos qué imagen está junto a (antes/después de) cada receta.
+      const stripHtml = (s: string): string =>
+        s.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&')
+          .replace(/&lt;/gi, '<').replace(/&gt;/gi, '>');
+      const segments = htmlResult.value.split(/<img[^>]*>/i);
+      const imagePositions: number[] = [];
+      let acc = 0;
+      let htmlText = '';
+      for (let k = 0; k < segments.length; k++) {
+        const segText = stripHtml(segments[k]);
+        htmlText += segText;
+        acc += segText.length;
+        if (k < segments.length - 1) imagePositions.push(acc); // posición de la imagen k
+      }
 
-      console.log(`📑 Split into ${pages.length} approximate pages`);
+      // Cantidad real de páginas: Word la guarda en docProps/app.xml (<Pages>).
+      // Si está, dividimos el texto en esa cantidad; si no, estimamos por caracteres.
+      const realPageCount = await this.getDocxPageCount(buffer);
+      const pages = realPageCount && realPageCount > 0
+        ? this.splitIntoNPages(fullText, realPageCount)
+        : this.splitIntoPages(fullText);
+
+      console.log(`📑 Split into ${pages.length} pages${realPageCount ? ` (real: ${realPageCount})` : ' (estimadas)'}`);
 
       return {
         fullText,
         pages,
         totalPages: pages.length,
         images,
-        html: htmlResult.value
+        html: htmlResult.value,
+        htmlText,
+        imagePositions
       };
     } catch (error) {
       console.error('❌ Error processing DOCX:', error);
@@ -231,7 +255,7 @@ export class DocxProcessor {
 
     if (recipe.ingredients && recipe.ingredients.length > 0) {
       parts.push('INGREDIENTES:');
-      recipe.ingredients.forEach(ingredient => {
+      recipe.ingredients.forEach((ingredient: string) => {
         parts.push(`• ${ingredient}`);
       });
       parts.push('');
@@ -239,7 +263,7 @@ export class DocxProcessor {
 
     if (recipe.instructions && recipe.instructions.length > 0) {
       parts.push('PREPARACIÓN:');
-      recipe.instructions.forEach((instruction, index) => {
+      recipe.instructions.forEach((instruction: string, index: number) => {
         parts.push(`${index + 1}. ${instruction}`);
       });
       parts.push('');
@@ -251,6 +275,50 @@ export class DocxProcessor {
   /**
    * Split text into approximate pages
    */
+  // Lee la cantidad real de páginas desde docProps/app.xml del .docx (lo escribe Word).
+  private async getDocxPageCount(buffer: Buffer): Promise<number | null> {
+    try {
+      const zip = await JSZip.loadAsync(buffer);
+      const appXml = zip.file('docProps/app.xml');
+      if (!appXml) return null;
+      const xml = await appXml.async('string');
+      const match = xml.match(/<Pages>(\d+)<\/Pages>/i);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        return Number.isFinite(n) && n > 0 ? n : null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Divide el texto en exactamente n páginas (lo más parejas posible, por líneas).
+  private splitIntoNPages(text: string, n: number): string[] {
+    if (n <= 1) return [text];
+    const lines = text.split('\n');
+    const targetPerPage = (text.length || 1) / n;
+    const pages: string[] = [];
+    let current = '';
+
+    for (const line of lines) {
+      current += line + '\n';
+      if (current.length >= targetPerPage && pages.length < n - 1) {
+        pages.push(current.trim());
+        current = '';
+      }
+    }
+    if (current.trim()) pages.push(current.trim());
+
+    // Ajustar para que haya exactamente n páginas.
+    while (pages.length < n) pages.push('');
+    if (pages.length > n) {
+      const extra = pages.splice(n - 1).join('\n\n');
+      pages.push(extra);
+    }
+    return pages;
+  }
+
   private splitIntoPages(text: string): string[] {
     const avgCharsPerPage = 3000; // Approximate characters per page
     const lines = text.split('\n');

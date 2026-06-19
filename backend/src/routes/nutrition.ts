@@ -25,7 +25,7 @@ router.post('/calculate', authenticateToken, async (req: AuthRequest, res) => {
     // Debug ingredients before validation
     if (req.body.ingredients) {
       console.log('🔍 Ingredients debug:');
-      req.body.ingredients.forEach((ing, idx) => {
+      (req.body.ingredients as Array<{ name?: unknown; amount?: unknown; unit?: unknown }>).forEach((ing, idx) => {
         console.log(`  ${idx}: name="${ing.name}" amount="${ing.amount}" unit="${ing.unit}"`);
       });
     }

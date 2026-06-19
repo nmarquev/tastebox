@@ -22,6 +22,7 @@ export interface DocxExtractedRecipe {
   id: string;
   title: string;
   content: string; // Raw text content for this recipe
+  imageIndex?: number; // Índice (en images[]) de la imagen que aparece junto a esta receta; -1 si ninguna
   estimatedData?: {
     title?: string;
     description?: string;
@@ -46,6 +47,8 @@ export interface DocxProcessedContent {
   totalPages: number;
   images?: string[]; // Base64 data URLs of extracted images
   html?: string; // HTML version with embedded images
+  htmlText?: string; // Texto plano derivado del HTML (para ubicar títulos de recetas)
+  imagePositions?: number[]; // Offset (en htmlText) donde aparece cada imagen, en orden
 }
 
 export interface RecipeDetectionResult {
@@ -55,6 +58,7 @@ export interface RecipeDetectionResult {
     startIndex: number;
     endIndex: number;
     content: string;
+    estimatedData?: DocxExtractedRecipe['estimatedData'];
   }[];
   totalDetected: number;
 }

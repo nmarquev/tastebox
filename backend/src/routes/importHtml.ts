@@ -4,6 +4,11 @@ import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { LLMServiceImproved } from '../services/llmServiceImproved';
 import { ImageService } from '../services/imageService';
+import { detectImportSource, getAuthorFromSourceUrl } from '../utils/importSource';
+import { getRecipeTags } from '../utils/recipeTags';
+import { normalizeInstructionDescription, normalizeRecipeTitle } from '../utils/recipeText';
+import { sanitizeSuggestionText } from '../utils/suggestions';
+import { mentionsGlutenFree } from '../utils/dietaryFeatures';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -11,6 +16,7 @@ const prisma = new PrismaClient();
 // Validation schema for HTML import
 const importHtmlSchema = z.object({
   html: z.string().min(100), // Ensure we have substantial HTML content
+  renderedText: z.string().optional(),
   url: z.string().url(),
   title: z.string().optional() // Page title if available
 });
@@ -19,10 +25,24 @@ const importHtmlSchema = z.object({
 const llmService = new LLMServiceImproved();
 const imageService = new ImageService();
 
+function getImportedSourceUrl(html: string, originalUrl: string): string {
+  try {
+    if (!/(^|\.)instagram\.com$/i.test(new URL(originalUrl).hostname)) {
+      return originalUrl;
+    }
+
+    return html.match(
+      /<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i
+    )?.[1] || originalUrl;
+  } catch {
+    return originalUrl;
+  }
+}
+
 // Import recipe from HTML content (for bookmarklet)
 router.post('/', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { html, url, title } = importHtmlSchema.parse(req.body);
+    const { html, renderedText, url, title } = importHtmlSchema.parse(req.body);
 
     console.log('\n🔖 BOOKMARKLET RECIPE IMPORT');
     console.log('📍 Source URL:', url);
@@ -31,7 +51,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
 
     // Step 1: Extract recipe data from HTML using LLM
     console.log('🤖 Extracting recipe data from HTML...');
-    const recipeData = await llmService.extractRecipeFromHtml(html, url);
+    const recipeData = await llmService.extractRecipeFromHtml(html, url, renderedText);
 
     console.log(`✅ Extracted recipe: "${recipeData.title}"`);
     console.log(`🖼️ Found ${recipeData.images.length} images`);
@@ -49,20 +69,57 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         // Continuar sin imágenes si fallan al descargar
       }
     }
+    if (processedImages.length === 0) {
+      const fallbackImage = await imageService.findAndStoreRecipeImage(recipeData.title);
+      if (fallbackImage) processedImages = [fallbackImage];
+    }
 
     // Step 3: Save recipe to database
     console.log('💾 Saving recipe to database...');
+    const importedSourceUrl = getImportedSourceUrl(html, url);
+    const glutenFree = recipeData.glutenFree === true || mentionsGlutenFree(recipeData);
+    const recipeTags = getRecipeTags(
+      recipeData.tags,
+      recipeData.ingredients,
+      recipeData.title,
+      {
+        glutenFree,
+        lowCarb: recipeData.lowCarb,
+        keto: recipeData.keto,
+        vegetarian: recipeData.vegetarian,
+      }
+    );
     const savedRecipe = await prisma.recipe.create({
       data: {
-        title: recipeData.title,
+        title: normalizeRecipeTitle(recipeData.title),
         description: recipeData.description || `Recipe imported from ${url}`,
+        suggestions: sanitizeSuggestionText(recipeData.suggestions),
         prepTime: recipeData.prepTime,
         cookTime: recipeData.cookTime,
         servings: recipeData.servings,
         difficulty: recipeData.difficulty,
         recipeType: recipeData.recipeType,
-        sourceUrl: url,
+        country: recipeData.country,
+        language: recipeData.language || 'Español',
+        sourceUrl: importedSourceUrl,
+        author: getAuthorFromSourceUrl(importedSourceUrl),
+        importedFrom: detectImportSource(importedSourceUrl),
         userId: req.user!.id,
+        thermomix: recipeData.thermomix ?? false,
+        airFryer: recipeData.airFryer ?? false,
+        glutenFree,
+        keto: recipeData.keto ?? false,
+        lowCarb: recipeData.lowCarb ?? false,
+        vegetarian: recipeData.vegetarian ?? false,
+        // Nutrición exacta de Cookidoo (si vino en el HTML)
+        calories: recipeData.nutrition?.calories,
+        protein: recipeData.nutrition?.protein,
+        carbohydrates: recipeData.nutrition?.carbohydrates,
+        fat: recipeData.nutrition?.fat,
+        saturatedFat: recipeData.nutrition?.saturatedFat,
+        fiber: recipeData.nutrition?.fiber,
+        sugar: recipeData.nutrition?.sugar,
+        sodium: recipeData.nutrition?.sodium,
         images: {
           create: processedImages.map(img => ({
             url: img.url,
@@ -83,7 +140,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         instructions: {
           create: recipeData.instructions.map(inst => ({
             step: inst.step,
-            description: inst.description,
+            description: normalizeInstructionDescription(inst.description),
             function: inst.function || undefined,
             time: inst.time || undefined,
             temperature: inst.temperature || undefined,
@@ -92,7 +149,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
           }))
         },
         tags: {
-          create: recipeData.tags.map(tagName => ({
+          create: recipeTags.map((tagName, index) => ({
+            order: index + 1,
             tag: {
               connectOrCreate: {
                 where: { name: tagName },
@@ -113,6 +171,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
           orderBy: { step: 'asc' }
         },
         tags: {
+          orderBy: { order: 'asc' },
           include: {
             tag: true
           }

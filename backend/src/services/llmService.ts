@@ -1,6 +1,8 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { RecipeImportResponse } from '../types/recipe';
+import { createOpenAIClient } from '../config/openai';
+import { getModel } from '../config/aiSettings';
 
 // Validation schema for LLM response
 const llmResponseSchema = z.object({
@@ -33,14 +35,7 @@ export class LLMService {
   private openai: OpenAI;
 
   constructor() {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY environment variable is required');
-    }
-
-    this.openai = new OpenAI({
-      apiKey
-    });
+    this.openai = createOpenAIClient();
   }
 
   async extractRecipeFromUrl(url: string): Promise<RecipeImportResponse> {
@@ -101,7 +96,7 @@ export class LLMService {
     console.log('\n=== 🤖 LLM REQUEST START ===');
     console.log('📍 Source URL:', sourceUrl);
     console.log('📝 HTML Content Length:', html.length, 'characters');
-    console.log('🎯 Model:', 'gpt-5-mini');
+    console.log('🎯 Model:', getModel());
     console.log('🌡️ Temperature:', 0.1);
     console.log('📄 Max Tokens:', 4000);
     console.log('\n📋 SYSTEM PROMPT:');
@@ -133,7 +128,7 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
 
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-5-mini',
+        model: getModel(),
         messages: [
           {
             role: 'system',
@@ -167,7 +162,7 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
       console.log('\n✅ LLM RESPONSE RECEIVED');
       console.log('💰 Usage:', completion.usage);
 
-      responseContent = completion.choices[0]?.message?.content;
+      responseContent = completion.choices[0]?.message?.content || undefined;
 
       console.log('\n📋 RAW LLM RESPONSE:');
       console.log('---');
@@ -212,7 +207,7 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
       // Transform to our interface
       return {
         title: validatedData.title,
-        description: validatedData.description,
+        description: validatedData.description || undefined,
         images: (validatedData.images || []).filter(img => img.url && typeof img.order === 'number') as any[],
         ingredients: validatedData.ingredients.filter(ing => ing.name && ing.amount).map((ing, index) => ({
           ...ing,
@@ -228,8 +223,10 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
       };
     } catch (error) {
       console.log('\n❌ ERROR IN LLM PROCESSING');
-      console.log('Error type:', error.constructor.name);
-      console.log('Error message:', error.message);
+      const errorName = error instanceof Error ? error.constructor.name : typeof error;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.log('Error type:', errorName);
+      console.log('Error message:', errorMessage);
 
       if (error instanceof z.ZodError) {
         console.error('🛡️ Zod validation errors:');

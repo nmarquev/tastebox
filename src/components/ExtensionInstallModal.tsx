@@ -24,7 +24,10 @@ export const ExtensionInstallModal = ({ isOpen, onClose }: ExtensionInstallModal
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Chrome className="h-6 w-6 text-primary" />

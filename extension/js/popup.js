@@ -339,14 +339,23 @@ async function handleImportClick() {
     return;
   }
 
-  // Directly send URL to backend, let it handle fetching and extraction
-  chrome.runtime.sendMessage(
-    {
-      action: 'importRecipe',
-      url: tab.url,
-      html: null  // Not needed, backend will fetch
-    },
-    (response) => {
+  // Grab the fully-rendered DOM from the content script, then import.
+  // Sending the rendered HTML lets the backend persist the recipe and extract
+  // from JS-rendered / logged-in content (e.g. Cookidoo) instead of a bare URL fetch.
+  chrome.tabs.sendMessage(tab.id, { action: 'detectRecipe' }, (pageData) => {
+    const html = (!chrome.runtime.lastError && pageData) ? pageData.html : null;
+    const renderedText = (!chrome.runtime.lastError && pageData) ? pageData.renderedText : '';
+    const title = (!chrome.runtime.lastError && pageData?.metadata?.title) || tab.title || '';
+
+    chrome.runtime.sendMessage(
+      {
+        action: 'importRecipe',
+        url: tab.url,
+        html,
+        renderedText,
+        title
+      },
+      (response) => {
       showLoading(false);
 
       if (response && response.success) {
@@ -379,8 +388,9 @@ async function handleImportClick() {
           response?.error || 'Esta página no contiene una receta válida'
         );
       }
-    }
-  );
+      }
+    );
+  });
 }
 
 // Show/hide loading overlay

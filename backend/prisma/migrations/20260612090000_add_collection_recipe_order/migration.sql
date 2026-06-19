@@ -1,0 +1,1 @@
+ALTER TABLE "collection_recipes" ADD COLUMN "order" INTEGER NOT NULL DEFAULT 0;

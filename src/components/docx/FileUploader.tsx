@@ -70,10 +70,10 @@ export const FileUploader = ({ onFileSelect, loading }: FileUploaderProps) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold">Selecciona tu documento Word</h3>
-        <p className="text-muted-foreground">
+    <div className="space-y-3">
+      <div className="text-center space-y-1">
+        <h3 className="text-base font-semibold">Selecciona tu documento Word</h3>
+        <p className="text-sm text-muted-foreground">
           Sube un archivo .docx que contenga tus recetas para importarlas automáticamente
         </p>
       </div>
@@ -84,30 +84,30 @@ export const FileUploader = ({ onFileSelect, loading }: FileUploaderProps) => {
           ? "border-primary bg-primary/5"
           : "border-muted-foreground/25 hover:border-primary/50"
       }`}>
-        <CardContent className="p-8">
+        <CardContent className="p-4">
           <div
-            className="text-center space-y-4"
+            className="text-center space-y-2"
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
             <div className="flex justify-center">
-              <div className="p-4 bg-primary/10 rounded-full">
-                <Upload className={`h-8 w-8 ${dragActive ? "text-primary" : "text-muted-foreground"}`} />
+              <div className="p-2.5 bg-primary/10 rounded-full">
+                <Upload className={`h-6 w-6 ${dragActive ? "text-primary" : "text-muted-foreground"}`} />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-lg font-medium">
+            <div className="space-y-0.5">
+              <p className="text-base font-medium">
                 {dragActive ? "Suelta tu archivo aquí" : "Arrastra y suelta tu archivo .docx"}
               </p>
-              <p className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 o haz clic en el botón para seleccionar
               </p>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-1">
               <input
                 type="file"
                 accept=".docx"
@@ -119,7 +119,7 @@ export const FileUploader = ({ onFileSelect, loading }: FileUploaderProps) => {
               <label htmlFor="docx-file-input">
                 <Button
                   variant="outline"
-                  size="lg"
+                  size="sm"
                   disabled={loading}
                   className="cursor-pointer"
                   asChild
@@ -136,29 +136,29 @@ export const FileUploader = ({ onFileSelect, loading }: FileUploaderProps) => {
       </Card>
 
       {/* Instructions */}
-      <div className="space-y-3">
-        <div className="flex items-start space-x-3">
-          <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-          <div className="space-y-1">
-            <p className="font-medium text-sm">Instrucciones:</p>
-            <ul className="text-sm text-muted-foreground space-y-1">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex items-start space-x-2">
+          <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+          <div className="space-y-0.5">
+            <p className="font-medium text-xs">Instrucciones:</p>
+            <ul className="text-xs text-muted-foreground space-y-0.5">
               <li>• Solo archivos .docx (Microsoft Word)</li>
               <li>• Tamaño máximo: 50MB</li>
-              <li>• Las recetas deben estar bien estructuradas con ingredientes e instrucciones</li>
-              <li>• Podrás seleccionar qué páginas procesar después de la subida</li>
+              <li>• Recetas bien estructuradas (ingredientes e instrucciones)</li>
+              <li>• Después elegís qué páginas procesar</li>
             </ul>
           </div>
         </div>
 
-        <div className="flex items-start space-x-3">
-          <FileText className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-          <div className="space-y-1">
-            <p className="font-medium text-sm">¿Qué esperamos encontrar?</p>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Títulos de recetas claramente definidos</li>
-              <li>• Listas de ingredientes con cantidades</li>
+        <div className="flex items-start space-x-2">
+          <FileText className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+          <div className="space-y-0.5">
+            <p className="font-medium text-xs">¿Qué esperamos encontrar?</p>
+            <ul className="text-xs text-muted-foreground space-y-0.5">
+              <li>• Títulos de recetas claros</li>
+              <li>• Ingredientes con cantidades</li>
               <li>• Instrucciones paso a paso</li>
-              <li>• Información opcional: tiempos, porciones, dificultad</li>
+              <li>• Opcional: tiempos, porciones, dificultad</li>
             </ul>
           </div>
         </div>

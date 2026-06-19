@@ -23,6 +23,13 @@ import imageProxyRoutes from './routes/imageProxy';
 import nutritionRoutes from './routes/nutrition';
 import pdfRoutes from './routes/pdf';
 import testPdfRoutes from './routes/testPdf';
+import settingsRoutes from './routes/settings';
+import collectionRoutes from './routes/collections';
+import categoryRoutes from './routes/categories';
+import dishTypeRoutes from './routes/dishTypes';
+import sourceRoutes from './routes/sources';
+import tagRoutes from './routes/tags';
+import authorRoutes from './routes/authors';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -62,7 +69,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 app.use(cookieParser());
@@ -92,6 +99,13 @@ app.use('/api/proxy', imageProxyRoutes);
 app.use('/api/nutrition', nutritionRoutes);
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/test', testPdfRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/collections', collectionRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/dish-types', dishTypeRoutes);
+app.use('/api/sources', sourceRoutes);
+app.use('/api/tags', tagRoutes);
+app.use('/api/authors', authorRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -109,8 +123,8 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 
   if (error.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({
-      error: 'File too large',
-      message: 'Maximum file size is 5MB'
+      error: 'La imagen debe tener un tamaño menor a 2MB',
+      message: 'La imagen debe tener un tamaño menor a 2MB'
     });
   }
 

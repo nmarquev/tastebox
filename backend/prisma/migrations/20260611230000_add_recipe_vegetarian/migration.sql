@@ -1,0 +1,1 @@
+ALTER TABLE "recipes" ADD COLUMN "vegetarian" BOOLEAN NOT NULL DEFAULT false;

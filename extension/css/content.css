@@ -14,19 +14,19 @@
   position: relative;
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+  background: linear-gradient(135deg, #fc7814 0%, #e0690d 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4),
+  box-shadow: 0 4px 12px rgba(252, 120, 20, 0.4),
               0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
 .tastebox-fab:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.5),
+  box-shadow: 0 6px 16px rgba(252, 120, 20, 0.5),
               0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -47,7 +47,7 @@
   background: rgba(0, 0, 0, 0.9);
   color: white;
   border-radius: 6px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
@@ -84,7 +84,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15),
               0 2px 4px rgba(0, 0, 0, 0.1);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   font-weight: 500;
   opacity: 0;
@@ -139,14 +139,14 @@
 #tastebox-import-button * {
   all: initial;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .tastebox-notification,
 .tastebox-notification * {
   all: initial;
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Re-apply necessary styles after reset */

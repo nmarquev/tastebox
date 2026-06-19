@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,26 +10,49 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useNutritionCalculator } from '@/hooks/useNutritionCalculator';
-import { api } from '@/services/api';
+import { api, RecipeCollection } from '@/services/api';
 import { Recipe } from '@/types/recipe';
-import { Loader2, Plus, X, Upload, Edit, Calculator } from 'lucide-react';
+import { Loader2, Plus, X, Upload, Edit, Calculator, Globe, Check, ClipboardList, Heart, WheatOff, Leaf } from 'lucide-react';
 import { resolveImageUrl } from '@/utils/api';
+import { getRecipeSource } from '@/utils/siteUtils';
+import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
+import { Switch } from '@/components/ui/switch';
+import { AvocadoIcon } from '@/components/icons/AvocadoIcon';
+import { RecipePreparedIcon } from '@/components/icons/RecipePreparedIcon';
 
 interface EditRecipeModalProps {
   isOpen: boolean;
   onClose: () => void;
   recipe: Recipe | null;
   onRecipeUpdated: (recipe: Recipe) => void;
+  onCollectionsUpdated?: (collections: RecipeCollection[]) => void;
+  mode?: 'edit' | 'create';
 }
 
 interface RecipeFormData {
   title: string;
   description: string;
+  importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
+  sourceUrl: string;
+  source: string;
+  author: string;
+  createdAt: string;
   prepTime: number;
   cookTime?: number;
   servings: number;
   difficulty: "Fácil" | "Medio" | "Difícil";
   recipeType: string;
+  dishType: string;
+  country: string;
+  language: string;
+  glutenFree: boolean;
+  keto: boolean;
+  lowCarb: boolean;
+  vegetarian: boolean;
+  thermomix: boolean;
+  airFryer: boolean;
+  featured: boolean;
+  cooked: boolean;
   locution: string;
   tags: string[];
   calories?: number;
@@ -55,26 +78,55 @@ interface RecipeFormData {
   }>;
 }
 
-export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: EditRecipeModalProps) => {
+const toDateInputValue = (value?: string | Date | null) => {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return new Date().toISOString().slice(0, 10);
+  return date.toISOString().slice(0, 10);
+};
+
+export const EditRecipeModal = ({
+  isOpen,
+  onClose,
+  recipe,
+  onRecipeUpdated,
+  onCollectionsUpdated,
+  mode = 'edit',
+}: EditRecipeModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const [newTag, setNewTag] = useState('');
   const [existingImages, setExistingImages] = useState(recipe?.images || []);
   const [uploadedImages, setUploadedImages] = useState<Array<{ file: File; preview: string }>>([]);
+  const [collections, setCollections] = useState<RecipeCollection[]>([]);
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
+  const [isLoadingCollections, setIsLoadingCollections] = useState(false);
+  const [sourceOptions, setSourceOptions] = useState<string[]>([]);
+  const [languageOptions, setLanguageOptions] = useState<string[]>([]);
+  const [countryOptions, setCountryOptions] = useState<string[]>([]);
+  const [dishTypeOptions, setDishTypeOptions] = useState<string[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [tagOptions, setTagOptions] = useState<string[]>([]);
+  const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const { toast } = useToast();
   const { calculateNutrition, isCalculating } = useNutritionCalculator();
 
   const { register, handleSubmit, control, formState: { errors }, reset, setValue, watch } = useForm<RecipeFormData>();
 
-  const { fields: ingredientFields, append: appendIngredient, remove: removeIngredient } = useFieldArray({
+  const { fields: ingredientFields, append: appendIngredient, remove: removeIngredient, replace: replaceIngredients } = useFieldArray({
     control,
     name: 'ingredients'
   });
 
-  const { fields: instructionFields, append: appendInstruction, remove: removeInstruction } = useFieldArray({
+  const { fields: instructionFields, append: appendInstruction, remove: removeInstruction, replace: replaceInstructions } = useFieldArray({
     control,
     name: 'instructions'
   });
+
+  // Estado para subir imagen desde la web (URL) y para resaltar el recuadro al arrastrar.
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const [addingWebImage, setAddingWebImage] = useState(false);
+  const [showWebImageInput, setShowWebImageInput] = useState(false);
+  const [webImageUrl, setWebImageUrl] = useState('');
 
   const tags = watch('tags') || [];
 
@@ -114,11 +166,27 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
       reset({
         title: recipe.title,
         description: recipe.description || '',
+        importedFrom: recipe.importedFrom,
+        sourceUrl: recipe.sourceUrl || '',
+        source: recipe.source || '',
+        author: recipe.author || '',
+        createdAt: toDateInputValue(recipe.createdAt),
         prepTime: recipe.prepTime,
         cookTime: recipe.cookTime,
         servings: recipe.servings,
         difficulty: recipe.difficulty,
         recipeType: recipe.recipeType || '',
+        dishType: recipe.dishType || '',
+        country: recipe.country || '',
+        language: recipe.language || 'Español',
+        glutenFree: recipe.glutenFree || false,
+        keto: recipe.keto || false,
+        lowCarb: recipe.lowCarb || false,
+        vegetarian: recipe.vegetarian || false,
+        thermomix: recipe.thermomix || false,
+        airFryer: recipe.airFryer || false,
+        featured: recipe.featured || false,
+        cooked: recipe.cooked || false,
         locution: recipe.locution || '',
         tags: recipe.tags?.map(tag => typeof tag === 'string' ? tag : tag.tag || tag.name || '') || [],
         calories: recipe.calories || undefined,
@@ -146,6 +214,72 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
     }
   }, [recipe, isOpen, reset]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setIsLoadingCollections(true);
+    api.collections.getAll()
+      .then((items) => {
+        setCollections(items);
+        if (recipe?.id) {
+          setSelectedCollectionIds(
+            items
+              .filter(collection => collection.recipeIds.includes(recipe.id))
+              .sort((a, b) => (a.recipeOrders?.[recipe.id] ?? 0) - (b.recipeOrders?.[recipe.id] ?? 0))
+              .map(collection => collection.id)
+          );
+        } else {
+          setSelectedCollectionIds([]);
+        }
+      })
+      .catch(() => {
+        setCollections([]);
+        setSelectedCollectionIds([]);
+      })
+      .finally(() => setIsLoadingCollections(false));
+  }, [isOpen, recipe?.id]);
+
+  // Cargar fuentes / idiomas / países existentes para sugerirlos (elegir o agregar nuevo).
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const sortEs = (arr: string[]) => Array.from(new Set(arr)).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+    const DEFAULT_LANGUAGES = ['Español', 'Inglés', 'Portugués', 'Italiano', 'Francés', 'Alemán'];
+    const DEFAULT_COUNTRIES = ['Argentina', 'España', 'México', 'Chile', 'Uruguay', 'Colombia', 'Perú', 'Estados Unidos', 'Italia', 'Francia'];
+    Promise.all([
+      api.recipes.getAll().catch(() => [] as Recipe[]),
+      api.sources.getAll().catch(() => [] as Array<{ name: string }>),
+      api.dishTypes.getAll().catch(() => [] as Array<{ name: string }>),
+      api.categories.getAll().catch(() => [] as Array<{ name: string }>),
+    ])
+      .then(([allRecipes, customSources, customDishTypes, customCategories]) => {
+        if (cancelled) return;
+        const sources = new Set<string>();
+        const languages: string[] = [...DEFAULT_LANGUAGES];
+        const countries: string[] = [...DEFAULT_COUNTRIES];
+        const dishTypes = new Set<string>();
+        const categories = new Set<string>();
+        const tagSet = new Set<string>();
+        allRecipes.forEach(r => {
+          const s = getRecipeSource(r); if (s) sources.add(s);
+          if (r.language?.trim()) languages.push(r.language.trim());
+          if (r.country?.trim()) countries.push(r.country.trim());
+          if (r.dishType?.trim()) dishTypes.add(r.dishType.trim());
+          if (r.recipeType?.trim()) r.recipeType.split(',').map(c => c.trim()).filter(Boolean).forEach(c => categories.add(c));
+          (r.tags || []).forEach((t: any) => { const n = (typeof t === 'string' ? t : (t?.tag?.name || t?.name || t?.tag || '')).toString().trim(); if (n) tagSet.add(n); });
+        });
+        customSources.forEach(s => { const n = (s.name || '').trim(); if (n) sources.add(n); });
+        customDishTypes.forEach(s => { const n = (s.name || '').trim(); if (n) dishTypes.add(n); });
+        customCategories.forEach(s => { const n = (s.name || '').trim(); if (n) categories.add(n); });
+        setSourceOptions(sortEs(Array.from(sources)));
+        setLanguageOptions(sortEs(languages));
+        setCountryOptions(sortEs(countries));
+        setDishTypeOptions(sortEs(Array.from(dishTypes)));
+        setCategoryOptions(sortEs(Array.from(categories)));
+        setTagOptions(sortEs(Array.from(tagSet)));
+      });
+    return () => { cancelled = true; };
+  }, [isOpen]);
+
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
       setValue('tags', [...tags, newTag.trim()]);
@@ -155,6 +289,22 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
 
   const handleRemoveTag = (tagToRemove: string) => {
     setValue('tags', tags.filter(tag => tag !== tagToRemove));
+  };
+
+  // Marcar/desmarcar una etiqueta desde el diálogo de etiquetas.
+  const toggleTag = (tag: string) => {
+    const t = tag.trim();
+    if (!t) return;
+    setValue('tags', tags.includes(t) ? tags.filter(x => x !== t) : [...tags, t]);
+  };
+
+  // Crear una etiqueta nueva: la agrega a la receta y a la lista de opciones.
+  const handleCreateTag = () => {
+    const t = newTag.trim();
+    if (!t) return;
+    if (!tags.includes(t)) setValue('tags', [...tags, t]);
+    setTagOptions(prev => prev.includes(t) ? prev : [...prev, t].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })));
+    setNewTag('');
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,6 +321,97 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
 
   const handleRemoveExistingImage = (index: number) => {
     setExistingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Agregar archivos de imagen (desde el botón "Mi PC" o arrastrando), respetando el máximo de 3.
+  const addImageFiles = (files: File[]) => {
+    let slots = 3 - (existingImages.length + uploadedImages.length);
+    const toAdd: Array<{ file: File; preview: string }> = [];
+    for (const file of files) {
+      if (slots <= 0) break;
+      if (!file.type.startsWith('image/')) continue;
+      toAdd.push({ file, preview: URL.createObjectURL(file) });
+      slots--;
+    }
+    if (toAdd.length) setUploadedImages(prev => [...prev, ...toAdd]);
+    if (files.length > slots && existingImages.length + uploadedImages.length + toAdd.length >= 3) {
+      // sin mensaje extra; el recuadro ya indica el máximo
+    }
+  };
+
+  // Agregar una imagen desde una URL de la web (se descarga y optimiza en el servidor).
+  const addWebImageFromUrl = async (rawUrl: string) => {
+    const url = (rawUrl || '').trim();
+    if (!/^https?:\/\//i.test(url)) {
+      toast({ title: 'URL no válida', description: 'Pegá el enlace de una imagen (http...).', variant: 'destructive' });
+      return;
+    }
+    if (existingImages.length + uploadedImages.length >= 3) {
+      toast({ title: 'Máximo 3 imágenes', variant: 'destructive' });
+      return;
+    }
+    setAddingWebImage(true);
+    try {
+      const res = await api.upload.fromUrl(url);
+      setExistingImages(prev => [...prev, { url: res.image.url, altText: res.image.altText || 'Imagen', order: prev.length + 1 } as any]);
+      setShowWebImageInput(false);
+      setWebImageUrl('');
+      toast({ title: 'Imagen agregada desde la web' });
+    } catch (error: any) {
+      toast({ title: 'No se pudo agregar la imagen', description: error?.message || 'Intentá con otra URL', variant: 'destructive' });
+    } finally {
+      setAddingWebImage(false);
+    }
+  };
+
+  // Arrastrar una imagen al recuadro: archivo de la PC o imagen desde una página web (URL).
+  const handleImageDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingImage(false);
+    if (existingImages.length + uploadedImages.length >= 3) {
+      toast({ title: 'Máximo 3 imágenes', variant: 'destructive' });
+      return;
+    }
+    const files = Array.from(event.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) { addImageFiles(files); return; }
+    const html = event.dataTransfer.getData('text/html');
+    const htmlSrc = html ? (html.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || '') : '';
+    const url = (event.dataTransfer.getData('text/uri-list') || htmlSrc || event.dataTransfer.getData('text/plain') || '').trim();
+    if (/^https?:\/\//i.test(url)) { await addWebImageFromUrl(url); return; }
+    toast({ title: 'No se reconoció una imagen', description: 'Arrastrá un archivo o una imagen desde una página web.', variant: 'destructive' });
+  };
+
+  // Pegar lista de ingredientes desde el portapapeles: una por línea (intenta separar cantidad/unidad).
+  const handlePasteIngredients = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      if (!lines.length) { toast({ title: 'El portapapeles está vacío', variant: 'destructive' }); return; }
+      const parsed = lines.map(line => {
+        const m = line.replace(/^[-*•\d.)\s]+/, '').match(/^([\d.,/]+)\s*([a-zA-Záéíóúñ.]+)?\s+(.*)$/);
+        if (m && m[3]) {
+          return { name: m[3].trim(), amount: m[1].trim(), unit: (m[2] || '').trim(), section: '' };
+        }
+        return { name: line.replace(/^[-*•\s]+/, '').trim(), amount: '', unit: '', section: '' };
+      });
+      replaceIngredients(parsed);
+      toast({ title: `${parsed.length} ingredientes pegados` });
+    } catch {
+      toast({ title: 'No se pudo leer el portapapeles', description: 'Permití el acceso al portapapeles o pegá manualmente.', variant: 'destructive' });
+    }
+  };
+
+  // Pegar lista de pasos desde el portapapeles: uno por línea.
+  const handlePasteInstructions = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const lines = text.split(/\r?\n/).map(l => l.replace(/^[-*•\d.)\s]+/, '').trim()).filter(Boolean);
+      if (!lines.length) { toast({ title: 'El portapapeles está vacío', variant: 'destructive' }); return; }
+      replaceInstructions(lines.map(description => ({ description, function: '', time: '', temperature: '', speed: '', section: '' })));
+      toast({ title: `${lines.length} pasos pegados` });
+    } catch {
+      toast({ title: 'No se pudo leer el portapapeles', description: 'Permití el acceso al portapapeles o pegá manualmente.', variant: 'destructive' });
+    }
   };
 
   const handleRemoveNewImage = (index: number) => {
@@ -207,8 +448,36 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
     }
   };
 
+  const syncRecipeCollections = async (recipeId: string) => {
+    const currentCollectionIds = collections
+      .filter(collection => collection.recipeIds.includes(recipeId))
+      .map(collection => collection.id);
+    const collectionIdsToAdd = selectedCollectionIds.filter(
+      collectionId => !currentCollectionIds.includes(collectionId)
+    );
+    const collectionIdsToRemove = currentCollectionIds.filter(
+      collectionId => !selectedCollectionIds.includes(collectionId)
+    );
+
+    await Promise.all([
+      ...collectionIdsToAdd.map(collectionId => api.collections.addRecipe(collectionId, recipeId)),
+      ...collectionIdsToRemove.map(collectionId => api.collections.removeRecipe(collectionId, recipeId)),
+    ]);
+    await api.collections.reorderRecipe(recipeId, selectedCollectionIds);
+
+    const updatedCollections = await api.collections.getAll();
+    setCollections(updatedCollections);
+    onCollectionsUpdated?.(updatedCollections);
+  };
+
   const onSubmit = async (data: RecipeFormData) => {
     if (!recipe) return;
+
+    // Convierte un valor de input numérico (posible string vacío/NaN) a número o undefined.
+    const num = (v: unknown) => {
+      const n = typeof v === 'number' ? v : parseFloat(String(v ?? ''));
+      return Number.isFinite(n) ? n : undefined;
+    };
 
     setIsLoading(true);
 
@@ -233,43 +502,73 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
       const recipeData = {
         title: data.title,
         description: data.description,
+        importedFrom: data.importedFrom || undefined,
+        sourceUrl: data.sourceUrl || undefined,
+        source: data.source?.trim() || undefined,
+        author: data.author?.trim() || undefined,
+        createdAt: data.createdAt ? new Date(`${data.createdAt}T12:00:00`).toISOString() : undefined,
         images: allImages,
-        prepTime: data.prepTime,
-        cookTime: data.cookTime,
-        servings: data.servings,
-        difficulty: data.difficulty,
+        prepTime: Number.isFinite(data.prepTime as number) ? data.prepTime : undefined,
+        cookTime: Number.isFinite(data.cookTime as number) ? data.cookTime : undefined,
+        servings: Number.isFinite(data.servings as number) ? data.servings : undefined,
+        difficulty: data.difficulty || undefined,
         recipeType: data.recipeType,
+        dishType: data.dishType?.trim() || undefined,
+        country: data.country,
+        language: data.language,
+        glutenFree: data.glutenFree,
+        keto: data.keto,
+        lowCarb: data.lowCarb,
+        vegetarian: data.vegetarian,
+        thermomix: data.thermomix,
+        airFryer: data.airFryer,
+        featured: data.featured,
+        cooked: data.cooked,
         locution: data.locution,
         tags: data.tags,
-        calories: data.calories,
-        protein: data.protein,
-        carbohydrates: data.carbohydrates,
-        fat: data.fat,
-        fiber: data.fiber,
-        sugar: data.sugar,
-        sodium: data.sodium,
-        ingredients: data.ingredients.map((ing, index) => ({
-          name: ing.name,
-          amount: ing.amount,
-          unit: ing.unit,
-          section: ing.section || undefined,
-          order: index + 1
-        })),
-        instructions: data.instructions.map((inst, index) => ({
-          step: index + 1,
-          description: inst.description,
-          function: inst.function || "",
-          time: inst.time || "",
-          temperature: inst.temperature || "",
-          speed: inst.speed || "",
-          section: inst.section || undefined
-        }))
+        calories: num(data.calories),
+        protein: num(data.protein),
+        carbohydrates: num(data.carbohydrates),
+        fat: num(data.fat),
+        fiber: num(data.fiber),
+        sugar: num(data.sugar),
+        sodium: num(data.sodium),
+        ingredients: data.ingredients
+          .filter(ing => (ing.name || '').trim())
+          .map((ing, index) => ({
+            name: ing.name.trim(),
+            amount: ing.amount || '',
+            unit: ing.unit,
+            section: ing.section || undefined,
+            order: index + 1
+          })),
+        instructions: data.instructions
+          .filter(inst => (inst.description || '').trim())
+          .map((inst, index) => ({
+            step: index + 1,
+            description: inst.description.trim(),
+            function: inst.function || "",
+            time: inst.time || "",
+            temperature: inst.temperature || "",
+            speed: inst.speed || "",
+            section: inst.section || undefined
+          }))
       };
 
       // Check if this is an existing recipe (has ID) or a new/imported recipe
-      if (recipe.id) {
+      if (mode === 'create') {
+        const createdRecipe = await api.recipes.create(recipeData as any);
+        await syncRecipeCollections(createdRecipe.id);
+        onRecipeUpdated(createdRecipe);
+        handleClose();
+        toast({
+          title: "¡Receta creada!",
+          description: `"${data.title}" se ha guardado exitosamente`,
+        });
+      } else if (recipe.id) {
         // Existing recipe - update via API
         const updatedRecipe = await api.recipes.update(recipe.id, recipeData as any);
+        await syncRecipeCollections(updatedRecipe.id);
 
         console.log('✅ Recipe updated successfully, calling onRecipeUpdated');
         onRecipeUpdated(updatedRecipe);
@@ -312,8 +611,12 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
   const totalImages = existingImages.length + uploadedImages.length;
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent
+        className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0"
+        closeButtonClassName="right-4 top-4 h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+      >
         {/* Fixed Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
@@ -326,10 +629,11 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
           {/* Fixed Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
             <div className="px-6 pt-4 flex-shrink-0">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="info">Información</TabsTrigger>
+                <TabsTrigger value="classification">Clasificación</TabsTrigger>
                 <TabsTrigger value="ingredients">Ingredientes</TabsTrigger>
-                <TabsTrigger value="instructions">Instrucciones</TabsTrigger>
+                <TabsTrigger value="instructions">Preparación</TabsTrigger>
                 <TabsTrigger value="locution">Locución</TabsTrigger>
               </TabsList>
             </div>
@@ -337,61 +641,74 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
             {/* Scrollable content area with fixed height */}
             <div className="flex-1 overflow-y-auto px-6 pb-4 min-h-0">
               <TabsContent value="info" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
-              {/* Basic Information */}
+              {/* a: Título */}
+              <div>
+                <Label htmlFor="title">Título *</Label>
+                <Input
+                  id="title"
+                  {...register('title', { required: 'El título es requerido' })}
+                  placeholder="Nombre de tu receta"
+                />
+                {errors.title && (
+                  <p className="text-sm text-destructive mt-1">{errors.title.message}</p>
+                )}
+              </div>
+
+              {/* b: Descripción */}
+              <div>
+                <Label htmlFor="description">Descripción</Label>
+                <Textarea
+                  id="description"
+                  {...register('description')}
+                  placeholder="Describe tu receta..."
+                  rows={3}
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <Label htmlFor="title">Título *</Label>
-                  <Input
-                    id="title"
-                    {...register('title', { required: 'El título es requerido' })}
-                    placeholder="Nombre de tu receta"
-                  />
-                  {errors.title && (
-                    <p className="text-sm text-destructive mt-1">{errors.title.message}</p>
-                  )}
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label htmlFor="description">Descripción</Label>
-                  <Textarea
-                    id="description"
-                    {...register('description')}
-                    placeholder="Describe tu receta..."
-                    rows={3}
-                  />
-                </div>
-
+                {/* c: Fuente / URL */}
                 <div>
-                  <Label htmlFor="prepTime">Tiempo de Preparación (min) *</Label>
-                  <Input
-                    id="prepTime"
-                    type="number"
-                    {...register('prepTime', { required: true, min: 1 })}
+                  <Label>Fuente</Label>
+                  <MultiSelectCombobox
+                    options={sourceOptions}
+                    selected={watch('source') ? [watch('source')] : []}
+                    onChange={(next) => setValue('source', next[0] || '', { shouldDirty: true })}
+                    placeholder="Elegí una fuente"
+                    searchPlaceholder="Buscar o escribir fuente..."
+                    singleSelect
+                    closeOnSelect
+                    allowCreate
+                    createLabel="Agregar"
                   />
                 </div>
-
                 <div>
-                  <Label htmlFor="cookTime">Tiempo de Cocción (min)</Label>
-                  <Input
-                    id="cookTime"
-                    type="number"
-                    {...register('cookTime', { min: 0 })}
-                  />
+                  <Label htmlFor="sourceUrl">URL</Label>
+                  <Input id="sourceUrl" {...register('sourceUrl')} placeholder="https://... (opcional)" />
                 </div>
 
+                {/* d: Origen / Dificultad */}
                 <div>
-                  <Label htmlFor="servings">Porciones *</Label>
-                  <Input
-                    id="servings"
-                    type="number"
-                    {...register('servings', { required: true, min: 1 })}
-                  />
+                  <Label>Origen</Label>
+                  <Select
+                    value={watch('importedFrom') || 'own'}
+                    onValueChange={(value) => setValue('importedFrom', value === 'own' ? undefined : value as RecipeFormData['importedFrom'])}
+                  >
+                    <SelectTrigger className="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary">
+                      <SelectValue placeholder="Seleccionar origen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="own">Receta propia</SelectItem>
+                      <SelectItem value="www">Página web</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="youtube">YouTube</SelectItem>
+                      <SelectItem value="doc">DOC</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-
                 <div>
-                  <Label>Dificultad *</Label>
-                  <Select onValueChange={(value) => setValue('difficulty', value as any)} defaultValue={recipe.difficulty}>
-                    <SelectTrigger>
+                  <Label>Dificultad</Label>
+                  <Select value={watch('difficulty')} onValueChange={(value) => setValue('difficulty', value as any)}>
+                    <SelectTrigger className="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary">
                       <SelectValue placeholder="Seleccionar dificultad" />
                     </SelectTrigger>
                     <SelectContent>
@@ -402,13 +719,50 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
                   </Select>
                 </div>
 
+                {/* e: Idioma / País */}
                 <div>
-                  <Label htmlFor="recipeType">Tipo de Receta</Label>
-                  <Input
-                    id="recipeType"
-                    {...register('recipeType')}
-                    placeholder="ej: Pasta, Postre, Sopa"
+                  <Label>Idioma</Label>
+                  <MultiSelectCombobox
+                    options={languageOptions}
+                    selected={watch('language') ? [watch('language')] : []}
+                    onChange={(next) => setValue('language', next[0] || '', { shouldDirty: true })}
+                    placeholder="Elegí un idioma"
+                    searchPlaceholder="Buscar o escribir idioma..."
+                    singleSelect
+                    closeOnSelect
+                    allowCreate
+                    createLabel="Agregar"
                   />
+                </div>
+                <div>
+                  <Label>País</Label>
+                  <MultiSelectCombobox
+                    options={countryOptions}
+                    selected={watch('country') ? [watch('country')] : []}
+                    onChange={(next) => setValue('country', next[0] || '', { shouldDirty: true })}
+                    placeholder="Elegí un país"
+                    searchPlaceholder="Buscar o escribir país..."
+                    singleSelect
+                    closeOnSelect
+                    allowCreate
+                    createLabel="Agregar"
+                  />
+                </div>
+              </div>
+
+              {/* f: Tiempo de preparación / Tiempo total / Porciones */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="prepTime">Tiempo de preparación (min)</Label>
+                  <Input id="prepTime" type="number" {...register('prepTime', { valueAsNumber: true })} />
+                </div>
+                <div>
+                  <Label htmlFor="cookTime">Tiempo total (min)</Label>
+                  <Input id="cookTime" type="number" {...register('cookTime', { valueAsNumber: true })} />
+                </div>
+                <div>
+                  <Label htmlFor="servings">Porciones</Label>
+                  <Input id="servings" type="number" {...register('servings', { valueAsNumber: true })} />
                 </div>
               </div>
 
@@ -437,206 +791,264 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
                   </Button>
                 </div>
 
+                {/* g.1: Calorías / Proteína / Carbohidratos / Grasa */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <Label htmlFor="calories">Calorías</Label>
-                    <Input
-                      id="calories"
-                      type="number"
-                      step="0.1"
-                      {...register('calories')}
-                      placeholder="kcal"
-                    />
+                    <Input id="calories" type="number" step="0.1" {...register('calories')} placeholder="kcal" />
                   </div>
                   <div>
                     <Label htmlFor="protein">Proteína</Label>
-                    <Input
-                      id="protein"
-                      type="number"
-                      step="0.1"
-                      {...register('protein')}
-                      placeholder="g"
-                    />
+                    <Input id="protein" type="number" step="0.1" {...register('protein')} placeholder="g" />
                   </div>
                   <div>
                     <Label htmlFor="carbohydrates">Carbohidratos</Label>
-                    <Input
-                      id="carbohydrates"
-                      type="number"
-                      step="0.1"
-                      {...register('carbohydrates')}
-                      placeholder="g"
-                    />
+                    <Input id="carbohydrates" type="number" step="0.1" {...register('carbohydrates')} placeholder="g" />
                   </div>
                   <div>
                     <Label htmlFor="fat">Grasa</Label>
-                    <Input
-                      id="fat"
-                      type="number"
-                      step="0.1"
-                      {...register('fat')}
-                      placeholder="g"
-                    />
+                    <Input id="fat" type="number" step="0.1" {...register('fat')} placeholder="g" />
                   </div>
+                </div>
+                {/* g.2: Fibra / Azúcar / Sodio (mismo ancho que la fila de Calorías) */}
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <Label htmlFor="fiber">Fibra</Label>
-                    <Input
-                      id="fiber"
-                      type="number"
-                      step="0.1"
-                      {...register('fiber')}
-                      placeholder="g"
-                    />
+                    <Input id="fiber" type="number" step="0.1" {...register('fiber')} placeholder="g" />
                   </div>
                   <div>
                     <Label htmlFor="sugar">Azúcar</Label>
-                    <Input
-                      id="sugar"
-                      type="number"
-                      step="0.1"
-                      {...register('sugar')}
-                      placeholder="g"
-                    />
+                    <Input id="sugar" type="number" step="0.1" {...register('sugar')} placeholder="g" />
                   </div>
                   <div>
                     <Label htmlFor="sodium">Sodio</Label>
-                    <Input
-                      id="sodium"
-                      type="number"
-                      step="0.1"
-                      {...register('sodium')}
-                      placeholder="mg"
-                    />
+                    <Input id="sodium" type="number" step="0.1" {...register('sodium')} placeholder="mg" />
                   </div>
                 </div>
               </div>
 
-              {/* Tags */}
-              <div>
-                <Label>Etiquetas</Label>
-                <div className="flex gap-2 mb-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Agregar etiqueta"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                  />
-                  <Button type="button" onClick={handleAddTag} size="sm">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Images */}
+              {/* h: Imágenes (máximo 3) */}
               <div>
                 <Label>Imágenes (máximo 3)</Label>
 
-                {/* Existing Images */}
-                {existingImages.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-sm text-muted-foreground mb-2">Imágenes actuales:</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {existingImages.map((img, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={resolveImageUrl(img.url)}
-                            alt={img.altText || `Imagen ${index + 1}`}
-                            className="w-full h-24 object-cover rounded"
-                            loading="lazy"
-                            crossOrigin="anonymous"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveExistingImage(index)}
-                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                {/* h.1: mostrar las imágenes (actuales + nuevas) */}
+                {(existingImages.length > 0 || uploadedImages.length > 0) && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {existingImages.map((img, index) => (
+                      <div key={`ex-${index}`} className="relative">
+                        <img
+                          src={resolveImageUrl(img.url)}
+                          alt={img.altText || `Imagen ${index + 1}`}
+                          className="w-full h-24 object-cover rounded"
+                          loading="lazy"
+                          crossOrigin="anonymous"
+                        />
+                        <button type="button" onClick={() => handleRemoveExistingImage(index)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {uploadedImages.map((img, index) => (
+                      <div key={`up-${index}`} className="relative">
+                        <img src={img.preview} alt={`Preview ${index + 1}`} className="w-full h-24 object-cover rounded" />
+                        <button type="button" onClick={() => handleRemoveNewImage(index)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1">
+                          <X className="h-3 w-3" />
+                        </button>
+                        <div className="absolute bottom-1 left-1 bg-primary text-primary-foreground px-1 rounded text-xs">Nueva</div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                {/* Upload new images */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="image-upload"
-                    disabled={totalImages >= 3}
-                  />
-                  <label
-                    htmlFor="image-upload"
-                    className={`cursor-pointer flex flex-col items-center gap-2 ${
-                      totalImages >= 3 ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    <Upload className="h-8 w-8 text-gray-400" />
-                    <span className="text-sm text-gray-600">
-                      {totalImages >= 3 ? 'Máximo 3 imágenes' : 'Haz clic para subir imágenes adicionales'}
-                    </span>
-                  </label>
-                </div>
+                {/* input oculto para subir desde la PC */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="image-upload"
+                  disabled={totalImages >= 3}
+                />
 
-                {/* New uploaded images */}
-                {uploadedImages.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2 mt-4">
-                    {uploadedImages.map((img, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={img.preview}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveNewImage(index)}
-                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                        <div className="absolute bottom-1 left-1 bg-primary text-primary-foreground px-1 rounded text-xs">
-                          Nueva
-                        </div>
-                      </div>
-                    ))}
+                {/* h.2: recuadro para arrastrar + dos botones */}
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); if (totalImages < 3) setIsDraggingImage(true); }}
+                    onDragLeave={() => setIsDraggingImage(false)}
+                    onDrop={handleImageDrop}
+                    className={`relative flex h-28 flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-3 text-center transition-colors ${isDraggingImage ? 'border-primary bg-primary/5' : 'border-gray-300'} ${totalImages >= 3 ? 'opacity-50' : ''}`}
+                  >
+                    {addingWebImage ? <Loader2 className="h-6 w-6 animate-spin text-gray-400" /> : <Upload className="h-6 w-6 text-gray-400" />}
+                    <span className="text-xs text-gray-600">
+                      {totalImages >= 3 ? 'Máximo 3 imágenes' : 'Arrastrá aquí la imagen desde la página web o desde Mi PC'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-stretch justify-center gap-2">
+                    <Button type="button" variant="outline" size="sm" className="text-xs" disabled={totalImages >= 3} onClick={() => document.getElementById('image-upload')?.click()}>
+                      <Upload className="mr-2 h-3.5 w-3.5" />
+                      Subir imagen de Mi PC
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" className="text-xs" disabled={totalImages >= 3 || addingWebImage} onClick={() => setShowWebImageInput(v => !v)}>
+                      {addingWebImage ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Globe className="mr-2 h-3.5 w-3.5" />}
+                      Subir imagen de la web
+                    </Button>
+                  </div>
+                </div>
+                {showWebImageInput && totalImages < 3 && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <Input
+                      value={webImageUrl}
+                      onChange={(e) => setWebImageUrl(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addWebImageFromUrl(webImageUrl); } }}
+                      placeholder="Pegá el enlace de la imagen (https://...)"
+                      className="h-9"
+                      autoFocus
+                    />
+                    <Button type="button" size="sm" disabled={addingWebImage || !webImageUrl.trim()} onClick={() => void addWebImageFromUrl(webImageUrl)}>
+                      {addingWebImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
+                      Agregar
+                    </Button>
                   </div>
                 )}
               </div>
             </TabsContent>
 
+              <TabsContent value="classification" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
+                {/* 1: Tipo de receta / Colección */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Tipo de receta</Label>
+                    <MultiSelectCombobox
+                      options={dishTypeOptions}
+                      selected={watch('dishType') ? [watch('dishType')] : []}
+                      onChange={(next) => setValue('dishType', next[0] || '', { shouldDirty: true })}
+                      placeholder="Elegí un tipo de receta"
+                      searchPlaceholder="Buscar o escribir tipo..."
+                      singleSelect
+                      closeOnSelect
+                      allowCreate
+                      createLabel="Agregar"
+                    />
+                  </div>
+                  <div>
+                    <Label>Colección</Label>
+                    <MultiSelectCombobox
+                      options={collections.map(c => c.name)}
+                      selected={(() => { const c = collections.find(c => c.id === selectedCollectionIds[0]); return c ? [c.name] : []; })()}
+                      onChange={(next) => {
+                        if (!next.length) { setSelectedCollectionIds([]); return; }
+                        const found = collections.find(c => c.name === next[0]);
+                        if (found) setSelectedCollectionIds([found.id]);
+                      }}
+                      onCreate={async (name) => {
+                        try {
+                          const created = await api.collections.create(name);
+                          setCollections(prev => [...prev, created]);
+                          setSelectedCollectionIds([created.id]);
+                          toast({ title: 'Colección creada', description: `Se creó "${created.name}".` });
+                        } catch (error: any) {
+                          toast({ title: 'No se pudo crear la colección', description: error?.message || 'Intentá nuevamente', variant: 'destructive' });
+                        }
+                      }}
+                      placeholder={isLoadingCollections ? 'Cargando colecciones...' : 'Elegí una colección'}
+                      searchPlaceholder="Buscar o crear colección..."
+                      singleSelect
+                      closeOnSelect
+                      allowCreate
+                      createLabel="Crear colección"
+                    />
+                  </div>
+                </div>
+
+                {/* 2: Categoría */}
+                <div>
+                  <Label>Categoría</Label>
+                  <MultiSelectCombobox
+                    options={categoryOptions}
+                    selected={watch('recipeType') ? [watch('recipeType')] : []}
+                    onChange={(next) => setValue('recipeType', next[0] || '', { shouldDirty: true })}
+                    placeholder="Elegí una categoría"
+                    searchPlaceholder="Buscar o escribir categoría..."
+                    singleSelect
+                    closeOnSelect
+                    allowCreate
+                    createLabel="Agregar"
+                  />
+                </div>
+
+                {/* 3: Etiquetas */}
+                <div>
+                  <Label>Etiquetas</Label>
+                  <div className="flex gap-2 mb-2">
+                    <Input
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      placeholder="Agregar etiqueta"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                    />
+                    <Button type="button" onClick={() => { setNewTag(''); setTagDialogOpen(true); }} size="sm" title="Elegir etiquetas">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                        {tag}
+                        <button type="button" onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* c-f: Características (switches sí/no con ícono) — 4 por renglón, 2 renglones */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {([
+                    { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
+                    { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-4 w-4" /> },
+                    { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+                    { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+                    { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
+                    { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-4 w-4" /> },
+                    { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+                    { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
+                  ] as const).map(({ field, label, icon }) => {
+                    const active = Boolean(watch(field as any));
+                    return (
+                      <label key={field} className="flex cursor-pointer items-center justify-between rounded-md border bg-background px-3 py-2">
+                        <span className="flex items-center gap-2 text-sm">
+                          <span className="text-muted-foreground">{icon}</span>
+                          {label}
+                        </span>
+                        <Switch className="scale-90 data-[state=checked]:!bg-[#9eddee]" checked={active} onCheckedChange={(v) => setValue(field as any, v, { shouldDirty: true })} />
+                      </label>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+
               <TabsContent value="ingredients" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
               {/* Ingredients */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label>Ingredientes *</Label>
-                  <Button
-                    type="button"
-                    onClick={() => appendIngredient({ name: '', amount: '', unit: '', section: '' })}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Agregar
-                  </Button>
+                  <Label>Ingredientes</Label>
+                  <div className="flex gap-2">
+                    <Button type="button" onClick={handlePasteIngredients} size="sm" variant="outline">
+                      <ClipboardList className="h-4 w-4 mr-1" />
+                      Pegar lista
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => appendIngredient({ name: '', amount: '', unit: '', section: '' })}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Agregar
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   {ingredientFields.map((field, index) => (
@@ -644,13 +1056,13 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
                       <div className="flex gap-2 items-end">
                         <div className="flex-1">
                           <Input
-                            {...register(`ingredients.${index}.name`, { required: true })}
+                            {...register(`ingredients.${index}.name`)}
                             placeholder="Ingrediente"
                           />
                         </div>
                         <div className="w-24">
                           <Input
-                            {...register(`ingredients.${index}.amount`, { required: true })}
+                            {...register(`ingredients.${index}.amount`)}
                             placeholder="Cantidad"
                           />
                         </div>
@@ -727,16 +1139,22 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
               {/* Instructions */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label>Instrucciones *</Label>
-                  <Button
-                    type="button"
-                    onClick={() => appendInstruction({ description: '', function: '', time: '', temperature: '', speed: '', section: '' })}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Agregar Paso
-                  </Button>
+                  <Label>Preparación</Label>
+                  <div className="flex gap-2">
+                    <Button type="button" onClick={handlePasteInstructions} size="sm" variant="outline">
+                      <ClipboardList className="h-4 w-4 mr-1" />
+                      Pegar lista
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => appendInstruction({ description: '', function: '', time: '', temperature: '', speed: '', section: '' })}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Agregar Paso
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-4">
                   {instructionFields.map((field, index) => (
@@ -755,7 +1173,7 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
                         )}
                       </div>
                       <Textarea
-                        {...register(`instructions.${index}.description`, { required: true })}
+                        {...register(`instructions.${index}.description`)}
                         placeholder="Describe el paso..."
                         className="mb-2"
                       />
@@ -886,5 +1304,73 @@ export const EditRecipeModal = ({ isOpen, onClose, recipe, onRecipeUpdated }: Ed
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Diálogo para elegir/crear etiquetas */}
+    <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Etiquetas</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {/* Nueva etiqueta (primera opción) */}
+          <div className="flex items-center gap-2">
+            <Input
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              placeholder="Nueva etiqueta"
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateTag(); } }}
+              autoFocus
+            />
+            <Button type="button" size="sm" onClick={handleCreateTag} disabled={!newTag.trim()}>
+              <Plus className="mr-1 h-4 w-4" />
+              Agregar
+            </Button>
+          </div>
+
+          {/* Lista de etiquetas existentes (orden alfabético) para marcar */}
+          <div className="max-h-60 overflow-y-auto rounded-md border divide-y">
+            {tagOptions.length === 0 && (
+              <p className="px-3 py-4 text-sm text-muted-foreground">Todavía no hay etiquetas. Creá una arriba.</p>
+            )}
+            {tagOptions.map((tag) => {
+              const checked = tags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50 ${checked ? 'bg-accent/40' : ''}`}
+                >
+                  <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${checked ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 text-transparent'}`}>
+                    <Check className="h-3.5 w-3.5" />
+                  </span>
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Etiquetas marcadas (se van agregando abajo) */}
+          <div>
+            <p className="mb-1 text-xs font-medium text-muted-foreground">Seleccionadas ({tags.length})</p>
+            <div className="flex flex-wrap gap-1">
+              {tags.length === 0 && <span className="text-xs text-muted-foreground">Ninguna todavía.</span>}
+              {tags.map((tag, index) => (
+                <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                  {tag}
+                  <button type="button" onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button type="button" onClick={() => setTagDialogOpen(false)}>Listo</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };

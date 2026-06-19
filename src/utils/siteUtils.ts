@@ -1,72 +1,47 @@
-/**
- * Extrae el nombre del sitio web de una URL para mostrarlo en el enlace "Ver en..."
- * @param url - La URL original del sitio
- * @returns El nombre del sitio web o "Sitio original" si no se reconoce
- */
-export function getSiteName(url: string): string {
+export function getSourceFromUrl(url: string): string {
   try {
     const parsedUrl = new URL(url);
-    const hostname = parsedUrl.hostname.toLowerCase();
+    const host = parsedUrl.hostname.replace(/^www\./, '');
 
-    // Mapa de sitios web conocidos
-    const siteMap: Record<string, string> = {
-      'cookpad.com': 'Cookpad',
-      'allrecipes.com': 'Allrecipes',
-      'food.com': 'Food.com',
-      'delicious.com.au': 'Delicious',
-      'bbc.co.uk': 'BBC Good Food',
-      'epicurious.com': 'Epicurious',
-      'foodnetwork.com': 'Food Network',
-      'tastykitchen.com': 'Tasty Kitchen',
-      'simplyrecipes.com': 'Simply Recipes',
-      'seriouseats.com': 'Serious Eats',
-      'bonappetit.com': 'Bon Appétit',
-      'food52.com': 'Food52',
-      'chefkoch.de': 'Chefkoch',
-      'marmiton.org': 'Marmiton',
-      'cuisine.az': 'Cuisine AZ',
-      'recetasgratis.net': 'RecetasGratis',
-      'directoalpaladar.com': 'Directo al Paladar',
-      'kiwilimon.com': 'KiwiLimón',
-      'cocina-casera.com': 'Cocina Casera',
-      'gastronomiaycia.com': 'Gastronomía y Cía',
-      'thermorecetas.com': 'ThermoRecetas',
-      'recetastermomix.net': 'Recetas Thermomix',
-      'velocidad-cuchara.com': 'Velocidad Cuchara',
-      'robots-de-cocina.com': 'Robots de Cocina'
-    };
-
-    // Buscar coincidencia exacta
-    if (siteMap[hostname]) {
-      return siteMap[hostname];
+    if (/(^|\.)cookidoo\.international$/i.test(host)) {
+      return 'cookidoo';
     }
 
-    // Buscar coincidencia parcial (para subdominios)
-    for (const [domain, name] of Object.entries(siteMap)) {
-      if (hostname.includes(domain)) {
-        return name;
+    if (/(^|\.)instagram\.com$/i.test(host)) {
+      const segment = parsedUrl.pathname.split('/').filter(Boolean)[0];
+      const reserved = ['p', 'reel', 'reels', 'tv', 'stories', 'explore', 'accounts'];
+      if (segment && !reserved.includes(segment.toLowerCase())) {
+        return segment;
       }
+      return 'instagram.com';
     }
 
-    // Si no se encuentra, extraer el dominio principal
-    const domainParts = hostname.split('.');
-    if (domainParts.length >= 2) {
-      const mainDomain = domainParts[domainParts.length - 2];
-      // Capitalizar la primera letra
-      return mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1);
-    }
-
-    return 'Sitio original';
-  } catch (error) {
-    return 'Sitio original';
+    return host.split('.')[0] || host;
+  } catch {
+    // No es una URL: es una fuente de texto libre (ej. nombre de un libro).
+    return url?.trim() || 'Fuente desconocida';
   }
 }
 
-/**
- * Verifica si una URL es válida y accesible
- * @param url - La URL a verificar
- * @returns true si la URL es válida, false en caso contrario
- */
+export function getSourceDomainFromUrl(url: string): string {
+  try {
+    const parsedUrl = new URL(url);
+    const host = parsedUrl.hostname.replace(/^www\./, '');
+
+    if (/(^|\.)cookidoo\.international$/i.test(host)) {
+      return 'cookidoo';
+    }
+
+    if (/(^|\.)instagram\.com$/i.test(host)) {
+      return getSourceFromUrl(url);
+    }
+
+    return host;
+  } catch {
+    return url?.trim() || 'Fuente desconocida';
+  }
+}
+
 export function isValidUrl(url: string): boolean {
   try {
     new URL(url);
@@ -74,4 +49,14 @@ export function isValidUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+// Fuente a mostrar de una receta: el campo `source` (de quién es la receta) si existe;
+// si no, se deriva de la URL (recetas viejas que sólo tienen sourceUrl).
+export function getRecipeSource(recipe: { source?: string | null; sourceUrl?: string | null }): string {
+  const explicit = (recipe.source || '').trim();
+  if (explicit) return explicit;
+  const url = (recipe.sourceUrl || '').trim();
+  if (url) return getSourceFromUrl(url);
+  return '';
 }

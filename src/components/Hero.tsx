@@ -1,20 +1,42 @@
 import { Button } from "@/components/ui/button";
 import { ChefHat, Heart, Sparkles } from "lucide-react";
-import heroImage from "@/assets/hero-kitchen.jpg";
+import { useEffect, useState } from "react";
 
 interface HeroProps {
   onGetStarted: () => void;
   onViewFeatured: () => void;
 }
 
+// Imágenes de fondo del banner (en public/). Se van alternando con un fundido.
+const HERO_IMAGES = ["/hero-bg.webp", "/hero-bg2.webp"];
+const HERO_INTERVAL_MS = 6000;
+
 export const Hero = ({ onGetStarted, onViewFeatured }: HeroProps) => {
+  const [currentImage, setCurrentImage] = useState(0);
+
+  useEffect(() => {
+    if (HERO_IMAGES.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, HERO_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <section className="relative bg-gradient-warm overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-background/90 to-background/60" />
-      <div 
-        className="absolute inset-0 bg-cover bg-center opacity-20"
-        style={{ backgroundImage: `url(${heroImage})` }}
-      />
+      {/* Imágenes de fondo (en public/), se alternan con fundido cruzado */}
+      {HERO_IMAGES.map((src, index) => (
+        <div
+          key={src}
+          className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${
+            index === currentImage ? "opacity-100" : "opacity-0"
+          }`}
+          style={{ backgroundImage: `url(${src})` }}
+        />
+      ))}
+      {/* Filtro para que se lean bien las letras: más opaco a la izquierda (texto) y
+          más transparente a la derecha para que se vea la imagen. */}
+      <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/50" />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-6 sm:py-8">
@@ -54,21 +76,6 @@ export const Hero = ({ onGetStarted, onViewFeatured }: HeroProps) => {
                 <Heart className="mr-2 h-5 w-5" />
                 Ver recetas destacadas
               </Button>
-            </div>
-            
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-              <div>
-                <div className="text-3xl font-bold text-primary">500+</div>
-                <div className="text-muted-foreground">Recetas guardadas</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-primary">50+</div>
-                <div className="text-muted-foreground">Sitios compatibles</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-primary">24/7</div>
-                <div className="text-muted-foreground">Acceso completo</div>
-              </div>
             </div>
           </div>
         </div>

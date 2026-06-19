@@ -1,4 +1,4 @@
-export interface RecipeImage {
+﻿export interface RecipeImage {
   id?: string;
   url: string;
   localPath?: string;
@@ -33,20 +33,43 @@ export interface Recipe {
   userId: string;
   title: string;
   description?: string;
+  suggestions?: string;
   images: RecipeImage[];
-  prepTime: number;
-  cookTime?: number;
-  servings: number;
-  difficulty: "Fácil" | "Medio" | "Difícil";
+  prepTime?: number | null;
+  cookTime?: number | null;
+  servings?: number | null;
+  difficulty?: "Fácil" | "Medio" | "Difícil" | null;
   tags: string[];
   ingredients: Ingredient[];
   instructions: Instruction[];
   sourceUrl?: string;
+  source?: string;
+  author?: string;
+  importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
   recipeType?: string;
+  dishType?: string;
+  country?: string;
+  language?: string;
   featured?: boolean;
+  cooked?: boolean;
+  thermomix?: boolean;
+  airFryer?: boolean;
+  glutenFree?: boolean;
+  keto?: boolean;
+  lowCarb?: boolean;
+  vegetarian?: boolean;
   locution?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  // InformaciÃ³n nutricional por porciÃ³n
+  calories?: number | null;
+  protein?: number | null;
+  carbohydrates?: number | null;
+  fat?: number | null;
+  saturatedFat?: number | null;
+  fiber?: number | null;
+  sugar?: number | null;
+  sodium?: number | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export interface ImportRecipeResponse {
@@ -54,17 +77,39 @@ export interface ImportRecipeResponse {
   recipe?: {
     title: string;
     description?: string;
+    suggestions?: string;
     prepTime: number;
     cookTime?: number;
     servings: number;
     difficulty: "Fácil" | "Medio" | "Difícil";
     recipeType?: string;
+    dishType?: string;
+    country?: string;
+    language?: string;
     sourceUrl?: string;
+    source?: string;
+    author?: string;
+    importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
+    thermomix?: boolean;
+    airFryer?: boolean;
+    glutenFree?: boolean;
+    keto?: boolean;
+    lowCarb?: boolean;
+    vegetarian?: boolean;
     images: RecipeImage[];
     ingredients: Ingredient[];
     instructions: Instruction[];
     tags: string[];
+    calories?: number | null;
+    protein?: number | null;
+    carbohydrates?: number | null;
+    fat?: number | null;
+    saturatedFat?: number | null;
+    fiber?: number | null;
+    sugar?: number | null;
+    sodium?: number | null;
   };
   preview?: boolean;
   error?: string;
+  warning?: string;
 }

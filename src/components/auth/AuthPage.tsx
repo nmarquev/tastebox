@@ -2,9 +2,20 @@ import { useState } from 'react';
 import { LoginForm } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
 import { ChefHat, Sparkles, BookOpen, Heart } from 'lucide-react';
+import { Theme, useTheme } from '@/contexts/ThemeContext';
+
+const THEME_LOGOS: Record<Theme, string> = {
+  carrot: '/logos/logo_carrot.png',
+  violetas: '/logos/logo_violetas.png',
+  tierra: '/logos/logo_tierra.png',
+  frutilla: '/logos/logo_frutilla.png',
+  aguamarina: '/logos/logo_aguamarina.png',
+  pasteles: '/logos/logo_pasteles.png',
+};
 
 export const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const { theme } = useTheme();
 
   return (
     <div className="min-h-screen flex">
@@ -20,13 +31,9 @@ export const AuthPage = () => {
       </div>
 
       {/* Right side - Modern TasteBox branding */}
-      <div className="hidden lg:block flex-1 relative bg-gradient-to-br from-orange-50 via-orange-100 to-amber-50">
+      <div className="hidden lg:block flex-1 relative bg-gradient-to-br from-primary/5 via-primary/20 to-primary/5">
         {/* Cooking pot simulation with bubbles */}
         <div className="absolute inset-0">
-          {/* Pot bottom edge */}
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-amber-200/30 to-transparent"></div>
-          <div className="absolute bottom-0 left-1/4 right-1/4 h-3 bg-amber-400/50 rounded-t-full"></div>
-
           {/* Bubbles rising from pot */}
           <div className="absolute inset-0 opacity-15">
             {/* Large bubbles */}
@@ -56,9 +63,9 @@ export const AuthPage = () => {
             {/* Real app logo */}
             <div className="flex items-center justify-center mb-8">
               <img
-                src="/tastebox.png"
+                src={THEME_LOGOS[theme] || '/logo2.png'}
                 alt="TasteBox"
-                className="h-24 object-contain"
+                className="h-28 w-auto max-w-full object-contain"
               />
             </div>
 
@@ -74,19 +81,19 @@ export const AuthPage = () => {
             {/* Feature highlights */}
             <div className="grid grid-cols-2 gap-4 text-left">
               <div className="flex items-center space-x-3 bg-white/50 backdrop-blur-sm rounded-lg p-3">
-                <Sparkles className="h-6 w-6 text-orange-500" />
+                <Sparkles className="h-6 w-6 text-primary" />
                 <span className="text-sm font-medium text-gray-700">IA para importar recetas</span>
               </div>
               <div className="flex items-center space-x-3 bg-white/50 backdrop-blur-sm rounded-lg p-3">
-                <BookOpen className="h-6 w-6 text-amber-500" />
+                <BookOpen className="h-6 w-6 text-primary" />
                 <span className="text-sm font-medium text-gray-700">Organización inteligente</span>
               </div>
               <div className="flex items-center space-x-3 bg-white/50 backdrop-blur-sm rounded-lg p-3">
-                <Heart className="h-6 w-6 text-orange-500" />
+                <Heart className="h-6 w-6 text-primary" />
                 <span className="text-sm font-medium text-gray-700">Recetas favoritas</span>
               </div>
               <div className="flex items-center space-x-3 bg-white/50 backdrop-blur-sm rounded-lg p-3">
-                <ChefHat className="h-6 w-6 text-amber-500" />
+                <ChefHat className="h-6 w-6 text-primary" />
                 <span className="text-sm font-medium text-gray-700">Soporte Thermomix</span>
               </div>
             </div>

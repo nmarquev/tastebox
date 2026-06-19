@@ -4,8 +4,10 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import sharp from 'sharp';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { ImageService } from '../services/imageService';
 
 const router = express.Router();
+const imageService = new ImageService();
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -23,7 +25,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // Límite de 5MB
+    fileSize: 2 * 1024 * 1024 // Límite de 2MB por imagen
   }
 });
 
@@ -81,11 +83,68 @@ router.post('/images', authenticateToken, upload.array('images', 3), async (req:
 
     if (error instanceof multer.MulterError) {
       if (error.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'Archivo demasiado grande. El tamaño máximo es 5MB por imagen.' });
+        return res.status(400).json({ error: 'La imagen debe tener un tamaño menor a 2MB' });
       }
     }
 
     res.status(500).json({ error: 'Error al cargar las imágenes' });
+  }
+});
+
+// Descargar y guardar una imagen a partir de su URL (ej: arrastrada desde la web).
+router.post('/images/from-url', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const url = (req.body?.url ?? '').toString().trim();
+    if (!url || !/^https?:\/\//i.test(url)) {
+      return res.status(400).json({ error: 'URL de imagen inválida' });
+    }
+
+    const images = await imageService.downloadAndStoreImages([url]);
+    if (!images.length) {
+      return res.status(404).json({ error: 'No se pudo descargar la imagen desde esa URL' });
+    }
+
+    const image = images[0];
+    res.json({
+      success: true,
+      image: {
+        url: image.url,
+        localPath: image.localPath,
+        order: image.order,
+        altText: image.altText || 'Imagen',
+      },
+    });
+  } catch (error) {
+    console.error('Error agregando imagen por URL:', error);
+    res.status(500).json({ error: 'Error al agregar la imagen' });
+  }
+});
+
+// Buscar una imagen en la web a partir del nombre de la receta y guardarla.
+router.post('/images/search', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const query = (req.body?.query ?? '').toString().trim();
+    if (!query) {
+      return res.status(400).json({ error: 'Falta el nombre de la receta' });
+    }
+
+    const image = await imageService.findAndStoreRecipeImage(query);
+    if (!image) {
+      return res.status(404).json({ error: 'No se encontró ninguna imagen para esa receta' });
+    }
+
+    res.json({
+      success: true,
+      image: {
+        url: image.url,
+        localPath: image.localPath,
+        order: image.order,
+        altText: image.altText || query,
+      },
+    });
+  } catch (error) {
+    console.error('Error buscando imagen en la web:', error);
+    res.status(500).json({ error: 'Error al buscar la imagen' });
   }
 });
 

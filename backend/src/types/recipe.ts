@@ -36,6 +36,7 @@ export interface Recipe {
   userId: string;
   title: string;
   description?: string;
+  suggestions?: string;
   images: RecipeImage[];
   prepTime: number;
   cookTime?: number;
@@ -45,7 +46,11 @@ export interface Recipe {
   ingredients: Ingredient[];
   instructions: Instruction[];
   sourceUrl?: string;
+  source?: string;
+  author?: string;
+  importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
   recipeType?: string;
+  dishType?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +58,7 @@ export interface Recipe {
 export interface RecipeImportResponse {
   title: string;
   description?: string;
+  suggestions?: string;
   images: Array<{
     url: string;
     altText?: string;
@@ -76,9 +82,35 @@ export interface RecipeImportResponse {
   prepTime: number;
   cookTime?: number;
   servings: number;
-  difficulty: "Fácil" | "Medio" | "Difícil";
+  difficulty?: "Fácil" | "Medio" | "Difícil"; // vacío si la receta no lo indica
   recipeType?: string;
+  dishType?: string;
+  sourceUrl?: string; // URL de origen (p.ej. Instagram reconstruida con el usuario)
+  source?: string; // Fuente: de quién es la receta (texto libre)
+  author?: string;
+  importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
+  country?: string; // País de la receta (ej. extraído de Cookidoo)
+  language?: string; // Idioma de la receta (Español/Inglés)
   tags: string[];
+  featured?: boolean; // true si es receta favorita / destacada
+  cooked?: boolean; // true si la receta ya fue cocinada
+  thermomix?: boolean; // true si es receta Thermomix (Cookidoo o con configuraciones TMX)
+  airFryer?: boolean; // true si se prepara en freidora de aire
+  glutenFree?: boolean; // true si es receta sin gluten
+  keto?: boolean; // true si es receta keto / cetogénica
+  lowCarb?: boolean; // true si es receta baja en carbohidratos
+  vegetarian?: boolean; // true si es receta vegetariana
+  // Información nutricional por porción (ej. extraída exacta de Cookidoo).
+  nutrition?: {
+    calories?: number;
+    protein?: number;
+    carbohydrates?: number;
+    fat?: number;
+    saturatedFat?: number;
+    fiber?: number;
+    sugar?: number;
+    sodium?: number;
+  };
 }
 
 export interface User {

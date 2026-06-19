@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The browser extension must not show its importer inside TasteBox itself. */
+#tastebox-import-button {
+  display: none !important;
+}
+
+/* Campos de login en color aguamarina. El autocompletado de Chrome pinta su propio
+   fondo por encima, así que hay que forzarlo con box-shadow interno. */
+.auth-aqua-input {
+  background-color: #e4f3f6 !important;
+}
+.auth-aqua-input:-webkit-autofill,
+.auth-aqua-input:-webkit-autofill:hover,
+.auth-aqua-input:-webkit-autofill:focus,
+.auth-aqua-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #e4f3f6 inset !important;
+  box-shadow: 0 0 0 1000px #e4f3f6 inset !important;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
@@ -19,29 +37,29 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 20 50% 15%;
 
-    /* TasteBox Orange primary (#ff6c17 = 25 100% 54%) */
-    --primary: 25 100% 54%;
+    /* Naranja principal (#fc7814) */
+    --primary: 26 97% 53%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 35 85% 45%;
+    --primary-glow: 26 97% 65%;
 
-    /* Darker orange secondary */
-    --secondary: 25 85% 45%;
+    /* Secundario (mismo naranja #fc7814) para badges de Categoría/País/Idioma */
+    --secondary: 26 97% 53%;
     --secondary-foreground: 0 0% 100%;
 
     /* Light cream muted (#F2EED8 = 50 45% 90%) */
     --muted: 50 45% 90%;
     --muted-foreground: 20 40% 35%;
 
-    /* Warm accent */
-    --accent: 35 85% 65%;
-    --accent-foreground: 20 50% 15%;
+    /* Carrot accent (#ff7714) */
+    --accent: 25 100% 54%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 50 35% 85%;
     --input: 50 35% 95%;
-    --ring: 25 100% 54%;
+    --ring: 26 97% 53%;
 
     /* Carrot gradient system */
     --gradient-primary: linear-gradient(135deg, hsl(25 100% 54%), hsl(35 85% 65%), hsl(45 75% 75%));
@@ -79,13 +97,13 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 255 45% 18%;
 
-    /* Russian violet primary */
-    --primary: 255 45% 18%;
+    /* Violeta principal (#9e87bd) */
+    --primary: 266 29% 64%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 250 26% 44%;
+    --primary-glow: 266 32% 75%;
 
-    /* Ultra violet secondary */
-    --secondary: 250 26% 44%;
+    /* Violeta secundario (un poco más oscuro) */
+    --secondary: 266 29% 52%;
     --secondary-foreground: 0 0% 100%;
 
     /* Light muted tones */
@@ -101,17 +119,17 @@ All colors MUST be HSL.
 
     --border: 266 32% 85%;
     --input: 266 32% 95%;
-    --ring: 255 45% 18%;
+    --ring: 266 29% 64%;
 
     /* Purple gradient system */
-    --gradient-primary: linear-gradient(135deg, hsl(255 45% 18%), hsl(250 26% 44%), hsl(266 32% 64%));
-    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(327 43% 95%));
+    --gradient-primary: linear-gradient(135deg, hsl(266 29% 64%), hsl(266 32% 75%), hsl(266 32% 85%));
+    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(266 32% 95%));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(266 32% 97%));
-    --gradient-hero: linear-gradient(135deg, hsl(255 45% 18%), hsl(250 26% 44%), hsl(266 32% 64%), hsl(292 28% 68%), hsl(327 43% 79%));
+    --gradient-hero: linear-gradient(135deg, hsl(266 29% 64%), hsl(266 32% 72%), hsl(292 28% 78%), hsl(327 43% 85%), hsl(266 32% 92%));
 
     /* Purple shadows */
-    --shadow-recipe-card: 0 4px 20px -2px hsl(255 45% 18% / 0.1);
-    --shadow-elegant: 0 10px 40px -10px hsl(255 45% 18% / 0.15);
+    --shadow-recipe-card: 0 4px 20px -2px hsl(266 29% 64% / 0.15);
+    --shadow-elegant: 0 10px 40px -10px hsl(266 29% 64% / 0.2);
 
     /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -139,39 +157,39 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 188 9% 20%;
 
-    /* Outer space primary */
-    --primary: 188 9% 20%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 123 14% 60%;
+    /* Tierra principal (#e1c097) */
+    --primary: 33 55% 74%;
+    --primary-foreground: 32 45% 22%;
+    --primary-glow: 33 55% 84%;
 
-    /* Ash gray secondary */
-    --secondary: 188 9% 25%;
-    --secondary-foreground: 0 0% 100%;
+    /* Tierra secundario (#e1c097) para badges de Categoría/País/Idioma */
+    --secondary: 33 55% 74%;
+    --secondary-foreground: 32 45% 22%;
 
     /* Light muted tones */
     --muted: 45 15% 90%;
     --muted-foreground: 188 9% 35%;
 
-    /* Cherry blossom accent */
-    --accent: 351 63% 81%;
-    --accent-foreground: 188 9% 32%;
+    /* Tierra accent (#e1c097) */
+    --accent: 33 55% 74%;
+    --accent-foreground: 32 45% 22%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 45 15% 85%;
     --input: 45 15% 95%;
-    --ring: 188 9% 32%;
+    --ring: 33 55% 74%;
 
     /* Earth solid system */
-    --gradient-primary: hsl(351 63% 60%);
-    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(19 67% 95%));
+    --gradient-primary: linear-gradient(135deg, hsl(33 55% 74%), hsl(33 55% 82%), hsl(33 55% 90%));
+    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(33 55% 95%));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(45 15% 97%));
-    --gradient-hero: linear-gradient(135deg, hsl(351 63% 81%), hsl(19 67% 91%), hsl(45 15% 85%), hsl(123 14% 73%), hsl(188 9% 32%));
+    --gradient-hero: linear-gradient(135deg, hsl(33 55% 74%), hsl(33 55% 82%), hsl(33 55% 88%), hsl(45 45% 92%), hsl(33 55% 95%));
 
     /* Earth shadows */
-    --shadow-recipe-card: 0 4px 20px -2px hsl(188 9% 32% / 0.1);
-    --shadow-elegant: 0 10px 40px -10px hsl(188 9% 32% / 0.15);
+    --shadow-recipe-card: 0 4px 20px -2px hsl(33 55% 60% / 0.2);
+    --shadow-elegant: 0 10px 40px -10px hsl(33 55% 60% / 0.25);
     
     /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -195,50 +213,50 @@ All colors MUST be HSL.
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  [data-theme="pop"] {
-    /* Pop color system - vibrant and modern */
+  [data-theme="frutilla"] {
+    /* Frutilla color system - warm fruit tones */
     --background: 0 0% 100%;
-    --foreground: 205 100% 8%;
+    --foreground: 355 100% 25%;
 
     --card: 0 0% 100%;
-    --card-foreground: 205 100% 8%;
+    --card-foreground: 355 100% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 205 100% 8%;
+    --popover-foreground: 355 100% 25%;
 
-    /* Rich black primary */
-    --primary: 205 100% 8%;
-    --primary-foreground: 120 45% 98%;
-    --primary-glow: 174 72% 56%;
+    /* Frutilla principal (#f8003c) */
+    --primary: 345.5 100% 48.6%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 345.5 100% 65%;
 
-    /* Light sea green secondary */
-    --secondary: 205 100% 15%;
+    /* Frutilla secundario = principal (#f8003c) para badges de Categoría/País/Idioma */
+    --secondary: 345.5 100% 48.6%;
     --secondary-foreground: 0 0% 100%;
 
     /* Light muted tones */
-    --muted: 120 15% 92%;
-    --muted-foreground: 205 50% 25%;
+    --muted: 40 20% 92%;
+    --muted-foreground: 355 60% 35%;
 
-    /* Red Pantone accent */
-    --accent: 354 91% 52%;
-    --accent-foreground: 120 45% 98%;
+    /* Frutilla accent = principal (#f8003c) para los botones */
+    --accent: 345.5 100% 48.6%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 120 15% 85%;
-    --input: 120 15% 95%;
-    --ring: 205 100% 8%;
+    --border: 40 20% 85%;
+    --input: 40 20% 95%;
+    --ring: 345.5 100% 48.6%;
 
-    /* Pop solid system */
-    --gradient-primary: hsl(354 91% 52%);
-    --gradient-warm: linear-gradient(135deg, hsl(120 45% 98%), hsl(120 30% 95%));
-    --gradient-card: linear-gradient(145deg, hsl(120 45% 98%), hsl(120 20% 96%));
-    --gradient-hero: linear-gradient(135deg, hsl(205 100% 8%), hsl(174 72% 56%), hsl(354 91% 52%), hsl(25 100% 50%));
+    /* Frutilla solid system */
+    --gradient-primary: linear-gradient(135deg, hsl(346 100% 49%), hsl(346 100% 62%), hsl(346 100% 75%));
+    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(346 100% 96%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(40 20% 97%));
+    --gradient-hero: linear-gradient(135deg, hsl(346 100% 49%), hsl(346 100% 62%), hsl(346 90% 75%), hsl(20 100% 80%), hsl(346 100% 92%));
 
-    /* Pop shadows */
-    --shadow-recipe-card: 0 4px 20px -2px hsl(205 100% 8% / 0.1);
-    --shadow-elegant: 0 10px 40px -10px hsl(205 100% 8% / 0.15);
+    /* Frutilla shadows */
+    --shadow-recipe-card: 0 4px 20px -2px hsl(346 100% 49% / 0.15);
+    --shadow-elegant: 0 10px 40px -10px hsl(346 100% 49% / 0.2);
 
     /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -255,54 +273,109 @@ All colors MUST be HSL.
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  [data-theme="frutilla"] {
-    /* Frutilla color system - warm fruit tones */
+  [data-theme="aguamarina"] {
+    /* Aguamarina color system - carmesí (#c70039) + cian (#a4e3e6) */
     --background: 0 0% 100%;
-    --foreground: 355 100% 25%;
+    --foreground: 60 2% 43%;
 
     --card: 0 0% 100%;
-    --card-foreground: 355 100% 25%;
+    --card-foreground: 60 2% 43%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 355 100% 25%;
+    --popover-foreground: 60 2% 43%;
 
-    /* Red CMYK primary */
-    --primary: 355 100% 25%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 25 100% 50%;
+    /* Carmesí primary (#c70039) */
+    --primary: 189 60% 77%;
+    --primary-foreground: 60 2% 30%;
+    --primary-glow: 189 60% 86%;
 
-    /* UT Orange secondary */
-    --secondary: 355 100% 30%;
-    --secondary-foreground: 0 0% 100%;
+    /* Carmesí secondary (#c90036) */
+    --secondary: 189 60% 77%;
+    --secondary-foreground: 60 2% 30%;
 
-    /* Light muted tones */
-    --muted: 40 20% 92%;
-    --muted-foreground: 355 60% 35%;
+    /* Cian claro muted */
+    --muted: 189 50% 93%;
+    --muted-foreground: 60 2% 43%;
 
-    /* Engineering Orange accent */
-    --accent: 15 100% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* Cian accent (#a4e3e6) */
+    --accent: 189 60% 77%;
+    --accent-foreground: 60 2% 30%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 40 20% 85%;
-    --input: 40 20% 95%;
-    --ring: 355 100% 25%;
+    --border: 189 40% 86%;
+    --input: 189 40% 95%;
+    --ring: 189 60% 77%;
 
-    /* Frutilla solid system */
-    --gradient-primary: hsl(25 100% 50%);
-    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(25 100% 95%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(40 20% 97%));
-    --gradient-hero: linear-gradient(135deg, hsl(355 100% 25%), hsl(25 100% 50%), hsl(15 100% 50%), hsl(50 100% 65%), hsl(35 100% 55%));
+    /* Logo gradient system (carmesí → cian) */
+    --gradient-primary: linear-gradient(135deg, hsl(189 60% 77%), hsl(189 60% 84%), hsl(189 60% 90%));
+    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(189 60% 95%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(189 40% 97%));
+    --gradient-hero: linear-gradient(135deg, hsl(189 60% 77%), hsl(189 60% 82%), hsl(189 55% 87%), hsl(189 50% 92%), hsl(189 45% 96%));
 
-    /* Frutilla shadows */
-    --shadow-recipe-card: 0 4px 20px -2px hsl(355 100% 25% / 0.1);
-    --shadow-elegant: 0 10px 40px -10px hsl(355 100% 25% / 0.15);
+    /* Logo shadows */
+    --shadow-recipe-card: 0 4px 20px -2px hsl(189 60% 60% / 0.15);
+    --shadow-elegant: 0 10px 40px -10px hsl(189 60% 60% / 0.2);
 
     /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  [data-theme="pasteles"] {
+    /* Pasteles - principal/secundario/acento #ff7714, letras gris oscuro */
+    --background: 0 0% 100%;
+    --foreground: 60 2% 43%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 60 2% 43%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 60 2% 43%;
+
+    /* Principal #ffe6ea (rosa pastel, letras gris oscuro) */
+    --primary: 350 100% 95%;
+    --primary-foreground: 60 2% 30%;
+    --primary-glow: 350 100% 90%;
+
+    /* Secundario #ffe6ea (rosa) para badges de Categoría/País/Idioma */
+    --secondary: 350 100% 95%;
+    --secondary-foreground: 60 2% 30%;
+
+    --muted: 350 60% 96%;
+    --muted-foreground: 60 2% 43%;
+
+    /* Botones #ffe6ea (letras gris oscuro) */
+    --accent: 350 100% 95%;
+    --accent-foreground: 60 2% 30%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 350 50% 90%;
+    --input: 350 50% 95%;
+    --ring: 350 80% 85%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(350 100% 95%), hsl(180 83% 93%), hsl(180 83% 96%));
+    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(350 100% 97%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(350 60% 98%));
+    --gradient-hero: linear-gradient(135deg, hsl(350 100% 95%), hsl(350 100% 92%), hsl(330 60% 94%), hsl(200 70% 93%), hsl(180 83% 93%));
+
+    --shadow-recipe-card: 0 4px 20px -2px hsl(350 60% 80% / 0.2);
+    --shadow-elegant: 0 10px 40px -10px hsl(350 60% 80% / 0.25);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
@@ -360,6 +433,38 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Color de fuente general unificado (#6f6f6d, gris oscuro) para todos los temas claros */
+  :root:not(.dark),
+  [data-theme]:not(.dark) {
+    --foreground: 60 2% 43%;
+    --card-foreground: 60 2% 43%;
+    --popover-foreground: 60 2% 43%;
+    --muted-foreground: 60 2% 43%;
+  }
+
+  /* Tema Pasteles: hover del título de la receta y del enlace de Fuente en #a2dee8 */
+  [data-theme="pasteles"] .recipe-source-link {
+    color: #ffc6cd !important;
+  }
+
+  /* Tema Pasteles: los chips de filtros aplicados en gris (el rosa pastel no se lee) */
+  [data-theme="pasteles"] .filter-chip,
+  [data-theme="pasteles"] .filter-chip * {
+    color: hsl(var(--foreground)) !important;
+  }
+  [data-theme="pasteles"] .filter-chip {
+    background-color: hsl(var(--muted)) !important;
+  }
+
+  [data-theme="pasteles"] .recipe-section-title {
+    color: #ffc6cd !important;
+  }
+
+  [data-theme="pasteles"] .group:hover .recipe-card-title,
+  [data-theme="pasteles"] .recipe-source-link:hover {
+    color: #a2dee8 !important;
   }
 }
 

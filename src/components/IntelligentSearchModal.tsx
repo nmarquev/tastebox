@@ -258,10 +258,13 @@ export const IntelligentSearchModal = ({ isOpen, onClose, onRecipeSaved, onViewR
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-5xl max-h-[90vh] overflow-y-auto"
+        closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+      >
         <DialogHeader className="space-y-4">
           <DialogTitle className="flex items-center space-x-3">
-            <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-2 rounded-lg">
+            <div className="p-2 rounded-lg" style={{ backgroundImage: 'var(--gradient-primary)' }}>
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <span>Búsqueda Inteligente de Recetas</span>
@@ -300,7 +303,8 @@ export const IntelligentSearchModal = ({ isOpen, onClose, onRecipeSaved, onViewR
                   <Button
                     onClick={() => handleSearch()}
                     disabled={isSearching || !query.trim()}
-                    className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                    className="border-0 text-gray-700 transition-opacity hover:opacity-90"
+                    style={{ backgroundImage: 'var(--gradient-primary)' }}
                   >
                     {isSearching ? (
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

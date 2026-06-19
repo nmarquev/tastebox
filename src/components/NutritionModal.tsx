@@ -52,7 +52,8 @@ export const NutritionModal = ({ recipe, isOpen, onClose, onRecipeUpdate }: Nutr
             // Clean the recipe data to match API expectations
             const cleanedRecipe = {
               title: updatedRecipe.title,
-              description: updatedRecipe.description,
+              description: updatedRecipe.description || undefined,
+              suggestions: updatedRecipe.suggestions || undefined,
               prepTime: updatedRecipe.prepTime,
               cookTime: updatedRecipe.cookTime,
               servings: updatedRecipe.servings,
@@ -66,16 +67,21 @@ export const NutritionModal = ({ recipe, isOpen, onClose, onRecipeUpdate }: Nutr
               fiber: updatedRecipe.fiber,
               sugar: updatedRecipe.sugar,
               sodium: updatedRecipe.sodium,
-              images: updatedRecipe.images,
-              ingredients: updatedRecipe.ingredients.map(ing => ({
+              images: (updatedRecipe.images || []).map((image, index) => ({
+                url: image.url,
+                localPath: image.localPath ?? undefined,
+                order: image.order || index + 1,
+                altText: image.altText ?? undefined,
+              })),
+              ingredients: updatedRecipe.ingredients.map((ing, index) => ({
                 name: ing.name,
                 amount: ing.amount || "",  // Ensure amount is never null/undefined
                 unit: ing.unit || "",
                 section: ing.section || undefined, // Include section for multi-part recipes
-                order: ing.order
+                order: ing.order || index + 1
               })),
-              instructions: updatedRecipe.instructions.map(inst => ({
-                step: inst.step,
+              instructions: updatedRecipe.instructions.map((inst, index) => ({
+                step: inst.step || index + 1,
                 description: inst.description,
                 time: inst.thermomixSettings?.time || "",
                 temperature: inst.thermomixSettings?.temperature || "",
@@ -86,14 +92,14 @@ export const NutritionModal = ({ recipe, isOpen, onClose, onRecipeUpdate }: Nutr
             };
 
             // Save to backend
-            await api.recipes.update(recipe.id, cleanedRecipe);
+            const savedRecipe = await api.recipes.update(recipe.id, cleanedRecipe);
 
             // Update local state
-            setCurrentRecipe(updatedRecipe);
+            setCurrentRecipe(savedRecipe);
 
             // Notify parent component of the update
             if (onRecipeUpdate) {
-              onRecipeUpdate(updatedRecipe);
+              onRecipeUpdate(savedRecipe);
             }
           }
         } catch (error) {
@@ -131,6 +137,7 @@ export const NutritionModal = ({ recipe, isOpen, onClose, onRecipeUpdate }: Nutr
                 protein: currentRecipe.protein,
                 carbohydrates: currentRecipe.carbohydrates,
                 fat: currentRecipe.fat,
+                saturatedFat: currentRecipe.saturatedFat,
                 fiber: currentRecipe.fiber,
                 sugar: currentRecipe.sugar,
                 sodium: currentRecipe.sodium

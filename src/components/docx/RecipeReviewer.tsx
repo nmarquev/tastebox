@@ -13,7 +13,9 @@ import {
   FileText,
   CheckCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  ArrowLeft,
+  ArrowRight
 } from "lucide-react";
 import { DocxExtractedRecipe } from "@/types/docx";
 
@@ -23,8 +25,11 @@ interface RecipeReviewerProps {
   totalRecipes: number;
   isSaved: boolean;
   onSave: () => void;
+  onSaveAll?: () => void;
   onSkip: () => void;
   loading: boolean;
+  onPrevious?: () => void;
+  onNext?: () => void;
 }
 
 export const RecipeReviewer = ({
@@ -33,8 +38,11 @@ export const RecipeReviewer = ({
   totalRecipes,
   isSaved,
   onSave,
+  onSaveAll,
   onSkip,
-  loading
+  loading,
+  onPrevious,
+  onNext
 }: RecipeReviewerProps) => {
   const [showRawContent, setShowRawContent] = useState(false);
 
@@ -42,14 +50,114 @@ export const RecipeReviewer = ({
 
   return (
     <div className="space-y-6">
-      <div className="text-center space-y-2">
+      <div className="text-center">
         <h3 className="text-lg font-semibold">
           Revisar Receta {recipeIndex + 1} de {totalRecipes}
         </h3>
-        <p className="text-muted-foreground">
-          Revisa los datos extraídos y guarda la receta si está correcta
-        </p>
       </div>
+
+      {/* Action Buttons (arriba de la vista previa) */}
+      <div className="flex justify-center space-x-4">
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={onSkip}
+          disabled={loading}
+        >
+          <SkipForward className="h-4 w-4 mr-2" />
+          Saltar Esta Receta
+        </Button>
+
+        <Button
+          size="lg"
+          onClick={onSave}
+          disabled={loading || isSaved}
+          className="px-8"
+        >
+          {loading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              Guardando...
+            </>
+          ) : isSaved ? (
+            <>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Ya Guardada
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Guardar Receta
+            </>
+          )}
+        </Button>
+
+        {onSaveAll && totalRecipes > 1 && (
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={onSaveAll}
+            disabled={loading}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Guardar todas las recetas
+          </Button>
+        )}
+      </div>
+
+      {/* Navegación entre recetas (arriba del recuadro) */}
+      {totalRecipes > 1 && (
+        <div className="flex justify-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onPrevious}
+            disabled={recipeIndex === 0}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onNext}
+            disabled={recipeIndex >= totalRecipes - 1}
+          >
+            Siguiente
+            <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
+
+      {/* Calidad de Extracción (arriba de la vista previa) */}
+      <Card>
+        <CardHeader className="pb-2 pt-3">
+          <CardTitle className="flex items-center space-x-2 text-sm">
+            <FileText className="h-4 w-4" />
+            <span>Calidad de Extracción</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pb-3 pt-0">
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div>
+              <div className="text-base font-semibold text-green-600">{estimatedData?.title ? '✓' : '⚠️'}</div>
+              <div className="text-xs text-muted-foreground">Título</div>
+            </div>
+            <div>
+              <div className="text-base font-semibold text-green-600">{estimatedData?.ingredients?.length || 0}</div>
+              <div className="text-xs text-muted-foreground">Ingredientes</div>
+            </div>
+            <div>
+              <div className="text-base font-semibold text-green-600">{estimatedData?.instructions?.length || 0}</div>
+              <div className="text-xs text-muted-foreground">Pasos</div>
+            </div>
+            <div>
+              <div className="text-base font-semibold text-green-600">{estimatedData?.prepTime ? '✓' : '⚠️'}</div>
+              <div className="text-xs text-muted-foreground">Tiempos</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recipe Preview */}
       <Card className={isSaved ? "border-green-200 bg-green-50" : ""}>
@@ -164,44 +272,6 @@ export const RecipeReviewer = ({
         </CardContent>
       </Card>
 
-      {/* Quality Indicators */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-base">
-            <FileText className="h-4 w-4" />
-            <span>Calidad de Extracción</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <div className="text-lg font-semibold text-green-600">
-                {estimatedData?.title ? '✓' : '⚠️'}
-              </div>
-              <div className="text-xs text-muted-foreground">Título</div>
-            </div>
-            <div>
-              <div className="text-lg font-semibold text-green-600">
-                {estimatedData?.ingredients?.length || 0}
-              </div>
-              <div className="text-xs text-muted-foreground">Ingredientes</div>
-            </div>
-            <div>
-              <div className="text-lg font-semibold text-green-600">
-                {estimatedData?.instructions?.length || 0}
-              </div>
-              <div className="text-xs text-muted-foreground">Pasos</div>
-            </div>
-            <div>
-              <div className="text-lg font-semibold text-green-600">
-                {estimatedData?.prepTime ? '✓' : '⚠️'}
-              </div>
-              <div className="text-xs text-muted-foreground">Tiempos</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Warnings */}
       {(!estimatedData?.ingredients || estimatedData.ingredients.length === 0) && (
         <Alert>
@@ -220,43 +290,6 @@ export const RecipeReviewer = ({
           </AlertDescription>
         </Alert>
       )}
-
-      {/* Action Buttons */}
-      <div className="flex justify-center space-x-4">
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={onSkip}
-          disabled={loading}
-        >
-          <SkipForward className="h-4 w-4 mr-2" />
-          Saltar Esta Receta
-        </Button>
-
-        <Button
-          size="lg"
-          onClick={onSave}
-          disabled={loading || isSaved}
-          className="px-8"
-        >
-          {loading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              Guardando...
-            </>
-          ) : isSaved ? (
-            <>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Ya Guardada
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Guardar Receta
-            </>
-          )}
-        </Button>
-      </div>
 
       {/* Progress Indicator */}
       <div className="text-center text-sm text-muted-foreground">

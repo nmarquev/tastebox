@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TasteBox - Guarda tus recetas",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Guarda recetas de cualquier web o video a tu colección TasteBox",
   "permissions": [
     "activeTab",
@@ -20,6 +20,13 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
+      "exclude_matches": [
+        "http://localhost/*",
+        "https://localhost/*",
+        "http://127.0.0.1/*",
+        "https://127.0.0.1/*",
+        "https://tastebox.beweb.com.ar/*"
+      ],
       "js": ["js/content.js"],
       "css": ["css/content.css"]
     }
@@ -38,5 +45,11 @@
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/logo-white.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

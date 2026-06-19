@@ -17,6 +17,7 @@ export interface DocxExtractedRecipe {
   id: string;
   title: string;
   content: string;
+  imageIndex?: number; // Índice en uploadData.images de la imagen junto a esta receta; -1 si ninguna
   estimatedData?: {
     title?: string;
     description?: string;
@@ -53,6 +54,8 @@ export interface DocxImportState {
   loading: boolean;
   error?: string;
   savedRecipes: string[]; // IDs of recipes that have been saved
+  currentBatchStart?: number; // Página inicial del lote (de a 2 páginas) que se está revisando
+  fileName?: string; // Nombre del archivo DOCX que se está importando
 }
 
 export interface PageRange {

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { User, Mail, Tag, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Tag, Lock, Eye, EyeOff, KeyRound } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/services/api";
 import { ProfilePhotoUpload } from "./ProfilePhotoUpload";
@@ -20,17 +20,21 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
 
-  // Form state
+  // Form state (datos del perfil)
   const [formData, setFormData] = useState({
     email: user?.email || '',
     name: user?.name || '',
     alias: user?.alias || '',
-    currentPassword: '',
-    newPassword: ''
   });
+
+  // Diálogo de cambio de contraseña
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: '', new: '' });
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -38,8 +42,7 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
     setSuccess(null);
   };
 
-  const handlePhotoUpdate = async (photoUrl: string) => {
-    // Refresh user data to update the profile photo in the UI
+  const handlePhotoUpdate = async () => {
     if (refreshUser) {
       await refreshUser();
     }
@@ -52,7 +55,7 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
     setSuccess(null);
 
     try {
-      // Prepare data to send (only include changed fields)
+      // Solo enviar los campos que cambiaron
       const updateData: any = {};
 
       if (formData.email !== user?.email) {
@@ -67,45 +70,20 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
         updateData.alias = formData.alias || null;
       }
 
-      // Handle password change
-      if (formData.currentPassword && formData.newPassword) {
-        if (formData.newPassword.length < 6) {
-          setError('La nueva contraseña debe tener al menos 6 caracteres');
-          setLoading(false);
-          return;
-        }
-        updateData.currentPassword = formData.currentPassword;
-        updateData.newPassword = formData.newPassword;
-      } else if (formData.currentPassword || formData.newPassword) {
-        setError('Para cambiar la contraseña, debes completar ambos campos');
-        setLoading(false);
-        return;
-      }
-
-      // Check if there are changes to save
       if (Object.keys(updateData).length === 0) {
         setError('No hay cambios para guardar');
         setLoading(false);
         return;
       }
 
-      const response = await api.auth.updateProfile(updateData);
+      await api.auth.updateProfile(updateData);
 
       setSuccess('Perfil actualizado correctamente');
 
-      // Reset password fields
-      setFormData(prev => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: ''
-      }));
-
-      // Refresh user data in context
       if (refreshUser) {
         await refreshUser();
       }
 
-      // Close modal after a short delay to show success message
       setTimeout(() => {
         onClose();
         setSuccess(null);
@@ -118,14 +96,52 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
     }
   };
 
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError(null);
+
+    if (!passwordData.current || !passwordData.new) {
+      setPwError('Completá ambos campos');
+      return;
+    }
+    if (passwordData.new.length < 6) {
+      setPwError('La nueva contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setPwLoading(true);
+    try {
+      await api.auth.updateProfile({
+        currentPassword: passwordData.current,
+        newPassword: passwordData.new,
+      });
+      setPasswordData({ current: '', new: '' });
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowPasswordDialog(false);
+      setSuccess('Contraseña actualizada correctamente');
+    } catch (err: any) {
+      setPwError(err.message || 'Error al cambiar la contraseña');
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  const closePasswordDialog = () => {
+    if (pwLoading) return;
+    setPasswordData({ current: '', new: '' });
+    setPwError(null);
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowPasswordDialog(false);
+  };
+
   const handleClose = () => {
     if (!loading) {
       setFormData({
         email: user?.email || '',
         name: user?.name || '',
         alias: user?.alias || '',
-        currentPassword: '',
-        newPassword: ''
       });
       setError(null);
       setSuccess(null);
@@ -134,97 +150,144 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Editar Perfil</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent
+          className="sm:max-w-md max-h-[90vh] overflow-y-auto"
+          closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+        >
+          <DialogHeader>
+            <DialogTitle>Editar Perfil</DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-          {success && (
-            <Alert>
-              <AlertDescription className="text-green-600">{success}</AlertDescription>
-            </Alert>
-          )}
+            {success && (
+              <Alert>
+                <AlertDescription className="text-green-600">{success}</AlertDescription>
+              </Alert>
+            )}
 
-          {/* Profile Photo */}
-          <div className="space-y-2">
-            <Label>Foto de perfil</Label>
-            <ProfilePhotoUpload
-              currentPhotoUrl={user?.profilePhoto ? `${getServerBaseUrl()}${user.profilePhoto}` : undefined}
-              onPhotoUpdate={handlePhotoUpdate}
-            />
-          </div>
-
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className="pl-10"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                className="pl-10"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Alias */}
-          <div className="space-y-2">
-            <Label htmlFor="alias">Alias (opcional)</Label>
-            <div className="relative">
-              <Tag className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="alias"
-                value={formData.alias}
-                onChange={(e) => handleInputChange('alias', e.target.value)}
-                className="pl-10"
-                placeholder="Cómo quieres que aparezca tu nombre"
-              />
-            </div>
-          </div>
-
-          {/* Password Change Section */}
-          <div className="border-t pt-4 space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">
-              Cambiar Contraseña (opcional)
-            </h3>
-
-            {/* Current Password */}
+            {/* Profile Photo */}
             <div className="space-y-2">
-              <Label htmlFor="currentPassword">Contraseña Actual</Label>
+              <Label>Foto de perfil</Label>
+              <ProfilePhotoUpload
+                currentPhotoUrl={user?.profilePhoto ? `${getServerBaseUrl()}${user.profilePhoto}` : undefined}
+                onPhotoUpdate={handlePhotoUpdate}
+              />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">Nombre</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Alias */}
+            <div className="space-y-2">
+              <Label htmlFor="alias">Alias (opcional)</Label>
+              <div className="relative">
+                <Tag className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="alias"
+                  value={formData.alias}
+                  onChange={(e) => handleInputChange('alias', e.target.value)}
+                  className="pl-10"
+                  placeholder="Cómo quieres que aparezca tu nombre"
+                />
+              </div>
+            </div>
+
+            {/* Botón para abrir el diálogo de cambio de contraseña */}
+            <div className="border-t pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowPasswordDialog(true)}
+              >
+                <KeyRound className="mr-2 h-4 w-4" />
+                Cambiar contraseña
+              </Button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Guardando...' : 'Guardar Cambios'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de cambio de contraseña */}
+      <Dialog open={showPasswordDialog} onOpenChange={(open) => { if (!open) closePasswordDialog(); }}>
+        <DialogContent
+          className="sm:max-w-md"
+          closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+        >
+          <DialogHeader>
+            <DialogTitle>Cambiar contraseña</DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            {pwError && (
+              <Alert variant="destructive">
+                <AlertDescription>{pwError}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Contraseña actual */}
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Contraseña actual</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="currentPassword"
                   type={showCurrentPassword ? "text" : "password"}
-                  value={formData.currentPassword}
-                  onChange={(e) => handleInputChange('currentPassword', e.target.value)}
+                  value={passwordData.current}
+                  onChange={(e) => { setPasswordData(prev => ({ ...prev, current: e.target.value })); setPwError(null); }}
                   className="pl-10 pr-10"
+                  autoFocus
                 />
                 <button
                   type="button"
@@ -236,16 +299,16 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
               </div>
             </div>
 
-            {/* New Password */}
+            {/* Nueva contraseña */}
             <div className="space-y-2">
-              <Label htmlFor="newPassword">Nueva Contraseña</Label>
+              <Label htmlFor="newPassword">Nueva contraseña</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="newPassword"
                   type={showNewPassword ? "text" : "password"}
-                  value={formData.newPassword}
-                  onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                  value={passwordData.new}
+                  onChange={(e) => { setPasswordData(prev => ({ ...prev, new: e.target.value })); setPwError(null); }}
                   className="pl-10 pr-10"
                   minLength={6}
                 />
@@ -258,24 +321,18 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Guardando...' : 'Guardar Cambios'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button type="button" variant="outline" onClick={closePasswordDialog} disabled={pwLoading}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={pwLoading}>
+                {pwLoading ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
