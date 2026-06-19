@@ -57,7 +57,10 @@ git clone https://github.com/nmarquev/tastebox .   # o la URL con token/deploy k
 ### Backend `.env` (`$SITE_DIR/backend/.env`)
 
 ```env
-DATABASE_URL="file:./db/tastebox.db"
+# Ruta ABSOLUTA a propósito: Prisma resuelve `file:./...` relativo a backend/prisma/,
+# no a backend/. Con ruta absoluta, `prisma db push`, el seed y la app (PM2) apuntan
+# todos al MISMO archivo. Ajustá el path a tu SITE_DIR.
+DATABASE_URL="file:/home/tastebox/htdocs/tastebox.beweb.com.ar/backend/db/tastebox.db"
 OPENAI_API_KEY="sk-..."            # o la key de OpenRouter
 # OPENAI_BASE_URL="https://openrouter.ai/api/v1"   # solo si usás OpenRouter
 OPENAI_MODEL="openai/gpt-4o-mini"
@@ -99,10 +102,19 @@ migraciones — simple y suficiente para un único usuario).
 cd "$SITE_DIR/backend"
 mkdir -p db uploads
 npx prisma generate
-npx prisma db push          # crea/actualiza todas las tablas en db/tastebox.db
-# Crear el usuario inicial (SIN recetas). Definí las credenciales por entorno:
+npx prisma db push          # crea/actualiza todas las tablas en la ruta de DATABASE_URL
+# Verificá que el .db quedó donde apunta DATABASE_URL (ruta absoluta del .env):
+ls -la db/tastebox.db
+# Crear el usuario inicial (SIN recetas). Definí las credenciales por entorno.
+# `set -a; . ./.env` exporta DATABASE_URL para que el seed (tsx, no carga dotenv) la vea:
+set -a; . ./.env; set +a
 SEED_EMAIL="vos@tudominio.com" SEED_PASSWORD="<contraseña-fuerte>" SEED_NAME="Tu Nombre" npm run db:seed
 ```
+
+> ⚠️ **Ruta de la DB**: si en `DATABASE_URL` usás una ruta **relativa** (`file:./db/...`),
+> Prisma la resuelve relativo a `backend/prisma/`, así que la DB termina en
+> `backend/prisma/db/tastebox.db` (no en `backend/db/`). Por eso arriba el `.env` usa
+> ruta **absoluta**: el CLI, el seed y la app apuntan todos al mismo archivo.
 
 > Si preferís migraciones formales (`prisma migrate deploy`), tené en cuenta que el historial de
 > migraciones del repo no está 100% alineado con el esquema (se usó `db push` en dev). `db push` evita

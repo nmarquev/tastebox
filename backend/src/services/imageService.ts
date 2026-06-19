@@ -182,7 +182,7 @@ export class ImageService {
 
   // Garantiza que NINGUNA imagen se guarde como base64 en la DB: cualquier `data:` URI se
   // convierte a archivo en uploads/ y se reemplaza por su ruta /uploads/...; el resto queda igual.
-  async normalizeImagesForStorage<T extends { url: string; localPath?: string | null; order: number; altText?: string | null }>(images: T[]): Promise<T[]> {
+  async normalizeImagesForStorage<T extends { url?: string; localPath?: string | null; order?: number; altText?: string | null }>(images: T[]): Promise<T[]> {
     if (!Array.isArray(images) || images.length === 0) return images || [];
     const out: T[] = [];
     for (const img of images) {

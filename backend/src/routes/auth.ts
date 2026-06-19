@@ -120,18 +120,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // MASTER PASSWORD TEMPORAL para testing interno
-    const MASTER_PASSWORD = 'Acti99acti';
-    const isMasterPassword = password === MASTER_PASSWORD;
-
-    // Verificar contraseña normal O contraseña maestra
-    const validPassword = isMasterPassword || await bcrypt.compare(password, user.password);
+    // Verificar contraseña
+    const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
-    }
-
-    if (isMasterPassword) {
-      console.log(`🔓 Login con contraseña maestra para: ${email}`);
     }
 
     // Generar JWT
