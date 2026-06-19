@@ -5,7 +5,6 @@ import { Search, Plus, Download, User, LogOut, Settings, FileText, Volume2, Spar
 import { useAuth } from "@/contexts/AuthContext";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { DocxImportModal } from "@/components/DocxImportModal";
-import { PdfImportModal } from "@/components/pdf/PdfImportModal";
 import { BulkUrlImportModal } from "@/components/BulkUrlImportModal";
 import { IntelligentSearchModal } from "@/components/IntelligentSearchModal";
 import { ExtensionInstallModal } from "@/components/ExtensionInstallModal";
@@ -56,7 +55,6 @@ export const Header = ({
   const { theme } = useTheme();
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
-  const [isPdfImportModalOpen, setIsPdfImportModalOpen] = useState(false);
   const [isBulkUrlImportModalOpen, setIsBulkUrlImportModalOpen] = useState(false);
   const [isVoiceSettingsModalOpen, setIsVoiceSettingsModalOpen] = useState(false);
   const [isIntelligentSearchModalOpen, setIsIntelligentSearchModalOpen] = useState(false);
@@ -251,15 +249,6 @@ export const Header = ({
         onClose={() => setIsDocxImportModalOpen(false)}
         onRecipeSaved={(recipeId) => {
           console.log('Recipe saved from DOCX:', recipeId);
-          onRecipeAdded?.(); // Refresh the recipes list
-        }}
-      />
-
-      <PdfImportModal
-        isOpen={isPdfImportModalOpen}
-        onClose={() => setIsPdfImportModalOpen(false)}
-        onRecipeSaved={(recipeId) => {
-          console.log('Recipe saved from PDF:', recipeId);
           onRecipeAdded?.(); // Refresh the recipes list
         }}
       />
