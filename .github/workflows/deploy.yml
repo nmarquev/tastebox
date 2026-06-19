@@ -1,0 +1,36 @@
+name: Deploy a producción (VPS)
+
+# Se dispara en cada push a main, o a mano desde la pestaña Actions.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Evita deploys solapados: si entra un push mientras corre otro, espera (no cancela).
+concurrency:
+  group: vps-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy por SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          command_timeout: 30m      # npm install + build + (puppeteer) puede tardar
+          script_stop: true         # corta al primer comando que falle
+          script: |
+            set -euo pipefail
+            # El shell de la Action es NO interactivo: si Node se instaló vía nvm,
+            # hay que cargarlo a mano (si no usás nvm, este bloque es un no-op).
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            # Si node/pm2 NO aparecen, descomentá y ajustá el PATH a tu instalación:
+            # export PATH="/usr/bin:/usr/local/bin:$PATH"
+            cd /home/tastebox/htdocs/tastebox.beweb.com.ar
+            bash deploy.sh
