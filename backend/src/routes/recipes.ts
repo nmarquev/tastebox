@@ -285,6 +285,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       const fallbackImage = await imageService.findAndStoreRecipeImage(data.title);
       if (fallbackImage) recipeImages = [fallbackImage];
     }
+    // Nunca persistir imágenes base64 en la DB: convertir cualquier data: URI a archivo en uploads/.
+    recipeImages = await imageService.normalizeImagesForStorage(recipeImages);
 
     // Create recipe with related data
     const recipe = await prisma.recipe.create({
@@ -442,6 +444,9 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Recipe not found' });
     }
 
+    // Nunca persistir imágenes base64 en la DB: convertir cualquier data: URI a archivo en uploads/.
+    const updateImages = await imageService.normalizeImagesForStorage(data.images);
+
     // Update recipe (this is a simplified version - in production you'd want more granular updates)
     const recipe = await prisma.recipe.update({
       where: { id: req.params.id },
@@ -487,7 +492,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
         // For simplicity, we'll replace all related data
         images: {
           deleteMany: {},
-          create: data.images.map(img => ({
+          create: updateImages.map(img => ({
             url: img.url,
             localPath: img.localPath,
             order: img.order,

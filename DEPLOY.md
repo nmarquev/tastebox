@@ -100,8 +100,8 @@ cd "$SITE_DIR/backend"
 mkdir -p db uploads
 npx prisma generate
 npx prisma db push          # crea/actualiza todas las tablas en db/tastebox.db
-# (opcional) usuario inicial / datos de prueba:
-# npm run db:seed
+# Crear el usuario inicial (SIN recetas). Definí las credenciales por entorno:
+SEED_EMAIL="vos@tudominio.com" SEED_PASSWORD="<contraseña-fuerte>" SEED_NAME="Tu Nombre" npm run db:seed
 ```
 
 > Si preferís migraciones formales (`prisma migrate deploy`), tené en cuenta que el historial de
@@ -121,7 +121,7 @@ npm run build         # genera dist/
 cd "$SITE_DIR/backend"
 npm run build         # compila a dist/ (tsc, tolera errores de tipos pre-existentes)
 npm i -g pm2          # si no está
-pm2 start dist/index.js --name tastebox-api
+pm2 start dist/index.js --name tastebox
 pm2 save
 pm2 startup           # seguí la instrucción que imprime para que arranque al bootear
 ```
@@ -131,6 +131,9 @@ Verificá que el backend responde local:
 ```bash
 curl -s http://127.0.0.1:5000/api/health
 ```
+
+> En la práctica, los pasos 4–7 (deps, build front/back, Prisma, seed y PM2) los automatiza
+> **`./deploy.sh`** (ver paso 10). La primera vez podés correr `SEED=1 ./deploy.sh` para crear el usuario.
 
 ## 8) Configurar Nginx (vhost del sitio en CloudPanel)
 
@@ -177,16 +180,16 @@ Guardá y recargá Nginx (CloudPanel lo hace al guardar, o `sudo systemctl reloa
 
 ## 10) Actualizaciones futuras (deploy de nuevos cambios)
 
+Usá el script versionado **`deploy.sh`** (hace git pull + build front/back + `prisma db push` + reload PM2):
+
 ```bash
 cd "$SITE_DIR"
-git pull
-npm ci && npm run build                       # frontend
-cd backend && npm ci && npm run build         # backend
-npx prisma generate && npx prisma db push     # solo si cambió el esquema
-pm2 reload tastebox-api
+./deploy.sh              # actualizar a lo último de main
+./deploy.sh --no-pull    # rebuild sin git pull
+SEED=1 ./deploy.sh       # además corre el seed (usuario inicial; definí SEED_EMAIL/SEED_PASSWORD en backend/.env)
 ```
 
-Podés guardar esto como `deploy.sh` en el server (no en el repo) para correrlo de una.
+> Si `deploy.sh` no es ejecutable: `chmod +x deploy.sh`.
 
 ---
 

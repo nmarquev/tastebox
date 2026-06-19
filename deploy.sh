@@ -39,6 +39,18 @@ cd backend
 npm install --production=false
 npm run build
 
+echo -e "${YELLOW}🗄️  Paso 4b: Sincronizando base de datos (Prisma)...${NC}"
+# Asegurar carpetas de datos/uploads (no se borran en el deploy)
+mkdir -p db uploads
+npx prisma generate
+npx prisma db push   # crea/actualiza el esquema en db/tastebox.db (incluye tablas nuevas)
+
+# Seed opcional: crear el usuario inicial (sin recetas). Ejecutar con:  SEED=1 ./deploy.sh
+if [ "${SEED:-0}" = "1" ]; then
+  echo -e "${YELLOW}🌱 Seed: creando usuario inicial...${NC}"
+  npm run db:seed
+fi
+
 echo -e "${YELLOW}🔄 Paso 5: Reiniciando servicio PM2...${NC}"
 cd ..
 

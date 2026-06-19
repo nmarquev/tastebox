@@ -157,6 +157,46 @@ export class ImageService {
     return null;
   }
 
+  // Decodifica una imagen embebida (data:image/...;base64,XXXX), la optimiza y la guarda en uploads/.
+  async storeDataUriImage(dataUri: string, order: number): Promise<{
+    url: string;
+    localPath: string;
+    order: number;
+    altText?: string;
+  } | null> {
+    try {
+      const commaIdx = dataUri.indexOf(',');
+      if (!dataUri.startsWith('data:') || commaIdx === -1) return null;
+      const buffer = Buffer.from(dataUri.slice(commaIdx + 1), 'base64');
+      if (!buffer.length) return null;
+      await this.ensureUploadDir();
+      const filename = `recipe-${randomUUID()}-${order}.jpg`;
+      const localPath = path.join(this.uploadDir, filename);
+      await this.processAndSaveImage(buffer, localPath);
+      return { url: `/uploads/${filename}`, localPath: filename, order, altText: `Recipe image ${order}` };
+    } catch (error) {
+      console.error('Error guardando imagen base64 en disco:', error);
+      return null;
+    }
+  }
+
+  // Garantiza que NINGUNA imagen se guarde como base64 en la DB: cualquier `data:` URI se
+  // convierte a archivo en uploads/ y se reemplaza por su ruta /uploads/...; el resto queda igual.
+  async normalizeImagesForStorage<T extends { url: string; localPath?: string | null; order: number; altText?: string | null }>(images: T[]): Promise<T[]> {
+    if (!Array.isArray(images) || images.length === 0) return images || [];
+    const out: T[] = [];
+    for (const img of images) {
+      if (typeof img?.url === 'string' && img.url.startsWith('data:')) {
+        const stored = await this.storeDataUriImage(img.url, img.order ?? out.length + 1);
+        if (stored) out.push({ ...img, url: stored.url, localPath: stored.localPath });
+        // si no se pudo decodificar, se descarta (jamás se persiste base64)
+      } else {
+        out.push(img);
+      }
+    }
+    return out;
+  }
+
   private async downloadSingleImage(imageUrl: string, order: number): Promise<{
     originalUrl: string;
     localPath: string;
