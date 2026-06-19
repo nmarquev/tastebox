@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react';
+﻿import { useState, useEffect, useMemo, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNutritionCalculator } from '@/hooks/useNutritionCalculator';
 import { api, RecipeCollection } from '@/services/api';
 import { Recipe } from '@/types/recipe';
-import { Loader2, Plus, X, Upload, Edit, Calculator, Globe, Check, ClipboardList, Heart, WheatOff, Leaf } from 'lucide-react';
+import { Loader2, Plus, X, Upload, Edit, Calculator, Globe, Check, ClipboardList, ClipboardPaste, Heart, WheatOff, Leaf } from 'lucide-react';
 import { resolveImageUrl } from '@/utils/api';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
@@ -414,6 +414,43 @@ export const EditRecipeModal = ({
     }
   };
 
+  // Recuerda el último campo de texto enfocado para "Pegar texto".
+  const lastFieldRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const trackFocusField = (e: React.FocusEvent) => {
+    const t = e.target as HTMLElement;
+    if (t instanceof HTMLTextAreaElement) { lastFieldRef.current = t; return; }
+    if (t instanceof HTMLInputElement) {
+      const nonText = ['checkbox', 'radio', 'file', 'range', 'color', 'button', 'submit', 'reset'];
+      if (!nonText.includes(t.type) && !t.readOnly && !t.disabled) lastFieldRef.current = t;
+    }
+  };
+
+  // Pega el contenido del portapapeles en la posición del cursor del último campo enfocado.
+  const handlePasteText = async () => {
+    const el = lastFieldRef.current;
+    if (!el) {
+      toast({ title: 'Elegí un campo primero', description: 'Hacé clic en el campo donde querés pegar el texto.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) { toast({ title: 'El portapapeles está vacío', variant: 'destructive' }); return; }
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? el.value.length;
+      const newValue = el.value.slice(0, start) + text + el.value.slice(end);
+      // Setter nativo + evento input para que React / react-hook-form tomen el cambio.
+      const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+      setter?.call(el, newValue);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      const caret = start + text.length;
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    } catch {
+      toast({ title: 'No se pudo leer el portapapeles', description: 'Permití el acceso al portapapeles o pegá con Ctrl+V.', variant: 'destructive' });
+    }
+  };
+
   const handleRemoveNewImage = (index: number) => {
     setUploadedImages(prev => {
       URL.revokeObjectURL(prev[index].preview);
@@ -625,7 +662,7 @@ export const EditRecipeModal = ({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+        <form onSubmit={handleSubmit(onSubmit)} onFocus={trackFocusField} className="flex flex-col flex-1 min-h-0">
           {/* Fixed Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
             <div className="px-6 pt-4 flex-shrink-0">
@@ -660,7 +697,7 @@ export const EditRecipeModal = ({
                 <Textarea
                   id="description"
                   {...register('description')}
-                  placeholder="Describe tu receta..."
+                  placeholder="Describí tu receta"
                   rows={3}
                 />
               </div>
@@ -683,18 +720,18 @@ export const EditRecipeModal = ({
                 </div>
                 <div>
                   <Label htmlFor="sourceUrl">URL</Label>
-                  <Input id="sourceUrl" {...register('sourceUrl')} placeholder="https://... (opcional)" />
+                  <Input id="sourceUrl" {...register('sourceUrl')} placeholder="Ingresa la URL de la receta" />
                 </div>
 
                 {/* d: Origen / Dificultad */}
                 <div>
                   <Label>Origen</Label>
                   <Select
-                    value={watch('importedFrom') || 'own'}
+                    value={watch('importedFrom') || (mode === 'create' ? undefined : 'own')}
                     onValueChange={(value) => setValue('importedFrom', value === 'own' ? undefined : value as RecipeFormData['importedFrom'])}
                   >
                     <SelectTrigger className="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary">
-                      <SelectValue placeholder="Seleccionar origen" />
+                      <SelectValue placeholder="Seleccioná de donde proviene la receta" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="own">Receta propia</SelectItem>
@@ -709,7 +746,7 @@ export const EditRecipeModal = ({
                   <Label>Dificultad</Label>
                   <Select value={watch('difficulty')} onValueChange={(value) => setValue('difficulty', value as any)}>
                     <SelectTrigger className="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary">
-                      <SelectValue placeholder="Seleccionar dificultad" />
+                      <SelectValue placeholder="Seleccioná dificultad de la receta" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Fácil">Fácil</SelectItem>
@@ -1289,6 +1326,10 @@ export const EditRecipeModal = ({
           <div className="flex justify-end gap-2 px-6 py-4 border-t flex-shrink-0">
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
+            </Button>
+            <Button type="button" variant="outline" onClick={handlePasteText}>
+              <ClipboardPaste className="h-4 w-4 mr-2" />
+              Pegar texto
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (

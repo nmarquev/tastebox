@@ -198,6 +198,8 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
       <DialogContent
         className="max-w-4xl max-h-[90vh] overflow-y-auto"
         closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -213,19 +215,31 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
               <form onSubmit={(event) => event.preventDefault()}>
                 <Label htmlFor="recipe-url">URL de la receta</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input
-                    ref={urlInputRef}
-                    id="recipe-url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); triggerImport(); } }}
-                    placeholder="https://ejemplo.com/mi-receta"
-                    className="flex-1"
-                  />
+                  <div className="relative flex-1">
+                    <Input
+                      ref={urlInputRef}
+                      id="recipe-url"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); triggerImport(); } }}
+                      placeholder="https://ejemplo.com/mi-receta"
+                      className="w-full pr-9"
+                    />
+                    {url && (
+                      <button
+                        type="button"
+                        onClick={() => { setUrl(''); urlInputRef.current?.focus(); }}
+                        title="Borrar URL"
+                        aria-label="Borrar URL"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                   {isLoading ? (
                     <Button
                       type="button"
-                      variant="outline"
                       onClick={handleCancelImport}
                       className="min-w-44"
                     >
@@ -244,7 +258,6 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                   )}
                   <Button
                     type="button"
-                    variant="outline"
                     size="icon"
                     onClick={handlePasteUrl}
                     disabled={isLoading}
@@ -277,16 +290,14 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                 <h3 className="text-lg font-semibold">Vista previa de la receta</h3>
                 <div className="flex gap-2">
                   <Button
-                    variant="outline"
                     onClick={() => setIsEditing(!isEditing)}
                   >
                     {isEditing ? 'Ver' : 'Editar'}
                   </Button>
                   <Button
-                    variant="outline"
                     onClick={() => setImportedRecipe(null)}
                   >
-                    Volver
+                    Anterior
                   </Button>
                 </div>
               </div>
@@ -570,8 +581,8 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
 
               {/* Action Buttons */}
               <div className="flex justify-between pt-4 border-t">
-                <Button variant="outline" onClick={handleClose}>
-                  Cerrar
+                <Button onClick={handleClose}>
+                  Cancelar
                 </Button>
                 <div className="flex gap-2">
                   <Button

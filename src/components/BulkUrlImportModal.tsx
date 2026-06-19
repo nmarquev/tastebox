@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
 import { Recipe } from '@/types/recipe';
 import { getRecipeSource } from '@/utils/siteUtils';
-import { Loader2, Check, X, Globe, Heart, WheatOff, Leaf } from 'lucide-react';
+import { Loader2, Check, X, Globe, Heart, WheatOff, Leaf, ClipboardPaste } from 'lucide-react';
 
 interface BulkUrlImportModalProps {
   isOpen: boolean;
@@ -56,7 +56,10 @@ const EMPTY_COMMON: CommonFields = {
 };
 
 export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlImportModalProps) => {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [confirmed, setConfirmed] = useState(false);
+  // Paso 4: 'keep' conserva los campos en común; 'clear' los borra.
+  const [keepCommonChoice, setKeepCommonChoice] = useState<'keep' | 'clear'>('keep');
   const [urlsText, setUrlsText] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [results, setResults] = useState<UrlResult[]>([]);
@@ -111,6 +114,11 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
     });
     return () => { cancelled = true; };
   }, [isOpen]);
+
+  // Si se modifica algún campo en común después de confirmar, se vuelve a pedir confirmación.
+  useEffect(() => {
+    setConfirmed(false);
+  }, [common]);
 
   const parseUrls = (text: string): string[] => {
     const seen = new Set<string>();
@@ -231,8 +239,44 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
     setUrlsText('');
     setResults([]);
     setCommon(EMPTY_COMMON);
+    setConfirmed(false);
+    setKeepCommonChoice('keep');
     setStep(1);
     onClose();
+  };
+
+  // Paso 2: confirma los campos en común y habilita avanzar al Paso 3.
+  const handleConfirmData = () => {
+    setConfirmed(true);
+    toast({
+      title: 'Datos confirmados',
+      description: 'Se aplicarán a todas las recetas.',
+      duration: 2000,
+      className: 'w-auto p-3 pr-8 text-sm',
+    });
+  };
+
+  // Paso 1: pega la última dirección copiada del portapapeles en el cuadro de URLs.
+  const handlePasteUrl = async () => {
+    try {
+      const text = (await navigator.clipboard.readText()).trim();
+      if (!text) {
+        toast({ title: 'Portapapeles vacío', description: 'No hay ninguna dirección copiada.', variant: 'destructive' });
+        return;
+      }
+      setUrlsText(prev => (prev.trim() ? `${prev.replace(/\s*$/, '')}\n${text}` : text));
+    } catch {
+      toast({ title: 'No se pudo pegar', description: 'El navegador no permitió acceder al portapapeles. Pegá manualmente con Ctrl+V.', variant: 'destructive' });
+    }
+  };
+
+  // Paso 4: vuelve al Paso 1 para otro lote. keepCommon decide si se conservan los campos en común.
+  const handleStartNewBatch = (keepCommon: boolean) => {
+    setUrlsText('');
+    setResults([]);
+    setConfirmed(false);
+    if (!keepCommon) setCommon(EMPTY_COMMON);
+    setStep(1);
   };
 
   const urlCount = parseUrls(urlsText).length;
@@ -254,8 +298,10 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent
-        className="max-h-[90vh] max-w-2xl overflow-y-auto"
+        className={`max-h-[90vh] overflow-y-auto ${step === 2 ? 'max-w-4xl' : 'max-w-2xl'}`}
         closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -276,29 +322,39 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
                 rows={6}
                 className="mt-1 font-mono text-sm"
               />
-              {urlCount > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {urlCount} URL{urlCount > 1 ? 's' : ''} detectada{urlCount > 1 ? 's' : ''}
-                </p>
-              )}
+              <div className="mt-2 flex items-center justify-between gap-2">
+                {urlCount > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {urlCount} URL{urlCount > 1 ? 's' : ''} detectada{urlCount > 1 ? 's' : ''}
+                  </p>
+                ) : <span />}
+                <div className="flex items-center gap-2">
+                  <Button type="button" size="sm" onClick={() => setUrlsText('')} disabled={urlsText.trim() === ''}>
+                    <X className="mr-2 h-4 w-4" />
+                    Limpiar URLs
+                  </Button>
+                  <Button type="button" size="sm" onClick={handlePasteUrl}>
+                    <ClipboardPaste className="mr-2 h-4 w-4" />
+                    Pegar URL
+                  </Button>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>
+              <Button type="button" onClick={handleClose}>Cancelar</Button>
               <Button type="button" onClick={() => setStep(2)} disabled={urlCount === 0}>
-                Siguiente paso
+                Siguiente
               </Button>
             </div>
           </div>
-        ) : (
+        ) : step === 2 ? (
           <div className="space-y-4">
             <p className="text-base font-semibold text-foreground">
               Paso 2: Ingresar los campos en común de las recetas a importar (opcionales):
             </p>
 
-            {!isImporting && results.length === 0 && (
-              <>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <Label>Fuente</Label>
                     <MultiSelectCombobox
@@ -367,6 +423,17 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
                     />
                   </div>
                   <div>
+                    <Label>Categoría</Label>
+                    <MultiSelectCombobox
+                      options={categoryOptions}
+                      selected={common.recipeType ? [common.recipeType] : []}
+                      onChange={(next) => setCommon(c => ({ ...c, recipeType: next[0] || '' }))}
+                      placeholder="Elegí una categoría"
+                      searchPlaceholder="Buscar o escribir categoría..."
+                      singleSelect closeOnSelect allowCreate createLabel="Agregar"
+                    />
+                  </div>
+                  <div>
                     <Label>Colección</Label>
                     <MultiSelectCombobox
                       options={collections.map(c => c.name)}
@@ -378,17 +445,6 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
                       placeholder="Elegí una colección"
                       searchPlaceholder="Buscar colección..."
                       singleSelect closeOnSelect
-                    />
-                  </div>
-                  <div>
-                    <Label>Categoría</Label>
-                    <MultiSelectCombobox
-                      options={categoryOptions}
-                      selected={common.recipeType ? [common.recipeType] : []}
-                      onChange={(next) => setCommon(c => ({ ...c, recipeType: next[0] || '' }))}
-                      placeholder="Elegí una categoría"
-                      searchPlaceholder="Buscar o escribir categoría..."
-                      singleSelect closeOnSelect allowCreate createLabel="Agregar"
                     />
                   </div>
                 </div>
@@ -408,8 +464,23 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
                     );
                   })}
                 </div>
-              </>
-            )}
+
+            {/* Botonera: Anterior / Cancelar / Limpiar datos / Confirmar datos / Siguiente (ir a Paso 3) */}
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button type="button" onClick={() => setStep(1)}>Anterior</Button>
+              <Button type="button" onClick={handleClose}>Cancelar</Button>
+              <Button type="button" onClick={() => setCommon(EMPTY_COMMON)}>Limpiar datos</Button>
+              <Button type="button" onClick={handleConfirmData}>
+                {confirmed ? <><Check className="mr-2 h-4 w-4" />Datos confirmados</> : 'Confirmar datos'}
+              </Button>
+              <Button type="button" onClick={() => setStep(3)}>Siguiente</Button>
+            </div>
+          </div>
+        ) : step === 3 ? (
+          <div className="space-y-4">
+            <p className="text-base font-semibold text-foreground">
+              Paso 3: Importar recetas
+            </p>
 
             {/* Resultados de la importación */}
             {results.length > 0 && (
@@ -433,31 +504,67 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
               </div>
             )}
 
-            {/* Botonera: Cancelar / Aceptar (volver a Paso 1) y, debajo, Importar recetas */}
+            {/* Botonera: Importar recetas y, debajo, Cancelar importación / Seguir importando / Anterior */}
             <div className="space-y-2">
-              <div className="flex justify-end gap-2">
-                {isImporting ? (
-                  <Button type="button" variant="outline" onClick={() => { cancelRef.current = true; abortRef.current?.abort(); }}>
-                    <X className="mr-2 h-4 w-4" />
-                    Cancelar importación
-                  </Button>
-                ) : (
-                  <>
-                    <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>
-                    <Button type="button" variant="outline" onClick={() => setStep(1)}>Aceptar</Button>
-                  </>
-                )}
+              {isImporting ? (
+                <Button type="button" className="w-full" onClick={() => { cancelRef.current = true; abortRef.current?.abort(); }}>
+                  <X className="mr-2 h-4 w-4" />
+                  Cancelar importación
+                </Button>
+              ) : (
+                <Button type="button" className="w-full" onClick={handleImport} disabled={urlCount === 0 || results.length > 0}>
+                  {results.length > 0
+                    ? 'Recetas importadas'
+                    : `Importar ${urlCount > 0 ? urlCount : ''} receta${urlCount === 1 ? '' : 's'}`.trim()}
+                </Button>
+              )}
+              {isImporting && (
+                <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Importando...
+                </p>
+              )}
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button type="button" onClick={() => setStep(2)} disabled={isImporting}>Anterior</Button>
+                <Button type="button" onClick={handleClose} disabled={isImporting}>Cancelar</Button>
+                <Button type="button" onClick={() => setStep(4)} disabled={isImporting}>Siguiente</Button>
+                <Button type="button" onClick={handleClose} disabled={isImporting}>Finalizar</Button>
               </div>
-              <Button type="button" className="w-full" onClick={handleImport} disabled={isImporting || urlCount === 0}>
-                {isImporting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Importando...
-                  </>
-                ) : (
-                  `Importar ${urlCount > 0 ? urlCount : ''} receta${urlCount === 1 ? '' : 's'}`.trim()
-                )}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-base font-semibold text-foreground">
+              Paso 4: Seguir importando
+            </p>
+            <p className="text-sm text-muted-foreground">
+              ¿Qué hacemos con los campos en común del Paso 2 para el próximo lote?
+            </p>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Button
+                type="button"
+                variant={keepCommonChoice === 'keep' ? 'default' : 'outline'}
+                onClick={() => setKeepCommonChoice('keep')}
+              >
+                {keepCommonChoice === 'keep' && <Check className="mr-2 h-4 w-4" />}
+                Mantener campos en común
               </Button>
+              <Button
+                type="button"
+                variant={keepCommonChoice === 'clear' ? 'default' : 'outline'}
+                onClick={() => setKeepCommonChoice('clear')}
+              >
+                {keepCommonChoice === 'clear' && <Check className="mr-2 h-4 w-4" />}
+                Borrar campos en común
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap justify-end gap-2 pt-2">
+              <Button type="button" onClick={() => setStep(3)}>Anterior</Button>
+              <Button type="button" onClick={handleClose}>Cancelar</Button>
+              <Button type="button" onClick={() => handleStartNewBatch(keepCommonChoice === 'keep')}>Volver al paso 1</Button>
+              <Button type="button" onClick={handleClose}>Finalizar</Button>
             </div>
           </div>
         )}
