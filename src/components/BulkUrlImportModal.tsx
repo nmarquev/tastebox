@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
 import { AvocadoIcon } from '@/components/icons/AvocadoIcon';
 import { RecipePreparedIcon } from '@/components/icons/RecipePreparedIcon';
@@ -18,6 +19,8 @@ interface BulkUrlImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRecipeSaved?: (recipeId: string) => void;
+  // Abre las recetas recién importadas en modo edición, una tras otra.
+  onEditRecipes?: (recipeIds: string[]) => void;
 }
 
 type ImportStatus = 'pending' | 'importing' | 'success' | 'error';
@@ -28,6 +31,7 @@ interface UrlResult {
   title?: string;
   error?: string;
   warning?: string;
+  recipeId?: string;
 }
 
 // Campos en común que se aplican a todas las recetas importadas (todos opcionales).
@@ -50,13 +54,16 @@ interface CommonFields {
   vegetarian: boolean;
 }
 
+// Máximo de recetas que se pueden importar en un lote.
+const MAX_URLS = 20;
+
 const EMPTY_COMMON: CommonFields = {
   source: '', importedFrom: '', difficulty: '', language: '', country: '', dishType: '', collectionId: '', recipeType: '',
   featured: false, cooked: false, thermomix: false, airFryer: false, glutenFree: false, keto: false, lowCarb: false, vegetarian: false,
 };
 
-export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlImportModalProps) => {
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecipes }: BulkUrlImportModalProps) => {
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [confirmed, setConfirmed] = useState(false);
   // Paso 4: 'keep' conserva los campos en común; 'clear' los borra.
   const [keepCommonChoice, setKeepCommonChoice] = useState<'keep' | 'clear'>('keep');
@@ -148,7 +155,8 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
           cookTime: recipe.cookTime,
           servings: recipe.servings,
           // Campos en común (si se eligieron) sobre los extraídos:
-          difficulty: (common.difficulty || recipe.difficulty) as any,
+          // Dificultad: solo lo que el usuario indique en el Paso 2 (no autocompletar con la IA).
+          difficulty: (common.difficulty || undefined) as any,
           tags: recipe.tags,
           ingredients: recipe.ingredients,
           instructions: recipe.instructions,
@@ -156,10 +164,11 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
           source: common.source || (recipe as any).source || undefined,
           author: recipe.author,
           importedFrom: (common.importedFrom || recipe.importedFrom) as any,
-          recipeType: common.recipeType || recipe.recipeType,
-          dishType: common.dishType || (recipe as any).dishType || undefined,
-          country: common.country || recipe.country,
-          language: common.language || recipe.language || 'Español',
+          // Categoría, país e idioma: solo lo que el usuario indique en el Paso 2 (no autocompletar con la IA).
+          recipeType: common.recipeType || undefined,
+          dishType: common.dishType || undefined,
+          country: common.country || undefined,
+          language: common.language || undefined,
           featured: common.featured || undefined,
           cooked: common.cooked || undefined,
           thermomix: common.thermomix || recipe.thermomix,
@@ -182,7 +191,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
           try { await api.collections.addRecipe(common.collectionId, savedRecipe.id); } catch { /* no bloquear la importación */ }
         }
         onRecipeSaved?.(savedRecipe.id);
-        return { url, status: 'success', title: savedRecipe.title, warning: response.warning };
+        return { url, status: 'success', title: savedRecipe.title, warning: response.warning, recipeId: savedRecipe.id };
       }
       return { url, status: 'error', error: 'No se pudo extraer la receta' };
     } catch (error) {
@@ -314,6 +323,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
           <div className="space-y-4">
             <div>
               <Label htmlFor="bulk-urls" className="text-base font-semibold">Paso 1: Pegá las URLs, una por línea</Label>
+              <p className="mt-1 text-xs text-muted-foreground">Máximo {MAX_URLS} recetas.</p>
               <Textarea
                 id="bulk-urls"
                 value={urlsText}
@@ -322,28 +332,59 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
                 rows={6}
                 className="mt-1 font-mono text-sm"
               />
+              {urlCount > MAX_URLS && (
+                <div className="mt-2 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
+                  El máximo de links son {MAX_URLS}. Ingresaste {urlCount}, quitá {urlCount - MAX_URLS} para continuar.
+                </div>
+              )}
               <div className="mt-2 flex items-center justify-between gap-2">
-                {urlCount > 0 ? (
+                {urlCount > 0 && urlCount <= MAX_URLS ? (
                   <p className="text-xs text-muted-foreground">
                     {urlCount} URL{urlCount > 1 ? 's' : ''} detectada{urlCount > 1 ? 's' : ''}
                   </p>
                 ) : <span />}
                 <div className="flex items-center gap-2">
-                  <Button type="button" size="sm" onClick={() => setUrlsText('')} disabled={urlsText.trim() === ''}>
-                    <X className="mr-2 h-4 w-4" />
-                    Limpiar URLs
-                  </Button>
                   <Button type="button" size="sm" onClick={handlePasteUrl}>
                     <ClipboardPaste className="mr-2 h-4 w-4" />
-                    Pegar URL
+                    Pegar
+                  </Button>
+                  <Button type="button" size="sm" onClick={() => setUrlsText('')} disabled={urlsText.trim() === ''}>
+                    <X className="mr-2 h-4 w-4" />
+                    Limpiar lista
                   </Button>
                 </div>
               </div>
+
+              {/* Vista previa de los links detectados, numerados */}
+              {urlCount > 0 && (
+                <ol className="mt-2 max-h-40 overflow-y-auto rounded-md border border-border/50 divide-y divide-border/40 text-sm">
+                  {parseUrls(urlsText).map((u, i) => (
+                    <li key={i} className="flex items-center gap-2 px-3 py-1.5">
+                      <span className="w-6 shrink-0 text-right font-medium text-muted-foreground">{i + 1}.</span>
+                      <span className="min-w-0 flex-1 truncate font-mono text-xs">{u}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button type="button" onClick={handleClose}>Cancelar</Button>
-              <Button type="button" onClick={() => setStep(2)} disabled={urlCount === 0}>
+              <Button
+                type="button"
+                disabled={urlCount === 0}
+                onClick={() => {
+                  if (urlCount > MAX_URLS) {
+                    toast({
+                      title: `El máximo de links son ${MAX_URLS}`,
+                      description: `Ingresaste ${urlCount}. Quitá ${urlCount - MAX_URLS} para continuar.`,
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
+                  setStep(2);
+                }}
+              >
                 Siguiente
               </Button>
             </div>
@@ -465,15 +506,19 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
                   })}
                 </div>
 
-            {/* Botonera: Anterior / Cancelar / Limpiar datos / Confirmar datos / Siguiente (ir a Paso 3) */}
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button type="button" onClick={() => setStep(1)}>Anterior</Button>
-              <Button type="button" onClick={handleClose}>Cancelar</Button>
-              <Button type="button" onClick={() => setCommon(EMPTY_COMMON)}>Limpiar datos</Button>
-              <Button type="button" onClick={handleConfirmData}>
-                {confirmed ? <><Check className="mr-2 h-4 w-4" />Datos confirmados</> : 'Confirmar datos'}
-              </Button>
-              <Button type="button" onClick={() => setStep(3)}>Siguiente</Button>
+            {/* Botonera: (Confirmar datos / Limpiar datos / Cancelar) y debajo (Anterior / Siguiente) */}
+            <div className="space-y-2">
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button type="button" size="sm" className="w-40" onClick={handleConfirmData}>
+                  {confirmed ? <><Check className="mr-2 h-4 w-4" />Datos confirmados</> : 'Confirmar datos'}
+                </Button>
+                <Button type="button" size="sm" className="w-40" onClick={() => setCommon(EMPTY_COMMON)}>Limpiar datos</Button>
+                <Button type="button" size="sm" className="w-28" onClick={handleClose}>Cancelar</Button>
+              </div>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button type="button" size="sm" className="w-28" onClick={() => setStep(1)}>Anterior</Button>
+                <Button type="button" size="sm" className="w-28" onClick={() => setStep(3)}>Siguiente</Button>
+              </div>
             </div>
           </div>
         ) : step === 3 ? (
@@ -481,6 +526,17 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
             <p className="text-base font-semibold text-foreground">
               Paso 3: Importar recetas
             </p>
+
+            {/* Resumen al finalizar la importación */}
+            {!isImporting && results.length > 0 && (() => {
+              const ok = results.filter(r => r.status === 'success').length;
+              const failed = results.filter(r => r.status === 'error').length;
+              return (
+                <div className="rounded-md border border-green-600/40 bg-green-600/10 px-3 py-2 text-sm font-medium text-green-700">
+                  {ok} receta{ok === 1 ? '' : 's'} importada{ok === 1 ? '' : 's'}{failed > 0 ? ` · ${failed} con error` : ''}.
+                </div>
+              );
+            })()}
 
             {/* Resultados de la importación */}
             {results.length > 0 && (
@@ -525,46 +581,70 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved }: BulkUrlIm
                 </p>
               )}
               <div className="flex flex-wrap justify-end gap-2">
-                <Button type="button" onClick={() => setStep(2)} disabled={isImporting}>Anterior</Button>
-                <Button type="button" onClick={handleClose} disabled={isImporting}>Cancelar</Button>
-                <Button type="button" onClick={() => setStep(4)} disabled={isImporting}>Siguiente</Button>
-                <Button type="button" onClick={handleClose} disabled={isImporting}>Finalizar</Button>
+                <Button type="button" size="sm" className="w-28" onClick={handleClose} disabled={isImporting}>Cancelar</Button>
+                <Button type="button" size="sm" className="w-28" onClick={handleClose} disabled={isImporting}>Finalizar</Button>
               </div>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button type="button" size="sm" className="w-28" onClick={() => setStep(2)} disabled={isImporting}>Anterior</Button>
+                <Button type="button" size="sm" className="w-28" onClick={() => setStep(4)} disabled={isImporting}>Siguiente</Button>
+              </div>
+            </div>
+          </div>
+        ) : step === 4 ? (
+          <div className="space-y-4">
+            <p className="text-base font-semibold text-foreground">
+              Paso 4: ¿Qué desea hacer ahora?
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <Button type="button" onClick={() => setStep(5)}>Seguir importando</Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  const ids = results.filter(r => r.status === 'success' && r.recipeId).map(r => r.recipeId as string);
+                  if (ids.length === 0) return;
+                  handleClose();
+                  onEditRecipes?.(ids);
+                }}
+                disabled={!results.some(r => r.status === 'success' && r.recipeId)}
+              >
+                Editar recetas
+              </Button>
+              <Button type="button" onClick={handleClose}>Finalizar</Button>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
             <p className="text-base font-semibold text-foreground">
-              Paso 4: Seguir importando
+              Paso 5: Seguir importando
             </p>
             <p className="text-sm text-muted-foreground">
-              ¿Qué hacemos con los campos en común del Paso 2 para el próximo lote?
+              ¿Qué hacemos con los campos en común ingresados para el próximo lote?
             </p>
 
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <Button
-                type="button"
-                variant={keepCommonChoice === 'keep' ? 'default' : 'outline'}
-                onClick={() => setKeepCommonChoice('keep')}
-              >
-                {keepCommonChoice === 'keep' && <Check className="mr-2 h-4 w-4" />}
+            <RadioGroup
+              value={keepCommonChoice}
+              onValueChange={(v) => setKeepCommonChoice(v as 'keep' | 'clear')}
+              className="gap-2"
+            >
+              <label htmlFor="keep-common-keep" className="flex cursor-pointer items-center gap-3 rounded-md border bg-background px-3 py-2 text-sm">
+                <RadioGroupItem value="keep" id="keep-common-keep" />
                 Mantener campos en común
-              </Button>
-              <Button
-                type="button"
-                variant={keepCommonChoice === 'clear' ? 'default' : 'outline'}
-                onClick={() => setKeepCommonChoice('clear')}
-              >
-                {keepCommonChoice === 'clear' && <Check className="mr-2 h-4 w-4" />}
+              </label>
+              <label htmlFor="keep-common-clear" className="flex cursor-pointer items-center gap-3 rounded-md border bg-background px-3 py-2 text-sm">
+                <RadioGroupItem value="clear" id="keep-common-clear" />
                 Borrar campos en común
-              </Button>
-            </div>
+              </label>
+            </RadioGroup>
 
-            <div className="flex flex-wrap justify-end gap-2 pt-2">
-              <Button type="button" onClick={() => setStep(3)}>Anterior</Button>
-              <Button type="button" onClick={handleClose}>Cancelar</Button>
-              <Button type="button" onClick={() => handleStartNewBatch(keepCommonChoice === 'keep')}>Volver al paso 1</Button>
-              <Button type="button" onClick={handleClose}>Finalizar</Button>
+            <div className="space-y-2 pt-2">
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button type="button" size="sm" className="w-28" onClick={handleClose}>Cancelar</Button>
+                <Button type="button" size="sm" className="w-28" onClick={handleClose}>Finalizar</Button>
+              </div>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button type="button" size="sm" className="w-28" onClick={() => setStep(4)}>Anterior</Button>
+                <Button type="button" size="sm" className="w-28" onClick={() => handleStartNewBatch(keepCommonChoice === 'keep')}>Siguiente</Button>
+              </div>
             </div>
           </div>
         )}

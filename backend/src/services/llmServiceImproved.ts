@@ -840,6 +840,8 @@ export class LLMServiceImproved {
       let content: string = '';
       let instagramUsername: string | undefined;
       let instagramCanonicalUrl: string | undefined;
+      let tiktokCanonicalUrl: string | undefined;
+      let tiktokCommentsFound = false;
 
       if (url.includes('youtube.com') || url.includes('youtu.be')) {
         console.log('📺 Video de YouTube detectado');
@@ -850,6 +852,12 @@ export class LLMServiceImproved {
         content = ig.content;
         instagramUsername = ig.username;
         instagramCanonicalUrl = ig.canonicalUrl;
+      } else if (url.includes('tiktok.com')) {
+        console.log('🎵 Video de TikTok detectado');
+        const tk = await this.extractTikTokContent(url);
+        content = tk.content;
+        tiktokCanonicalUrl = tk.canonicalUrl;
+        tiktokCommentsFound = tk.commentsFound;
       } else {
         console.log('🎬 Otra plataforma de video, obteniendo contenido de página');
         try {
@@ -878,7 +886,12 @@ export class LLMServiceImproved {
           || this.buildInstagramSourceUrl(url, instagramUsername);
       }
 
-      console.log('✅ Extracción de receta de video completada');
+      // TikTok: usar la URL canónica (resuelve enlaces cortos vm/vt.tiktok.com).
+      if (url.includes('tiktok.com') && tiktokCanonicalUrl) {
+        recipeData.sourceUrl = tiktokCanonicalUrl;
+      }
+
+      console.log('✅ Extracción de receta de video completada', tiktokCommentsFound ? '(TikTok con comentarios)' : '');
       return recipeData;
 
     } catch (error) {
@@ -1152,6 +1165,106 @@ export class LLMServiceImproved {
     }
   }
 
+  // Extrae el contenido de un video de TikTok: el caption (descripción) y, en lo posible,
+  // los comentarios destacados (muchas recetas ponen ahí los ingredientes y/o los pasos).
+  private async extractTikTokContent(url: string): Promise<{ content: string; canonicalUrl?: string; thumbnail?: string; commentsFound: boolean }> {
+    console.log('🎵 Obteniendo contenido de TikTok...');
+    try {
+      // 1) Bajar la página (sigue redirects de enlaces cortos vm/vt.tiktok.com).
+      const pageResp = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+        },
+        timeout: 45000,
+        maxRedirects: 5,
+        responseType: 'text',
+        validateStatus: (s: number) => s < 400,
+      });
+      const html: string = pageResp.data || '';
+      const canonicalUrl: string | undefined = pageResp.request?.res?.responseUrl || url;
+      // Cookies que devolvió TikTok (ttwid, etc.) para reusar en la API de comentarios.
+      const setCookie = pageResp.headers?.['set-cookie'] as string[] | undefined;
+      const cookieHeader = (setCookie || []).map(c => c.split(';')[0]).join('; ');
+
+      // 2) Parsear los datos embebidos (__UNIVERSAL_DATA_FOR_REHYDRATION__).
+      let desc = '';
+      let author: string | undefined;
+      let awemeId: string | undefined;
+      let thumbnail: string | undefined;
+      const universalMatch = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
+      if (universalMatch) {
+        try {
+          const data = JSON.parse(universalMatch[1]);
+          const item = data?.__DEFAULT_SCOPE__?.['webapp.video-detail']?.itemInfo?.itemStruct;
+          if (item) {
+            desc = item.desc || '';
+            author = item.author?.uniqueId || item.author?.nickname;
+            awemeId = item.id;
+            thumbnail = item.video?.cover || item.video?.originCover || item.video?.dynamicCover;
+          }
+        } catch { /* se usan los fallbacks de abajo */ }
+      }
+      if (!desc) {
+        desc = (html.match(/"desc":"((?:[^"\\]|\\.)*)"/)?.[1] || '')
+          .replace(/\\u([\dA-Fa-f]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+          .replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      }
+      if (!desc) desc = html.match(/<meta property="og:description" content="([^"]+)"/i)?.[1] || '';
+      if (!awemeId) awemeId = (canonicalUrl || url).match(/\/(?:video|photo)\/(\d+)/)?.[1];
+      if (!thumbnail) thumbnail = html.match(/<meta property="og:image" content="([^"]+)"/i)?.[1];
+
+      // 3) Comentarios (best-effort). La API web puede requerir firma; si falla, seguimos con el caption.
+      let commentsText = '';
+      if (awemeId) {
+        try {
+          const apiUrl = `https://www.tiktok.com/api/comment/list/?aweme_id=${awemeId}&count=50&cursor=0&aid=1988&app_language=es&region=AR`;
+          const cResp = await axios.get(apiUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'application/json',
+              'Referer': canonicalUrl || url,
+              ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+            },
+            timeout: 20000,
+            responseType: 'json',
+            validateStatus: (s: number) => s < 500,
+          });
+          const comments = cResp.data?.comments;
+          if (Array.isArray(comments) && comments.length) {
+            // Priorizar los más likeados (los comentarios "útiles"/fijados suelen tener más).
+            const texts = comments
+              .map((c: any) => ({ text: String(c?.text || '').trim(), likes: Number(c?.digg_count || 0) }))
+              .filter((c: any) => c.text)
+              .sort((a: any, b: any) => b.likes - a.likes)
+              .slice(0, 15)
+              .map((c: any) => `- ${c.text}`);
+            if (texts.length) {
+              commentsText = texts.join('\n');
+              console.log(`💬 ${texts.length} comentarios de TikTok obtenidos`);
+            }
+          }
+        } catch (e) {
+          console.log('⚠️ No se pudieron obtener los comentarios de TikTok:', e instanceof Error ? e.message : '');
+        }
+      }
+
+      let content = '';
+      if (author) content += `Autor TikTok: @${author}\n`;
+      if (desc) content += `Descripción/caption del video:\n${desc}\n\n`;
+      if (commentsText) content += `Comentarios del video (pueden contener los ingredientes y/o los pasos de la preparación):\n${commentsText}\n\n`;
+      if (thumbnail) content += `Video Thumbnail: ${thumbnail}\n`;
+      if (!content.trim()) content = `Video de TikTok: ${url}\nNota: no se pudo extraer contenido.`;
+
+      console.log('🎵 Contenido de TikTok:', content.length, 'characters', commentsText ? '(con comentarios)' : '(solo caption)');
+      return { content, canonicalUrl, thumbnail, commentsFound: commentsText.length > 0 };
+    } catch (error) {
+      console.error('Error al extraer contenido de TikTok:', error);
+      return { content: `Video de TikTok: ${url}\nNota: no se pudo extraer el contenido.`, commentsFound: false };
+    }
+  }
+
   // Detecta el nombre de usuario (@handle) de una página de Instagram a partir de
   // varias señales del HTML (datos embebidos y meta tags), de más a menos fiable.
   private extractInstagramUsername(html: string): string | undefined {
@@ -1211,6 +1324,7 @@ BUSCA información sobre:
 - Dificultad (si se menciona)
 
 IMPORTANTE para videos:
+- En videos de TikTok/Instagram, los ingredientes y/o los pasos suelen estar en la DESCRIPCIÓN (caption) o en los COMENTARIOS del video: si están ahí, usalos como fuente PRINCIPAL (no los inventes).
 - Si solo tienes el título/descripción, infiere los ingredientes básicos
 - Para ingredientes sin cantidades específicas, usa "al gusto"
 - Crea pasos básicos de preparación basados en el tipo de receta

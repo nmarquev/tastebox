@@ -14,9 +14,9 @@ export function Toaster() {
           ?? (props.variant === 'destructive' ? ERROR_TOAST_AUTO_DISMISS_MS : TOAST_AUTO_DISMISS_MS);
         return (
           <Toast key={id} {...props} duration={duration}>
-            <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
-              {description && <ToastDescription>{description}</ToastDescription>}
+            <div className="grid gap-1 min-w-0">
+              {title && <ToastTitle className="break-words">{title}</ToastTitle>}
+              {description && <ToastDescription className="break-words">{description}</ToastDescription>}
             </div>
             {action}
             <ToastClose />

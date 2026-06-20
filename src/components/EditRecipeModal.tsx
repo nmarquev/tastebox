@@ -19,6 +19,7 @@ import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
 import { Switch } from '@/components/ui/switch';
 import { AvocadoIcon } from '@/components/icons/AvocadoIcon';
 import { RecipePreparedIcon } from '@/components/icons/RecipePreparedIcon';
+import { useDraggableDialog } from '@/hooks/useDraggableDialog';
 
 interface EditRecipeModalProps {
   isOpen: boolean;
@@ -27,11 +28,17 @@ interface EditRecipeModalProps {
   onRecipeUpdated: (recipe: Recipe) => void;
   onCollectionsUpdated?: (collections: RecipeCollection[]) => void;
   mode?: 'edit' | 'create';
+  // Edición secuencial de varias recetas (p. ej. tras importar varias por URL).
+  // position es 0-based; onNext avanza a la siguiente o cierra si es la última.
+  queue?: { position: number; total: number; onNext: () => void };
+  // Solo en el flujo de importación: vuelve a la pantalla para importar otra receta.
+  onImportAnother?: () => void;
 }
 
 interface RecipeFormData {
   title: string;
   description: string;
+  suggestions: string;
   importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
   sourceUrl: string;
   source: string;
@@ -91,14 +98,20 @@ export const EditRecipeModal = ({
   onRecipeUpdated,
   onCollectionsUpdated,
   mode = 'edit',
+  queue,
+  onImportAnother,
 }: EditRecipeModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const [newTag, setNewTag] = useState('');
   const [existingImages, setExistingImages] = useState(recipe?.images || []);
   const [uploadedImages, setUploadedImages] = useState<Array<{ file: File; preview: string }>>([]);
+  // Cantidad de imágenes de referencia (baseline) para detectar cambios; se actualiza al cargar y al guardar.
+  const [initialImageCount, setInitialImageCount] = useState(recipe?.images?.length ?? 0);
   const [collections, setCollections] = useState<RecipeCollection[]>([]);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
+  // Colecciones de referencia (baseline) para detectar si el usuario cambió la colección.
+  const [initialCollectionIds, setInitialCollectionIds] = useState<string[]>([]);
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
   const [sourceOptions, setSourceOptions] = useState<string[]>([]);
   const [languageOptions, setLanguageOptions] = useState<string[]>([]);
@@ -110,7 +123,26 @@ export const EditRecipeModal = ({
   const { toast } = useToast();
   const { calculateNutrition, isCalculating } = useNutritionCalculator();
 
-  const { register, handleSubmit, control, formState: { errors }, reset, setValue, watch } = useForm<RecipeFormData>();
+  const { dragHandleProps, contentStyle: dragContentStyle } = useDraggableDialog(isOpen);
+
+  const { register, handleSubmit, control, formState: { errors }, reset, setValue, watch, getValues } = useForm<RecipeFormData>();
+
+  // Foto de los valores del formulario al cargar la receta (y tras guardar). Se compara
+  // contra los valores actuales para saber si el usuario realmente modificó algún campo.
+  // (Más confiable que isDirty, que puede dar falsos positivos al inicializar.)
+  const initialFormSnapshot = useRef<string | null>(null);
+
+  // ¿Se modificó algo? Campos del formulario, imágenes (agregadas/quitadas) o la colección.
+  const collectionsChanged =
+    [...selectedCollectionIds].sort().join(',') !== [...initialCollectionIds].sort().join(',');
+  const formChanged =
+    initialFormSnapshot.current !== null
+    && JSON.stringify(watch()) !== initialFormSnapshot.current;
+  const hasChanges =
+    formChanged
+    || uploadedImages.length > 0
+    || existingImages.length !== initialImageCount
+    || collectionsChanged;
 
   const { fields: ingredientFields, append: appendIngredient, remove: removeIngredient, replace: replaceIngredients } = useFieldArray({
     control,
@@ -162,10 +194,12 @@ export const EditRecipeModal = ({
     if (recipe && isOpen) {
       setExistingImages(recipe.images || []);
       setUploadedImages([]);
+      setInitialImageCount(recipe.images?.length ?? 0);
 
       reset({
         title: recipe.title,
         description: recipe.description || '',
+        suggestions: recipe.suggestions || '',
         importedFrom: recipe.importedFrom,
         sourceUrl: recipe.sourceUrl || '',
         source: recipe.source || '',
@@ -178,7 +212,7 @@ export const EditRecipeModal = ({
         recipeType: recipe.recipeType || '',
         dishType: recipe.dishType || '',
         country: recipe.country || '',
-        language: recipe.language || 'Español',
+        language: recipe.language || '',
         glutenFree: recipe.glutenFree || false,
         keto: recipe.keto || false,
         lowCarb: recipe.lowCarb || false,
@@ -211,8 +245,10 @@ export const EditRecipeModal = ({
           section: inst.section || ''
         })) || [{ description: '', function: '', time: '', temperature: '', speed: '', section: '' }]
       });
+      // Foto de los valores ya cargados: punto de partida para detectar cambios reales.
+      initialFormSnapshot.current = JSON.stringify(getValues());
     }
-  }, [recipe, isOpen, reset]);
+  }, [recipe, isOpen, reset, getValues]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -221,19 +257,21 @@ export const EditRecipeModal = ({
       .then((items) => {
         setCollections(items);
         if (recipe?.id) {
-          setSelectedCollectionIds(
-            items
-              .filter(collection => collection.recipeIds.includes(recipe.id))
-              .sort((a, b) => (a.recipeOrders?.[recipe.id] ?? 0) - (b.recipeOrders?.[recipe.id] ?? 0))
-              .map(collection => collection.id)
-          );
+          const ids = items
+            .filter(collection => collection.recipeIds.includes(recipe.id))
+            .sort((a, b) => (a.recipeOrders?.[recipe.id] ?? 0) - (b.recipeOrders?.[recipe.id] ?? 0))
+            .map(collection => collection.id);
+          setSelectedCollectionIds(ids);
+          setInitialCollectionIds(ids);
         } else {
           setSelectedCollectionIds([]);
+          setInitialCollectionIds([]);
         }
       })
       .catch(() => {
         setCollections([]);
         setSelectedCollectionIds([]);
+        setInitialCollectionIds([]);
       })
       .finally(() => setIsLoadingCollections(false));
   }, [isOpen, recipe?.id]);
@@ -263,7 +301,7 @@ export const EditRecipeModal = ({
           const s = getRecipeSource(r); if (s) sources.add(s);
           if (r.language?.trim()) languages.push(r.language.trim());
           if (r.country?.trim()) countries.push(r.country.trim());
-          if (r.dishType?.trim()) dishTypes.add(r.dishType.trim());
+          if (r.dishType?.trim()) r.dishType.split(',').map(c => c.trim()).filter(Boolean).forEach(c => dishTypes.add(c));
           if (r.recipeType?.trim()) r.recipeType.split(',').map(c => c.trim()).filter(Boolean).forEach(c => categories.add(c));
           (r.tags || []).forEach((t: any) => { const n = (typeof t === 'string' ? t : (t?.tag?.name || t?.name || t?.tag || '')).toString().trim(); if (n) tagSet.add(n); });
         });
@@ -282,27 +320,27 @@ export const EditRecipeModal = ({
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setValue('tags', [...tags, newTag.trim()]);
+      setValue('tags', [...tags, newTag.trim()], { shouldDirty: true });
       setNewTag('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setValue('tags', tags.filter(tag => tag !== tagToRemove));
+    setValue('tags', tags.filter(tag => tag !== tagToRemove), { shouldDirty: true });
   };
 
   // Marcar/desmarcar una etiqueta desde el diálogo de etiquetas.
   const toggleTag = (tag: string) => {
     const t = tag.trim();
     if (!t) return;
-    setValue('tags', tags.includes(t) ? tags.filter(x => x !== t) : [...tags, t]);
+    setValue('tags', tags.includes(t) ? tags.filter(x => x !== t) : [...tags, t], { shouldDirty: true });
   };
 
   // Crear una etiqueta nueva: la agrega a la receta y a la lista de opciones.
   const handleCreateTag = () => {
     const t = newTag.trim();
     if (!t) return;
-    if (!tags.includes(t)) setValue('tags', [...tags, t]);
+    if (!tags.includes(t)) setValue('tags', [...tags, t], { shouldDirty: true });
     setTagOptions(prev => prev.includes(t) ? prev : [...prev, t].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })));
     setNewTag('');
   };
@@ -475,13 +513,13 @@ export const EditRecipeModal = ({
 
     if (result) {
       // Update form with calculated nutrition values
-      setValue('calories', result.calories);
-      setValue('protein', result.protein);
-      setValue('carbohydrates', result.carbohydrates);
-      setValue('fat', result.fat);
-      setValue('fiber', result.fiber);
-      setValue('sugar', result.sugar);
-      setValue('sodium', result.sodium);
+      setValue('calories', result.calories, { shouldDirty: true });
+      setValue('protein', result.protein, { shouldDirty: true });
+      setValue('carbohydrates', result.carbohydrates, { shouldDirty: true });
+      setValue('fat', result.fat, { shouldDirty: true });
+      setValue('fiber', result.fiber, { shouldDirty: true });
+      setValue('sugar', result.sugar, { shouldDirty: true });
+      setValue('sodium', result.sodium, { shouldDirty: true });
     }
   };
 
@@ -507,8 +545,36 @@ export const EditRecipeModal = ({
     onCollectionsUpdated?.(updatedCollections);
   };
 
+  // Resuelve el createdAt a guardar a partir del valor del input (solo fecha, YYYY-MM-DD),
+  // conservando la hora: si la fecha no cambió, mantiene el timestamp original (hora de
+  // importación); si cambió, aplica la nueva fecha sobre la hora original.
+  const resolveCreatedAt = (inputDate?: string): string | undefined => {
+    if (!inputDate) return undefined;
+    const original = recipe?.createdAt ? new Date(recipe.createdAt) : null;
+    if (original && !Number.isNaN(original.getTime())) {
+      if (toDateInputValue(original) === inputDate) {
+        return original.toISOString();
+      }
+      const [y, m, d] = inputDate.split('-').map(Number);
+      original.setUTCFullYear(y, m - 1, d);
+      return original.toISOString();
+    }
+    // Receta sin fecha previa (p. ej. creación): nueva fecha con la hora actual.
+    const base = new Date();
+    const [y, m, d] = inputDate.split('-').map(Number);
+    base.setUTCFullYear(y, m - 1, d);
+    return base.toISOString();
+  };
+
   const onSubmit = async (data: RecipeFormData) => {
     if (!recipe) return;
+
+    // Sin cambios: no se actualiza. En modo cola pasa a la siguiente; en edición normal
+    // el botón está deshabilitado, así que esto no debería dispararse (no cerramos).
+    if (!hasChanges) {
+      if (queue) queue.onNext();
+      return;
+    }
 
     // Convierte un valor de input numérico (posible string vacío/NaN) a número o undefined.
     const num = (v: unknown) => {
@@ -539,11 +605,15 @@ export const EditRecipeModal = ({
       const recipeData = {
         title: data.title,
         description: data.description,
+        suggestions: data.suggestions?.trim() || undefined,
         importedFrom: data.importedFrom || undefined,
         sourceUrl: data.sourceUrl || undefined,
         source: data.source?.trim() || undefined,
         author: data.author?.trim() || undefined,
-        createdAt: data.createdAt ? new Date(`${data.createdAt}T12:00:00`).toISOString() : undefined,
+        // La fecha se guarda con fecha + hora. El input solo muestra la fecha, así que
+        // si no se cambió, conservamos el timestamp original (hora de importación);
+        // si se cambió, aplicamos la nueva fecha manteniendo la hora original.
+        createdAt: resolveCreatedAt(data.createdAt),
         images: allImages,
         prepTime: Number.isFinite(data.prepTime as number) ? data.prepTime : undefined,
         cookTime: Number.isFinite(data.cookTime as number) ? data.cookTime : undefined,
@@ -610,19 +680,38 @@ export const EditRecipeModal = ({
         console.log('✅ Recipe updated successfully, calling onRecipeUpdated');
         onRecipeUpdated(updatedRecipe);
 
-        console.log('🚪 Closing edit modal');
-        handleClose();
-
         console.log('🎉 Showing edit success toast');
         toast({
           title: "¡Receta actualizada!",
           description: `"${data.title}" se ha actualizado exitosamente`,
         });
+
+        // En edición secuencial pasamos a la siguiente receta; si no, la ventana
+        // queda abierta (se cierra con "Finalizar"). Reseteamos el baseline para que
+        // el botón vuelva a "Ver receta" hasta que se modifique algo de nuevo.
+        if (queue) {
+          queue.onNext();
+        } else {
+          const persistedImages = (updatedRecipe.images || existingImages);
+          setExistingImages(persistedImages);
+          setUploadedImages([]);
+          setInitialImageCount(persistedImages.length);
+          setInitialCollectionIds(selectedCollectionIds);
+          reset(data);
+          initialFormSnapshot.current = JSON.stringify(getValues());
+        }
       } else {
-        // New/imported recipe - just update local state
+        // Receta sin ID (aún no persistida): solo actualiza el estado local y deja
+        // la ventana abierta (se cierra con "Finalizar"), igual que el caso con ID.
         console.log('📝 Updating local recipe data (no ID yet)');
         onRecipeUpdated(recipeData as any);
-        handleClose();
+        if (queue) {
+          queue.onNext();
+        } else {
+          setUploadedImages([]);
+          setInitialImageCount(existingImages.length);
+          reset(data);
+        }
       }
     } catch (error) {
       console.error('Update recipe error:', error);
@@ -651,14 +740,20 @@ export const EditRecipeModal = ({
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
+        style={dragContentStyle}
         className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0"
         closeButtonClassName="right-4 top-4 h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
       >
-        {/* Fixed Header */}
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+        {/* Fixed Header (se puede arrastrar para mover el modal) */}
+        <DialogHeader className="px-6 pt-6 pb-4 border-b" {...dragHandleProps}>
           <DialogTitle className="flex items-center gap-2">
             <Edit className="h-5 w-5" />
             Editar Receta
+            {queue && (
+              <Badge variant="secondary" className="ml-2">
+                Receta {queue.position + 1} de {queue.total}
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -728,7 +823,7 @@ export const EditRecipeModal = ({
                   <Label>Origen</Label>
                   <Select
                     value={watch('importedFrom') || (mode === 'create' ? undefined : 'own')}
-                    onValueChange={(value) => setValue('importedFrom', value === 'own' ? undefined : value as RecipeFormData['importedFrom'])}
+                    onValueChange={(value) => setValue('importedFrom', value === 'own' ? undefined : value as RecipeFormData['importedFrom'], { shouldDirty: true })}
                   >
                     <SelectTrigger className="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary">
                       <SelectValue placeholder="Seleccioná de donde proviene la receta" />
@@ -744,7 +839,7 @@ export const EditRecipeModal = ({
                 </div>
                 <div>
                   <Label>Dificultad</Label>
-                  <Select value={watch('difficulty')} onValueChange={(value) => setValue('difficulty', value as any)}>
+                  <Select value={watch('difficulty')} onValueChange={(value) => setValue('difficulty', value as any, { shouldDirty: true })}>
                     <SelectTrigger className="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary">
                       <SelectValue placeholder="Seleccioná dificultad de la receta" />
                     </SelectTrigger>
@@ -784,6 +879,12 @@ export const EditRecipeModal = ({
                     allowCreate
                     createLabel="Agregar"
                   />
+                </div>
+
+                {/* Fecha: solo se muestra la fecha; al guardar se conserva fecha + hora. */}
+                <div>
+                  <Label htmlFor="createdAt">Fecha</Label>
+                  <Input id="createdAt" type="date" {...register('createdAt')} />
                 </div>
               </div>
 
@@ -955,42 +1056,55 @@ export const EditRecipeModal = ({
                 {/* 1: Tipo de receta / Colección */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Tipo de receta</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Tipo de receta</Label>
+                      {(watch('dishType') || '').trim() && (
+                        <button type="button" onClick={() => setValue('dishType', '', { shouldDirty: true })} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
                     <MultiSelectCombobox
                       options={dishTypeOptions}
-                      selected={watch('dishType') ? [watch('dishType')] : []}
-                      onChange={(next) => setValue('dishType', next[0] || '', { shouldDirty: true })}
-                      placeholder="Elegí un tipo de receta"
+                      selected={(watch('dishType') || '').split(',').map(s => s.trim()).filter(Boolean)}
+                      onChange={(next) => setValue('dishType', next.join(', '), { shouldDirty: true })}
+                      placeholder="Elegí uno o más tipos de receta"
                       searchPlaceholder="Buscar o escribir tipo..."
-                      singleSelect
                       closeOnSelect
                       allowCreate
                       createLabel="Agregar"
                     />
                   </div>
                   <div>
-                    <Label>Colección</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Colección</Label>
+                      {selectedCollectionIds.length > 0 && (
+                        <button type="button" onClick={() => setSelectedCollectionIds([])} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
                     <MultiSelectCombobox
                       options={collections.map(c => c.name)}
-                      selected={(() => { const c = collections.find(c => c.id === selectedCollectionIds[0]); return c ? [c.name] : []; })()}
+                      selected={selectedCollectionIds.map(id => collections.find(c => c.id === id)?.name).filter(Boolean) as string[]}
                       onChange={(next) => {
-                        if (!next.length) { setSelectedCollectionIds([]); return; }
-                        const found = collections.find(c => c.name === next[0]);
-                        if (found) setSelectedCollectionIds([found.id]);
+                        const ids = next
+                          .map(name => collections.find(c => c.name === name)?.id)
+                          .filter(Boolean) as string[];
+                        setSelectedCollectionIds(ids);
                       }}
                       onCreate={async (name) => {
                         try {
                           const created = await api.collections.create(name);
                           setCollections(prev => [...prev, created]);
-                          setSelectedCollectionIds([created.id]);
+                          setSelectedCollectionIds(prev => [...prev, created.id]);
                           toast({ title: 'Colección creada', description: `Se creó "${created.name}".` });
                         } catch (error: any) {
                           toast({ title: 'No se pudo crear la colección', description: error?.message || 'Intentá nuevamente', variant: 'destructive' });
                         }
                       }}
-                      placeholder={isLoadingCollections ? 'Cargando colecciones...' : 'Elegí una colección'}
+                      placeholder={isLoadingCollections ? 'Cargando colecciones...' : 'Elegí una o más colecciones'}
                       searchPlaceholder="Buscar o crear colección..."
-                      singleSelect
                       closeOnSelect
                       allowCreate
                       createLabel="Crear colección"
@@ -1000,14 +1114,20 @@ export const EditRecipeModal = ({
 
                 {/* 2: Categoría */}
                 <div>
-                  <Label>Categoría</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Categoría</Label>
+                    {(watch('recipeType') || '').trim() && (
+                      <button type="button" onClick={() => setValue('recipeType', '', { shouldDirty: true })} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
                   <MultiSelectCombobox
                     options={categoryOptions}
-                    selected={watch('recipeType') ? [watch('recipeType')] : []}
-                    onChange={(next) => setValue('recipeType', next[0] || '', { shouldDirty: true })}
-                    placeholder="Elegí una categoría"
+                    selected={(watch('recipeType') || '').split(',').map(s => s.trim()).filter(Boolean)}
+                    onChange={(next) => setValue('recipeType', next.join(', '), { shouldDirty: true })}
+                    placeholder="Elegí una o más categorías"
                     searchPlaceholder="Buscar o escribir categoría..."
-                    singleSelect
                     closeOnSelect
                     allowCreate
                     createLabel="Agregar"
@@ -1016,7 +1136,14 @@ export const EditRecipeModal = ({
 
                 {/* 3: Etiquetas */}
                 <div>
-                  <Label>Etiquetas</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Etiquetas</Label>
+                    {tags.length > 0 && (
+                      <button type="button" onClick={() => setValue('tags', [], { shouldDirty: true })} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
                   <div className="flex gap-2 mb-2">
                     <Input
                       value={newTag}
@@ -1128,11 +1255,11 @@ export const EditRecipeModal = ({
                             onValueChange={(value) => {
                               if (value === '__new__') {
                                 setShowNewIngredientSection(prev => ({ ...prev, [index]: true }));
-                                setValue(`ingredients.${index}.section`, '');
+                                setValue(`ingredients.${index}.section`, '', { shouldDirty: true });
                               } else if (value === '__none__') {
-                                setValue(`ingredients.${index}.section`, '');
+                                setValue(`ingredients.${index}.section`, '', { shouldDirty: true });
                               } else {
-                                setValue(`ingredients.${index}.section`, value);
+                                setValue(`ingredients.${index}.section`, value, { shouldDirty: true });
                               }
                             }}
                           >
@@ -1222,11 +1349,11 @@ export const EditRecipeModal = ({
                             onValueChange={(value) => {
                               if (value === '__new__') {
                                 setShowNewInstructionSection(prev => ({ ...prev, [index]: true }));
-                                setValue(`instructions.${index}.section`, '');
+                                setValue(`instructions.${index}.section`, '', { shouldDirty: true });
                               } else if (value === '__none__') {
-                                setValue(`instructions.${index}.section`, '');
+                                setValue(`instructions.${index}.section`, '', { shouldDirty: true });
                               } else {
-                                setValue(`instructions.${index}.section`, value);
+                                setValue(`instructions.${index}.section`, value, { shouldDirty: true });
                               }
                             }}
                           >
@@ -1300,6 +1427,17 @@ export const EditRecipeModal = ({
                   ))}
                 </div>
               </div>
+
+              {/* Sugerencias (debajo de los pasos de la preparación) */}
+              <div>
+                <Label htmlFor="suggestions">Sugerencias</Label>
+                <Textarea
+                  id="suggestions"
+                  {...register('suggestions')}
+                  placeholder="Tips, consejos o notas para preparar la receta"
+                  rows={3}
+                />
+              </div>
             </TabsContent>
 
               <TabsContent value="locution" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
@@ -1331,16 +1469,33 @@ export const EditRecipeModal = ({
               <ClipboardPaste className="h-4 w-4 mr-2" />
               Pegar texto
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            {queue && queue.position < queue.total - 1 && (
+              <Button type="button" variant="outline" onClick={() => queue.onNext()} disabled={isLoading}>
+                Omitir
+              </Button>
+            )}
+            <Button type="submit" disabled={isLoading || (!hasChanges && !queue)}>
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Actualizando...
                 </>
+              ) : queue ? (
+                queue.position < queue.total - 1 ? 'Guardar y siguiente' : 'Guardar y finalizar'
               ) : (
                 'Actualizar Receta'
               )}
             </Button>
+            {!queue && onImportAnother && (
+              <Button type="button" variant="secondary" onClick={onImportAnother} disabled={isLoading}>
+                Importar otra receta
+              </Button>
+            )}
+            {!queue && (
+              <Button type="button" onClick={handleClose} disabled={isLoading}>
+                Finalizar
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>
@@ -1367,6 +1522,7 @@ export const EditRecipeModal = ({
               Agregar
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">Para agregar etiqueta pulsar el +</p>
 
           {/* Lista de etiquetas existentes (orden alfabético) para marcar */}
           <div className="max-h-60 overflow-y-auto rounded-md border divide-y">

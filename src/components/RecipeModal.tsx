@@ -20,6 +20,7 @@ import { parseCategories } from "@/constants/categories";
 import { useNutritionCalculator } from "@/hooks/useNutritionCalculator";
 import { downloadRecipePdf, printRecipePdf, shareRecipePdf } from "@/utils/pdfUtils";
 import { EditRecipeModal } from "@/components/EditRecipeModal";
+import { useDraggableDialog } from "@/hooks/useDraggableDialog";
 
 interface RecipeModalProps {
   recipe: Recipe | null;
@@ -51,6 +52,8 @@ const ModalShell = ({
   header,
   children,
   scrollRef,
+  contentStyle,
+  headerDragProps,
 }: {
   isPage: boolean;
   isOpen: boolean;
@@ -58,6 +61,8 @@ const ModalShell = ({
   header: React.ReactNode;
   children: React.ReactNode;
   scrollRef?: React.Ref<HTMLDivElement>;
+  contentStyle?: React.CSSProperties;
+  headerDragProps?: React.HTMLAttributes<HTMLDivElement>;
 }) => {
   if (isPage) {
     return (
@@ -70,10 +75,11 @@ const ModalShell = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         hideCloseButton
+        style={contentStyle}
         className="flex max-h-[90vh] max-w-4xl flex-col gap-0 overflow-hidden p-0"
       >
-        {/* Header fijo (no scrollea) */}
-        <div className="flex-shrink-0 border-b bg-background px-6 pb-3 pt-6">{header}</div>
+        {/* Header fijo (no scrollea); se puede arrastrar para mover el modal */}
+        <div className="flex-shrink-0 border-b bg-background px-6 pb-3 pt-6" {...headerDragProps}>{header}</div>
         {/* Cuerpo scrolleable */}
         <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-4">{children}</div>
       </DialogContent>
@@ -119,6 +125,7 @@ export const RecipeModal = ({
   variant = "modal",
 }: RecipeModalProps) => {
   const isPage = variant === "page";
+  const { dragHandleProps, contentStyle: dragContentStyle } = useDraggableDialog(isOpen);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -708,6 +715,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       isOpen={isOpen}
       onOpenChange={handleModalClose}
       scrollRef={scrollRef}
+      contentStyle={dragContentStyle}
+      headerDragProps={dragHandleProps}
       header={
         <DialogHeader className={isPage ? "mb-6" : ""}>
           <div className="flex items-center justify-between gap-4">
@@ -719,23 +728,23 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <div className="flex flex-shrink-0 items-center gap-2">
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={onPreviousRecipe}
                 disabled={!hasPreviousRecipe}
                 title="Receta anterior"
+                aria-label="Receta anterior"
               >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Anterior
+                <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={onNextRecipe}
                 disabled={!hasNextRecipe}
                 title="Receta siguiente"
+                aria-label="Receta siguiente"
               >
-                Siguiente
-                <ChevronRight className="h-4 w-4 ml-1" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
@@ -1410,18 +1419,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           recipe={localRecipe}
           onCollectionsUpdated={onCollectionsUpdated}
           onRecipeUpdated={(updatedRecipe) => {
+            // No cerramos el editor al actualizar; queda abierto hasta "Finalizar".
             setLocalRecipe(updatedRecipe);
-            setIsEditModalOpen(false);
 
             // Notify parent component
             if (onRecipeUpdate) {
               onRecipeUpdate(updatedRecipe);
             }
-
-            toast({
-              title: "Receta actualizada",
-              description: "Los cambios se han guardado exitosamente",
-            });
           }}
         />
       )}

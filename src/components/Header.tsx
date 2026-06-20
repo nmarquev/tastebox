@@ -5,7 +5,6 @@ import { Search, Plus, Download, User, LogOut, Settings, FileText, Volume2, Spar
 import { useAuth } from "@/contexts/AuthContext";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { DocxImportModal } from "@/components/DocxImportModal";
-import { BulkUrlImportModal } from "@/components/BulkUrlImportModal";
 import { IntelligentSearchModal } from "@/components/IntelligentSearchModal";
 import { ExtensionInstallModal } from "@/components/ExtensionInstallModal";
 import {
@@ -55,7 +54,6 @@ export const Header = ({
   const { theme } = useTheme();
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
-  const [isBulkUrlImportModalOpen, setIsBulkUrlImportModalOpen] = useState(false);
   const [isVoiceSettingsModalOpen, setIsVoiceSettingsModalOpen] = useState(false);
   const [isIntelligentSearchModalOpen, setIsIntelligentSearchModalOpen] = useState(false);
   const [isExtensionModalOpen, setIsExtensionModalOpen] = useState(false);
@@ -148,17 +146,13 @@ export const Header = ({
                     className="flex items-center gap-2 bg-accent text-accent-foreground hover:bg-accent/80 border-0 transition-all duration-200 hover:scale-105 hover:shadow-md"
                   >
                     <Download className="h-4 w-4" />
-                    <span className="hidden sm:inline">Importar Receta</span>
+                    <span className="hidden sm:inline">Importar recetas</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={onImportRecipe}>
                     <Download className="mr-2 h-4 w-4 text-muted-foreground" />
                     URL
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsBulkUrlImportModalOpen(true)}>
-                    <Download className="mr-2 h-4 w-4 text-muted-foreground" />
-                    URLs
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setIsDocxImportModalOpen(true)}>
                     <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -249,14 +243,6 @@ export const Header = ({
         onClose={() => setIsDocxImportModalOpen(false)}
         onRecipeSaved={(recipeId) => {
           console.log('Recipe saved from DOCX:', recipeId);
-          onRecipeAdded?.(); // Refresh the recipes list
-        }}
-      />
-
-      <BulkUrlImportModal
-        isOpen={isBulkUrlImportModalOpen}
-        onClose={() => setIsBulkUrlImportModalOpen(false)}
-        onRecipeSaved={() => {
           onRecipeAdded?.(); // Refresh the recipes list
         }}
       />

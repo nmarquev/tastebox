@@ -8,6 +8,8 @@ import { RecipeModal } from "@/components/RecipeModal";
 import { NutritionModal } from "@/components/NutritionModal";
 import { FilterPanel, RecipeFilters } from "@/components/FilterPanel";
 import { ImportRecipeModal } from "@/components/ImportRecipeModal";
+import { BulkUrlImportModal } from "@/components/BulkUrlImportModal";
+import { BulkEditModal } from "@/components/BulkEditModal";
 import { CreateRecipeModal } from "@/components/CreateRecipeModal";
 import { EditRecipeModal } from "@/components/EditRecipeModal";
 import { DeleteRecipeDialog } from "@/components/DeleteRecipeDialog";
@@ -28,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Grid3X3, Grid2X2, Grid, Columns, Filter, FilterX, ChevronDown, Trash2, Play, Pause, Search, ChefHat, Heart, Bookmark, WheatOff, Leaf, ArrowUpDown, ArrowUp, ArrowDown, Check, ListChecks, Printer, Loader2, X, ExternalLink, UtensilsCrossed, MoreVertical, ImageIcon, User, List, Square, Clock, Plus, Tag } from "lucide-react";
+import { Grid3X3, Grid2X2, Grid, Columns, Filter, FilterX, ChevronDown, Trash2, Play, Pause, Search, ChefHat, Heart, Bookmark, WheatOff, Leaf, ArrowUpDown, ArrowUp, ArrowDown, Check, ListChecks, Printer, Loader2, X, ExternalLink, UtensilsCrossed, MoreVertical, ImageIcon, User, List, Square, Clock, Plus, Tag, Edit } from "lucide-react";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { api, RecipeCollection } from "@/services/api";
@@ -79,15 +81,21 @@ const Index = () => {
   const { authors: customAuthors, createAuthor, reloadAuthors } = useRecipeAuthors(Boolean(user));
 
   const [searchTerm, setSearchTerm] = useState("");
+  // Palabras clave confirmadas (con Enter) para buscar recetas por varios términos (AND).
+  const [searchTerms, setSearchTerms] = useState<string[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   // El banner (Hero) ya no se muestra: una sola página.
   const [showHero, setShowHero] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showBulkUrlImportModal, setShowBulkUrlImportModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showNutritionModal, setShowNutritionModal] = useState(false);
   const [recipeToEdit, setRecipeToEdit] = useState<Recipe | null>(null);
+  // Cola de recetas a editar de forma secuencial (tras importar varias por URL).
+  const [editQueue, setEditQueue] = useState<Recipe[]>([]);
+  const [editQueueIndex, setEditQueueIndex] = useState(0);
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
   const [nutritionRecipe, setNutritionRecipe] = useState<Recipe | null>(null);
   const [collectionRecipe, setCollectionRecipe] = useState<Recipe | null>(null);
@@ -188,7 +196,8 @@ const Index = () => {
     localStorage.setItem('recipe-sort', recipeSort);
     localStorage.setItem('recipe-sort-direction', sortDirection);
   }, [recipeSort, sortDirection]);
-  const [activeBulkPanel, setActiveBulkPanel] = useState<'print' | 'delete' | null>(null);
+  const [activeBulkPanel, setActiveBulkPanel] = useState<'print' | 'delete' | 'edit' | null>(null);
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<Set<string>>(new Set());
   const [selectedCollectionBulkIds, setSelectedCollectionBulkIds] = useState<Set<string>>(new Set());
   const [showNewCollectionDialog, setShowNewCollectionDialog] = useState(false);
@@ -404,13 +413,15 @@ const Index = () => {
   // Lista de tipos de receta (dishType) con cantidad y miniatura.
   const dishTypeMap = new Map<string, { count: number; cover?: string }>();
   recipes.forEach(recipe => {
-    const name = (recipe.dishType || '').trim();
-    if (!name) return;
+    const names = (recipe.dishType || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (!names.length) return;
     const cover = recipe.images?.[0]?.url ? resolveImageUrl(recipe.images[0].url) : undefined;
-    const entry = dishTypeMap.get(name) || { count: 0, cover: undefined };
-    entry.count += 1;
-    if (!entry.cover && cover) entry.cover = cover;
-    dishTypeMap.set(name, entry);
+    names.forEach(name => {
+      const entry = dishTypeMap.get(name) || { count: 0, cover: undefined };
+      entry.count += 1;
+      if (!entry.cover && cover) entry.cover = cover;
+      dishTypeMap.set(name, entry);
+    });
   });
   // Incluir tipos de receta creados manualmente y aplicar portada personalizada.
   customDishTypes.forEach(({ name, coverImage }) => {
@@ -449,28 +460,31 @@ const Index = () => {
 
   // Apply search and filters, then sort alphabetically (only when user is logged in)
   const allFilteredRecipes = user ? recipes.filter(recipe => {
-    // Search filter - busca en título, descripción, ingredientes, instrucciones y etiquetas
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = !searchTerm ||
-      (recipe.title || '').toLowerCase().includes(searchLower) ||
-      (recipe.description || '').toLowerCase().includes(searchLower) ||
+    // Búsqueda - por varias palabras clave (AND): título, descripción, ingredientes,
+    // instrucciones, etiquetas, categoría, fuente y colecciones.
+    const matchesTerm = (q: string) =>
+      (recipe.title || '').toLowerCase().includes(q) ||
+      (recipe.description || '').toLowerCase().includes(q) ||
       (recipe.ingredients || []).some(ingredient =>
-        (ingredient.name || '').toLowerCase().includes(searchLower) ||
-        (ingredient.amount && ingredient.amount.toLowerCase().includes(searchLower)) ||
-        (ingredient.unit && ingredient.unit.toLowerCase().includes(searchLower))
+        (ingredient.name || '').toLowerCase().includes(q) ||
+        (ingredient.amount && ingredient.amount.toLowerCase().includes(q)) ||
+        (ingredient.unit && ingredient.unit.toLowerCase().includes(q))
       ) ||
       (recipe.instructions || []).some(instruction =>
-        (instruction.description || '').toLowerCase().includes(searchLower)
+        (instruction.description || '').toLowerCase().includes(q)
       ) ||
       (recipe.tags || []).some(tag => {
         const tagValue = typeof tag === 'string' ? tag : tag.tag || tag.name || '';
-        return tagValue.toLowerCase().includes(searchLower);
+        return tagValue.toLowerCase().includes(q);
       }) ||
-      (recipe.recipeType && recipe.recipeType.toLowerCase().includes(searchLower)) ||
-      // Fuente (texto libre o derivada de la URL)
-      (getRecipeSource(recipe).toLowerCase().includes(searchLower)) ||
-      // Colecciones que contienen esta receta
-      collections.some(col => col.recipeIds.includes(recipe.id) && (col.name || '').toLowerCase().includes(searchLower));
+      (recipe.recipeType && recipe.recipeType.toLowerCase().includes(q)) ||
+      (getRecipeSource(recipe).toLowerCase().includes(q)) ||
+      collections.some(col => col.recipeIds.includes(recipe.id) && (col.name || '').toLowerCase().includes(q));
+
+    const allSearchTerms = [...searchTerms, searchTerm]
+      .map(t => t.trim().toLowerCase())
+      .filter(Boolean);
+    const matchesSearch = allSearchTerms.length === 0 || allSearchTerms.every(matchesTerm);
 
     // Difficulty filter
     const matchesDifficulty = filters.difficulty.length === 0 ||
@@ -533,7 +547,8 @@ const Index = () => {
     const matchesSource = !filters.sources?.length
       || filters.sources.includes(getRecipeSource(recipe));
     const selectedDishTypes = [...(filters.dishTypes || []), ...(filters.dishType ? [filters.dishType] : [])];
-    const matchesDishType = selectedDishTypes.length === 0 || selectedDishTypes.includes((recipe.dishType || '').trim());
+    const recipeDishTypes = (recipe.dishType || '').split(',').map(s => s.trim()).filter(Boolean);
+    const matchesDishType = selectedDishTypes.length === 0 || recipeDishTypes.some(dt => selectedDishTypes.includes(dt));
     const matchesAuthor = !filters.author || (recipe.author || '').trim() === filters.author;
 
     return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesKeto && matchesLowCarb && matchesVegetarian && matchesCollection && matchesSource && matchesDishType && matchesAuthor;
@@ -680,7 +695,7 @@ const Index = () => {
   useEffect(() => {
     if (!user) return; // Skip if not logged in
     setDisplayedCount(24);
-  }, [user, searchTerm, filters, recipeSort, sortDirection]);
+  }, [user, searchTerm, searchTerms, filters, recipeSort, sortDirection]);
 
   // If user is not logged in, show auth page
   if (!user) {
@@ -760,8 +775,46 @@ const Index = () => {
   };
 
   const handleEditRecipe = (recipe: Recipe) => {
+    setEditQueue([]);
+    setEditQueueIndex(0);
     setRecipeToEdit(recipe);
     setShowEditModal(true);
+  };
+
+  // Abre las recetas recién importadas (por sus IDs) en modo edición, una tras otra.
+  const handleEditImportedRecipes = async (recipeIds: string[]) => {
+    if (recipeIds.length === 0) return;
+    try {
+      const all = await api.recipes.getAll();
+      const byId = new Map(all.map(r => [r.id, r]));
+      const queue = recipeIds.map(id => byId.get(id)).filter(Boolean) as Recipe[];
+      if (queue.length === 0) return;
+      setEditQueue(queue);
+      setEditQueueIndex(0);
+      setRecipeToEdit(queue[0]);
+      setShowEditModal(true);
+    } catch (error) {
+      console.error('Error preparing recipes to edit:', error);
+    }
+  };
+
+  // Cierra el modal de edición y limpia la cola.
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditQueue([]);
+    setEditQueueIndex(0);
+    setRecipeToEdit(null);
+  };
+
+  // Avanza a la siguiente receta de la cola; si no hay más, cierra el modal.
+  const goToNextQueuedRecipe = () => {
+    const next = editQueueIndex + 1;
+    if (next >= editQueue.length) {
+      closeEditModal();
+      return;
+    }
+    setEditQueueIndex(next);
+    setRecipeToEdit(editQueue[next]);
   };
 
   const handleRecipeUpdated = (updatedRecipe: Recipe) => {
@@ -776,6 +829,11 @@ const Index = () => {
     // Keep the open detail modal synchronized with the same server response.
     setSelectedRecipe(prev =>
       prev?.id === updatedRecipe.id ? updatedRecipe : prev
+    );
+    // Mantener el editor abierto sincronizado: refrescar la receta en edición con la
+    // respuesta del servidor (deja el form "limpio" → el botón vuelve a "Ver receta").
+    setRecipeToEdit(prev =>
+      prev && prev.id === updatedRecipe.id ? updatedRecipe : prev
     );
     console.log('🎊 Showing recipe updated toast');
     toast({
@@ -2653,14 +2711,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         <Hero onGetStarted={handleGetStarted} onViewFeatured={handleViewFeatured} />
       )}
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-8">
         <div
           ref={recipeToolbarRef}
-          className="sticky z-30 -mx-4 flex flex-col gap-2 border-b border-border/50 bg-background px-4 py-2.5 shadow-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 xl:flex-row xl:items-center xl:justify-between xl:gap-3"
+          className="sticky z-30 -mx-4 flex flex-col gap-2 border-b border-border/50 bg-background px-4 pt-1 pb-2.5 shadow-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 xl:flex-row xl:items-center xl:justify-between xl:gap-3"
           style={{ top: 'var(--tastebox-header-height, 113px)' }}
         >
-          <div className="text-left">
-            <h2 className="text-lg font-bold text-foreground xl:text-2xl">
+          <div className="text-left xl:shrink-0">
+            <h2 className="whitespace-nowrap text-lg font-bold text-foreground xl:text-2xl">
               {showCollectionsGallery
                 ? 'Mis Colecciones'
                 : showCategoriesGallery
@@ -2673,11 +2731,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         ? 'Etiquetas'
                       : showAuthorsGallery
                         ? 'Autores'
-                        : searchTerm
-                          ? `Resultados para "${searchTerm}"`
-                          : filters.collectionId
-                            ? `Colección ${collections.find(c => c.id === filters.collectionId)?.name ?? ''}`
-                            : `Recetas de ${user?.alias || user?.name || 'Usuario'}`}
+                        : filters.collectionId
+                          ? `Colección ${collections.find(c => c.id === filters.collectionId)?.name ?? ''}`
+                          : `Recetas de ${user?.alias || user?.name || 'Usuario'}`}
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
               {showCollectionsGallery
@@ -2722,34 +2778,73 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
             )}
           </div>
-          <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center xl:w-auto xl:flex-nowrap xl:gap-3">
-            {/* Search input */}
-            <div className="relative rounded-md transition-all duration-200 hover:scale-105 hover:shadow-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={showCollectionsGallery ? "Buscar colección" : showDishTypesGallery ? "Buscar tipo de receta" : showCategoriesGallery ? "Buscar categoría" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar en TasteBox"}
-                title="Buscar receta por nombre, ingrediente, categoría, autor"
-                value={searchTerm}
-                onChange={(e) => { if (e.target.value && !showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery) { setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); } setSearchTerm(e.target.value); }}
-                className="pl-10 pr-9 w-full sm:w-64"
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  aria-label="Borrar búsqueda"
-                  title="Borrar búsqueda"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+          <div className="grid w-full grid-cols-3 gap-x-2 gap-y-1 pt-1.5 sm:flex sm:flex-wrap sm:items-start sm:justify-end xl:w-auto xl:gap-x-3 xl:gap-y-1">
+            {/* Search input (multi-palabra: escribí y Enter agrega una palabra clave) */}
+            <div className="col-span-3 flex w-full flex-col gap-1 sm:w-auto">
+              <div className="relative rounded-md transition-all duration-200 hover:scale-105 hover:shadow-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={showCollectionsGallery ? "Buscar colección" : showDishTypesGallery ? "Buscar tipo de receta" : showCategoriesGallery ? "Buscar categoría" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar (Enter agrega palabra)"}
+                  title="Escribí una palabra o frase y pulsá Enter para agregarla. Podés sumar varias."
+                  value={searchTerm}
+                  onChange={(e) => { if (e.target.value && !showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery) { setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); } setSearchTerm(e.target.value); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const term = searchTerm.trim();
+                      const inGallery = showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery;
+                      if (term && !inGallery) {
+                        setSearchTerms(prev => prev.some(t => t.toLowerCase() === term.toLowerCase()) ? prev : [...prev, term]);
+                        setSearchTerm('');
+                      }
+                    }
+                  }}
+                  className={`pl-10 pr-9 w-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'sm:w-52' : 'sm:w-80'}`}
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    aria-label="Borrar búsqueda"
+                    title="Borrar búsqueda"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              {/* Palabras clave agregadas */}
+              {searchTerms.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1">
+                  {searchTerms.map((term, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 rounded-full bg-primary/10 py-0.5 pl-2 pr-1 text-xs font-medium text-primary">
+                      {term}
+                      <button
+                        type="button"
+                        onClick={() => setSearchTerms(prev => prev.filter((_, idx) => idx !== i))}
+                        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-primary/70 transition-colors hover:bg-primary/20 hover:text-primary"
+                        aria-label={`Quitar ${term}`}
+                        title="Quitar"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerms([])}
+                    className="ml-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                  >
+                    Limpiar
+                  </button>
+                </div>
               )}
             </div>
 
             {/* Column selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 transition-all duration-200 hover:scale-105 hover:shadow-md">
+                <Button variant="outline" size="sm" className="h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md">
                   {viewMode === 'list' || viewMode === 'detail' || viewMode === 'ingredients' ? <List className="h-4 w-4" /> : getColumnIcon(gridColumns)}
                   <span className="ml-2">Ver</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
@@ -2823,9 +2918,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {/* Sort selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 transition-all duration-200 hover:scale-105 hover:shadow-md">
+                <Button variant="outline" size="sm" className="h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md">
                   <ArrowUpDown className="h-4 w-4" />
                   <span className="ml-2">Ordenar</span>
+                  <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -3030,16 +3126,37 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 setActiveBulkPanel(null);
                 setSelectedRecipeIds(new Set());
               }}
-              className={`h-9 transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
+              className={`h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
             >
               <Filter className="h-4 w-4 mr-2" />
               Filtrar
               <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </Button>
+            {/* Salto de fila (solo en la vista de recetas): Buscar/Ver/Ordenar/Filtrar arriba; Editar/Imprimir/Eliminar abajo.
+                En las galerías se oculta para que los botones queden en una sola fila. */}
+            <div className={`basis-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:block'}`} aria-hidden="true" />
+            <Button
+              variant={activeBulkPanel === 'edit' ? "default" : "outline"}
+              size="sm"
+              className={`h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
+              onClick={() => {
+                if (activeBulkPanel === 'edit') {
+                  setActiveBulkPanel(null);
+                  setSelectedRecipeIds(new Set());
+                } else {
+                  setActiveBulkPanel('edit');
+                  setShowFilters(false);
+                }
+              }}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+              <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${activeBulkPanel === 'edit' ? 'rotate-180' : ''}`} />
+            </Button>
             <Button
               variant={activeBulkPanel === 'print' ? "default" : "outline"}
               size="sm"
-              className="h-9 transition-all duration-200 hover:scale-105 hover:shadow-md"
+              className="h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md"
               onClick={() => {
                 if (activeBulkPanel === 'print') {
                   setActiveBulkPanel(null);
@@ -3057,7 +3174,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'delete' ? "default" : "outline"}
               size="sm"
-              className="h-9 transition-all duration-200 hover:scale-105 hover:shadow-md"
+              className="h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md"
               onClick={() => {
                 if (activeBulkPanel === 'delete') {
                   setActiveBulkPanel(null);
@@ -3091,7 +3208,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 onClick={() => { resetNewDishTypeDialog(); setShowNewDishTypeDialog(true); }}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Nuevo tipo de receta
+                Nuevo tipo
               </Button>
             )}
             {showCategoriesGallery && (
@@ -4209,8 +4326,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <div className="relative flex items-center justify-center px-8">
                 <div className="absolute left-0 top-1/2 hidden -translate-y-1/2 lg:block">
                   <h3 className="flex items-center gap-2 font-medium text-foreground">
-                    {activeBulkPanel === 'delete' ? <Trash2 className="h-4 w-4" /> : <Printer className="h-4 w-4" />}
-                    {activeBulkPanel === 'delete' ? 'Eliminar recetas' : 'Imprimir recetas'}
+                    {activeBulkPanel === 'delete' ? <Trash2 className="h-4 w-4" /> : activeBulkPanel === 'edit' ? <Edit className="h-4 w-4" /> : <Printer className="h-4 w-4" />}
+                    {activeBulkPanel === 'delete' ? 'Eliminar recetas' : activeBulkPanel === 'edit' ? 'Editar recetas' : 'Imprimir recetas'}
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {selectedRecipeIds.size
@@ -4228,6 +4345,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       className="w-auto text-xs sm:w-44 xl:w-48"
                       onClick={handleToggleAllVisibleRecipes}
                       disabled={filteredRecipes.length === 0 || bulkAction !== null}
+                      title="Hacé clic en las recetas deseadas. Si querés seleccionar varias, marcá la primera, pulsá SHIFT y marcá la última."
                     >
                       <Check className="mr-2 h-4 w-4 shrink-0" />
                       {(() => {
@@ -4247,6 +4365,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       className="w-auto text-xs sm:w-44 xl:w-48"
                       onClick={handleSelectAllRecipes}
                       disabled={allFilteredRecipes.length === 0 || bulkAction !== null}
+                      title="Hacé clic en las recetas deseadas. Si querés seleccionar varias, marcá la primera, pulsá SHIFT y marcá la última."
                     >
                       <ListChecks className="mr-2 h-4 w-4 shrink-0" />
                       {(() => {
@@ -4332,6 +4451,19 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       Eliminar recetas
                     </Button>
                     )}
+                    {activeBulkPanel === 'edit' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-auto text-xs sm:w-56"
+                      onClick={() => setShowBulkEditModal(true)}
+                      disabled={selectedRecipeIds.size === 0 || bulkAction !== null}
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editar campos comunes
+                    </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4363,12 +4495,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     // "Todas las recetas": limpiar todos los filtros activos y la búsqueda
                     handleClearFilters();
                     setSearchTerm('');
+                    setSearchTerms([]);
                   }
                 }}
                 onShowCollections={() => { setShowHero(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowCollectionsGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
                 onCreateCollection={handleCreateCollection}
                 totalRecipes={recipes.length}
-                allRecipesActive={!hasActiveFilters && !showCollectionsGallery && !showCategoriesGallery && !showSourcesGallery && !showDishTypesGallery && !showTagsGallery && !showAuthorsGallery && !searchTerm}
+                allRecipesActive={!hasActiveFilters && !showCollectionsGallery && !showCategoriesGallery && !showSourcesGallery && !showDishTypesGallery && !showTagsGallery && !showAuthorsGallery && !searchTerm && searchTerms.length === 0}
                 favoritesActive={filters.featured === true}
                 favoritesCount={recipes.filter((r) => r.featured).length}
                 onSelectFavorites={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, featured: filters.featured === true ? undefined : true }); }}
@@ -4558,7 +4691,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         )}
                       </div>
                       <div className="p-4">
-                        <h3 className="font-semibold text-foreground">{collection.name}</h3>
+                        <h3 className="font-semibold text-foreground">{collection.name} <span className="text-sm font-normal text-muted-foreground">({collection.recipeCount})</span></h3>
                       </div>
                     </button>
 
@@ -4703,7 +4836,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-foreground">{category.name}</h3>
+                      <h3 className="font-semibold text-foreground">{category.name} <span className="text-sm font-normal text-muted-foreground">({category.count})</span></h3>
                     </div>
                   </button>
                   <DropdownMenu>
@@ -4838,7 +4971,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-foreground">{source.name}</h3>
+                      <h3 className="font-semibold text-foreground">{source.name} <span className="text-sm font-normal text-muted-foreground">({source.count})</span></h3>
                     </div>
                   </button>
                   <DropdownMenu>
@@ -4973,7 +5106,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-foreground">{tag.name}</h3>
+                      <h3 className="font-semibold text-foreground">{tag.name} <span className="text-sm font-normal text-muted-foreground">({tag.count})</span></h3>
                     </div>
                   </button>
                   <DropdownMenu>
@@ -5108,7 +5241,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-foreground">{dishType.name}</h3>
+                      <h3 className="font-semibold text-foreground">{dishType.name} <span className="text-sm font-normal text-muted-foreground">({dishType.count})</span></h3>
                     </div>
                   </button>
 
@@ -5586,6 +5719,21 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         onClose={() => setShowImportModal(false)}
         onImportSuccess={handleImportSuccess}
         onViewRecipe={handleViewRecipe}
+        onBulkImport={() => { setShowImportModal(false); setShowBulkUrlImportModal(true); }}
+      />
+
+      <BulkUrlImportModal
+        isOpen={showBulkUrlImportModal}
+        onClose={() => setShowBulkUrlImportModal(false)}
+        onRecipeSaved={() => loadRecipes()}
+        onEditRecipes={handleEditImportedRecipes}
+      />
+
+      <BulkEditModal
+        isOpen={showBulkEditModal}
+        onClose={() => setShowBulkEditModal(false)}
+        recipes={selectedActionRecipes}
+        onApplied={() => { loadRecipes(); setSelectedRecipeIds(new Set()); setActiveBulkPanel(null); }}
       />
 
       <CreateRecipeModal
@@ -5597,10 +5745,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
       <EditRecipeModal
         isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
+        onClose={closeEditModal}
         recipe={recipeToEdit}
         onRecipeUpdated={handleRecipeUpdated}
         onCollectionsUpdated={handleCollectionsUpdated}
+        queue={editQueue.length > 0
+          ? { position: editQueueIndex, total: editQueue.length, onNext: goToNextQueuedRecipe }
+          : undefined}
       />
 
       <DeleteRecipeDialog

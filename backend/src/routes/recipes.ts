@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { detectImportSource, getAuthorFromSourceUrl, importSources } from '../utils/importSource';
+import { getSourceFromUrl } from '../utils/sourceUtils';
 import { getRecipeTags } from '../utils/recipeTags';
 import { normalizeInstructionDescription, normalizeRecipeTitle } from '../utils/recipeText';
 import { ImageService } from '../services/imageService';
@@ -301,9 +302,11 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         recipeType: data.recipeType,
         dishType: data.dishType,
         country: data.country,
-        language: data.language?.trim() || 'Español',
+        language: data.language?.trim() || null,
         sourceUrl: data.sourceUrl,
-        source: data.source?.trim() || null,
+        // Si no se indicó fuente, derivarla de la URL (primera palabra del dominio); si no hay URL, queda null.
+        source: data.source?.trim()
+          || (data.sourceUrl && /^https?:\/\//i.test(data.sourceUrl) ? getSourceFromUrl(data.sourceUrl) : null),
         author: data.author?.trim() || getAuthorFromSourceUrl(data.sourceUrl),
         createdAt: data.createdAt,
         importedFrom: data.importedFrom ?? detectImportSource(data.sourceUrl),
@@ -404,6 +407,98 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
+// Edición masiva: actualiza SOLO los campos provistos en varias recetas a la vez
+// (no toca ingredientes/instrucciones/imágenes). Las etiquetas se reemplazan solo si se envían.
+router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
+  const bulkSchema = z.object({
+    recipeIds: z.array(z.string()).min(1),
+    fields: z.object({
+      source: z.string().optional().nullable(),
+      importedFrom: z.enum(['www', 'instagram', 'youtube', 'doc']).optional(),
+      difficulty: z.enum(['Fácil', 'Medio', 'Difícil']).optional().nullable(),
+      language: z.string().optional().nullable(),
+      country: z.string().optional().nullable(),
+      createdAt: z.string().optional(),
+      dishType: z.string().optional().nullable(),
+      recipeType: z.string().optional().nullable(),
+      tags: z.array(z.string()).optional(),
+      featured: z.boolean().optional(),
+      cooked: z.boolean().optional(),
+      thermomix: z.boolean().optional(),
+      airFryer: z.boolean().optional(),
+      glutenFree: z.boolean().optional(),
+      keto: z.boolean().optional(),
+      lowCarb: z.boolean().optional(),
+      vegetarian: z.boolean().optional(),
+    }),
+  });
+
+  try {
+    const { recipeIds, fields } = bulkSchema.parse(req.body);
+
+    // Solo recetas del usuario autenticado.
+    const owned = await prisma.recipe.findMany({
+      where: { id: { in: recipeIds }, userId: req.user!.id },
+      select: { id: true },
+    });
+    const ownedIds = owned.map(r => r.id);
+
+    // Datos escalares (solo los campos provistos).
+    const data: any = {};
+    if (fields.source !== undefined) data.source = fields.source?.trim() || null;
+    if (fields.importedFrom !== undefined) data.importedFrom = fields.importedFrom;
+    if (fields.difficulty !== undefined) data.difficulty = fields.difficulty;
+    if (fields.language !== undefined) data.language = fields.language?.trim() || null;
+    if (fields.country !== undefined) data.country = fields.country?.trim() || null;
+    if (fields.createdAt !== undefined) data.createdAt = new Date(fields.createdAt);
+    if (fields.dishType !== undefined) data.dishType = fields.dishType?.trim() || null;
+    if (fields.recipeType !== undefined) data.recipeType = fields.recipeType?.trim() || null;
+    (['featured', 'cooked', 'thermomix', 'airFryer', 'glutenFree', 'keto', 'lowCarb', 'vegetarian'] as const)
+      .forEach(f => { if (fields[f] !== undefined) data[f] = fields[f]; });
+
+    const hasScalar = Object.keys(data).length > 0;
+    const tagsToAdd = fields.tags; // si viene, se AGREGAN a las existentes (no reemplazan)
+
+    for (const id of ownedIds) {
+      if (hasScalar) {
+        await prisma.recipe.update({ where: { id }, data });
+      }
+      if (tagsToAdd !== undefined && tagsToAdd.length > 0) {
+        // Unir con las etiquetas existentes (sin duplicar) y conservar el orden.
+        const current = await prisma.recipe.findUnique({
+          where: { id },
+          select: { tags: { orderBy: { order: 'asc' }, include: { tag: true } } },
+        });
+        const existingNames = (current?.tags || []).map(rt => rt.tag.name);
+        const merged = [...existingNames];
+        tagsToAdd.forEach(name => { if (name && !merged.includes(name)) merged.push(name); });
+        if (merged.length !== existingNames.length) {
+          await prisma.recipe.update({
+            where: { id },
+            data: {
+              tags: {
+                deleteMany: {},
+                create: merged.map((tagName, index) => ({
+                  order: index + 1,
+                  tag: { connectOrCreate: { where: { name: tagName }, create: { name: tagName } } },
+                })),
+              },
+            },
+          });
+        }
+      }
+    }
+
+    res.json({ updated: ownedIds.length });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    console.error('Bulk update error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Update recipe
 router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
   try {
@@ -461,7 +556,8 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
         recipeType: data.recipeType,
         dishType: data.dishType,
         country: data.country,
-        language: data.language,
+        // '' → null; si no se envió el campo, queda undefined (no se modifica).
+        language: data.language !== undefined ? (data.language?.trim() || null) : undefined,
         sourceUrl: data.sourceUrl,
         source: data.source !== undefined ? (data.source?.trim() || null) : undefined,
         author: data.author?.trim()

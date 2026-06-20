@@ -29,7 +29,7 @@ const emptyRecipe: Recipe = {
   recipeType: '',
   dishType: '',
   country: '',
-  language: 'Español',
+  language: '',
   thermomix: false,
   airFryer: false,
   glutenFree: false,

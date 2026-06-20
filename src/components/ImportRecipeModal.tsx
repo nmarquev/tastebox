@@ -8,20 +8,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
 import { Recipe } from '@/types/recipe';
-import { Loader2, Globe, Clock, Users, ChefHat, X, Check, ClipboardPaste } from 'lucide-react';
+import { Loader2, Globe, Clock, Users, ChefHat, X, Check, ClipboardPaste, ChevronUp, ChevronDown, Edit } from 'lucide-react';
 import { resolveImageUrl } from '@/utils/api';
 import { ThermomixSetting } from '@/components/ThermomixSetting';
 import { StepDescription, hasInlineThermomix } from '@/components/StepDescription';
 import { EditRecipeModal } from '@/components/EditRecipeModal';
+import { useDraggableDialog } from '@/hooks/useDraggableDialog';
 
 interface ImportRecipeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onImportSuccess: (recipe: Recipe) => void;
   onViewRecipe?: (recipe: Recipe) => void;
+  onBulkImport?: () => void;
 }
 
-export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewRecipe }: ImportRecipeModalProps) => {
+export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewRecipe, onBulkImport }: ImportRecipeModalProps) => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [importedRecipe, setImportedRecipe] = useState<Recipe | null>(null);
@@ -30,7 +32,14 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
   const urlInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const cancelledRef = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { dragHandleProps, contentStyle: dragContentStyle } = useDraggableDialog(isOpen);
   const { toast } = useToast();
+
+  // Flechas de la vista previa: ir al principio / al final del contenido scrolleable.
+  const scrollToTop = () => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  const scrollToBottom = () =>
+    contentRef.current?.scrollTo({ top: contentRef.current.scrollHeight, behavior: 'smooth' });
 
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -69,16 +78,18 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           prepTime: recipe.prepTime,
           cookTime: recipe.cookTime,
           servings: recipe.servings,
-          difficulty: recipe.difficulty,
+          // Dificultad: no autocompletar con lo que adivina la IA.
+          difficulty: undefined,
           tags: recipe.tags,
           ingredients: recipe.ingredients,
           instructions: recipe.instructions,
           sourceUrl: recipe.sourceUrl,
           author: recipe.author,
           importedFrom: recipe.importedFrom,
-          recipeType: recipe.recipeType,
-          country: recipe.country,
-          language: recipe.language || 'Español',
+          // Categoría, país e idioma: no autocompletar con lo que adivina la IA.
+          recipeType: undefined,
+          country: undefined,
+          language: undefined,
           thermomix: recipe.thermomix,
           airFryer: recipe.airFryer,
           glutenFree: recipe.glutenFree,
@@ -196,12 +207,14 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent
+        ref={contentRef}
+        style={dragContentStyle}
         className="max-w-4xl max-h-[90vh] overflow-y-auto"
         closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader>
+        <DialogHeader {...dragHandleProps}>
           <DialogTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
             Importar Receta desde URL
@@ -237,6 +250,17 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                       </button>
                     )}
                   </div>
+                  <Button
+                    type="button"
+                    onClick={handlePasteUrl}
+                    disabled={isLoading}
+                    title="Pegar URL"
+                    aria-label="Pegar URL"
+                    className="shrink-0"
+                  >
+                    <ClipboardPaste className="h-4 w-4 mr-2" />
+                    Pegar
+                  </Button>
                   {isLoading ? (
                     <Button
                       type="button"
@@ -256,17 +280,6 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                       Importar
                     </Button>
                   )}
-                  <Button
-                    type="button"
-                    size="icon"
-                    onClick={handlePasteUrl}
-                    disabled={isLoading}
-                    title="Pegar URL"
-                    aria-label="Pegar URL"
-                    className="h-10 w-10 shrink-0"
-                  >
-                    <ClipboardPaste className="h-4 w-4" />
-                  </Button>
                 </div>
               </form>
 
@@ -280,6 +293,20 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                   <li>Hasta 3 imágenes de la receta</li>
                 </ul>
               </div>
+
+              {onBulkImport && (
+                <div className="border-t pt-4">
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={() => { setUrl(''); onBulkImport(); }}
+                    disabled={isLoading}
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    Importar varias recetas por URL
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -292,12 +319,18 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                   <Button
                     onClick={() => setIsEditing(!isEditing)}
                   >
-                    {isEditing ? 'Ver' : 'Editar'}
+                    {!isEditing && <Edit className="h-4 w-4 mr-2" />}
+                    {isEditing ? 'Ver' : 'Editar receta'}
                   </Button>
                   <Button
-                    onClick={() => setImportedRecipe(null)}
+                    onClick={() => { setImportedRecipe(null); setUrl(''); }}
                   >
-                    Anterior
+                    Importar otra receta
+                  </Button>
+                  <Button
+                    onClick={handleClose}
+                  >
+                    Finalizar
                   </Button>
                 </div>
               </div>
@@ -579,19 +612,34 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                 </div>
               </div>
 
+              {/* Flechitas para ir al principio / al final del contenido (arriba de la línea) */}
+              <div className="pointer-events-none sticky bottom-3 z-30 flex flex-col items-end gap-1.5 pr-3">
+                <button
+                  type="button"
+                  onClick={scrollToTop}
+                  className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-md transition-all hover:bg-primary hover:scale-105"
+                  title="Ir al principio"
+                  aria-label="Ir al principio"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={scrollToBottom}
+                  className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-md transition-all hover:bg-primary hover:scale-105"
+                  title="Ir al final"
+                  aria-label="Ir al final"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex justify-between pt-4 border-t">
                 <Button onClick={handleClose}>
                   Cancelar
                 </Button>
                 <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => setIsEditing(true)}
-                    disabled={isLoading}
-                  >
-                    Editar receta
-                  </Button>
                   <Button
                     onClick={() => {
                       if (onViewRecipe) onViewRecipe(importedRecipe);
@@ -616,13 +664,11 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           onClose={() => setIsEditing(false)}
           recipe={importedRecipe as any}
           onRecipeUpdated={(updatedRecipe) => {
-            setImportedRecipe(updatedRecipe as any);
-            setIsEditing(false);
-            toast({
-              title: "Receta actualizada",
-              description: "Los cambios se guardaron correctamente",
-            });
+            // No cerramos el editor al actualizar; queda abierto hasta "Finalizar".
+            // Guard: si llegara algo nulo, NO lo asignamos (desmontaría el editor y lo cerraría).
+            if (updatedRecipe) setImportedRecipe(updatedRecipe as any);
           }}
+          onImportAnother={() => { setIsEditing(false); setImportedRecipe(null); setUrl(''); }}
         />
       )}
     </Dialog>

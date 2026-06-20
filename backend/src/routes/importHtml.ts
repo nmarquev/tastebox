@@ -100,7 +100,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         difficulty: recipeData.difficulty,
         recipeType: recipeData.recipeType,
         country: recipeData.country,
-        language: recipeData.language || 'Español',
+        // Idioma: solo lo detectado; nunca forzar "Español".
+        language: recipeData.language || undefined,
         sourceUrl: importedSourceUrl,
         author: getAuthorFromSourceUrl(importedSourceUrl),
         importedFrom: detectImportSource(importedSourceUrl),

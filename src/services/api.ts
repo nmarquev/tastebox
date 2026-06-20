@@ -219,6 +219,19 @@ export const api = {
       return response.json();
     },
 
+    // Edición masiva: aplica solo los campos provistos a varias recetas.
+    bulkUpdate: async (recipeIds: string[], fields: Record<string, unknown>): Promise<{ updated: number }> => {
+      const response = await authFetch('/recipes/bulk', {
+        method: 'PATCH',
+        body: JSON.stringify({ recipeIds, fields }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'No se pudieron actualizar las recetas');
+      }
+      return response.json();
+    },
+
     delete: async (id: string): Promise<void> => {
       const response = await authFetch(`/recipes/${id}`, {
         method: 'DELETE',

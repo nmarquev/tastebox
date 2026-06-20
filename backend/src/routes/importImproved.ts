@@ -75,6 +75,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       warning = 'Esta receta de Foodit (La Nación) tiene la preparación detrás del paywall, por eso no se importaron los pasos. Para traerlos completos, configurá tus credenciales de Foodit en Ajustes o importala con la extensión de Chrome de TasteBox.';
     } else if (isCookidoo && !cookidooCreds && (recipeData.instructions?.length ?? 0) < 2) {
       warning = 'Esta receta de Cookidoo tiene la preparación detrás del paywall, por eso no se importaron los pasos. Configurá tus credenciales de Cookidoo en Ajustes para traerlos completos.';
+    } else if (/tiktok\.com/i.test(hostname) && ((recipeData.instructions?.length ?? 0) < 2 || (recipeData.ingredients?.length ?? 0) < 2)) {
+      warning = 'En TikTok los ingredientes/pasos suelen estar en los comentarios, y a veces TikTok no permite leerlos automáticamente. Si la receta quedó incompleta, abrí el TikTok, desplegá los comentarios y usá la extensión de Chrome de TasteBox, o pegá el texto manualmente.';
     }
 
     // Step 2: Download and process images
@@ -102,7 +104,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       difficulty: recipeData.difficulty,
       recipeType: recipeData.recipeType,
       country: recipeData.country,
-      language: recipeData.language || 'Español',
+      // Idioma: solo lo detectado; nunca forzar "Español" (no autocompletar con lo que adivina la IA).
+      language: recipeData.language || undefined,
       sourceUrl: recipeData.sourceUrl || url,
       author: getAuthorFromSourceUrl(recipeData.sourceUrl || url),
       importedFrom: detectImportSource(recipeData.sourceUrl || url),
