@@ -119,12 +119,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               Regístrate aquí
             </button>
           </p>
-          
-          <div className="mt-4 p-3 bg-muted rounded-lg">
-            <p className="text-xs text-muted-foreground mb-2">Demo:</p>
-            <p className="text-xs">Email: demo@tastebox.com</p>
-            <p className="text-xs">Contraseña: demo123</p>
-          </div>
         </div>
       </CardContent>
     </Card>

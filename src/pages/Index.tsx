@@ -5825,8 +5825,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       {/* Footer */}
       <footer className="bg-primary py-4 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-primary-foreground">
-            © Copyright 2025 - TasteBox
+          <p className="flex items-center justify-center gap-1 text-center text-sm text-primary-foreground">
+            © Copyright 2025 - TasteBox - Hecho con
+            <Heart className="h-3.5 w-3.5 fill-red-500 text-red-500" />
           </p>
         </div>
       </footer>
