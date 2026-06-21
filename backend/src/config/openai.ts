@@ -13,6 +13,21 @@ export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 export const OPENAI_VISION_MODEL =
   process.env.OPENAI_VISION_MODEL || OPENAI_MODEL;
 
+// Node 22 + el SDK de OpenAI cortan respuestas largas detrás de Cloudflare/OpenRouter
+// con "Premature close" al consumir el body. Bufferamos la respuesta completa con el
+// fetch nativo (que sí tolera el cierre) y se la entregamos al SDK ya en memoria.
+// Las respuestas SSE (stream: true) se dejan pasar sin bufferear para no romper el stream.
+const bufferedFetch = async (input: any, init?: any): Promise<Response> => {
+  const res = await fetch(input, init);
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('text/event-stream')) return res;
+  const body = Buffer.from(await res.arrayBuffer());
+  const headers = new Headers(res.headers);
+  headers.delete('content-encoding'); // ya viene descomprimido
+  headers.delete('content-length');   // el largo cambió tras descomprimir
+  return new Response(body, { status: res.status, statusText: res.statusText, headers });
+};
+
 // Creates an OpenAI SDK client pointed at the configured provider.
 // Works transparently with OpenRouter (OpenAI-compatible API) when OPENAI_BASE_URL is set.
 export function createOpenAIClient(
@@ -25,6 +40,7 @@ export function createOpenAIClient(
 
   return new OpenAI({
     apiKey,
+    fetch: bufferedFetch,
     ...(OPENAI_BASE_URL ? { baseURL: OPENAI_BASE_URL } : {}),
     ...options,
   });
