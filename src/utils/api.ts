@@ -14,8 +14,14 @@ export const getApiBaseUrl = (): string => {
 export const resolveImageUrl = (url: string): string => {
   if (!url) return '';
 
-  // If it's a local/uploaded image path, prepend the server base URL
-  if (url.startsWith('/uploads/') || url.startsWith('/')) {
+  // Imágenes subidas (/uploads/...): se sirven bajo /api/uploads para que en producción
+  // pasen por el proxy de Nginx que enruta /api al backend (Nginx no enruta /uploads).
+  if (url.startsWith('/uploads/')) {
+    return `${getServerBaseUrl()}/api${url}`;
+  }
+
+  // Otros paths locales: anteponer la base del servidor.
+  if (url.startsWith('/')) {
     return `${getServerBaseUrl()}${url}`;
   }
 
