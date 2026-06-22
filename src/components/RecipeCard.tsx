@@ -47,11 +47,11 @@ interface RecipeCardProps {
 // Características editables desde el popover "ON".
 const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
-  { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-4 w-4" /> },
+  { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-5 w-5" /> },
   { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
   { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
   { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
-  { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-4 w-4" /> },
+  { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-5 w-5" /> },
   { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
   { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
 ];
@@ -626,18 +626,24 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             </>
           ) : (
             <>
-              <div>
-                <p className="font-semibold text-foreground">Tipo de receta</p>
-                <p className="text-muted-foreground">{recipe.dishType?.trim() || '—'}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Categoría</p>
-                <p className="text-muted-foreground">{categories.length > 0 ? categories.join(', ') : '—'}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Colección</p>
-                <p className="text-muted-foreground">{collectionNames.length > 0 ? collectionNames.join(', ') : '—'}</p>
-              </div>
+              {recipe.dishType?.trim() && (
+                <div>
+                  <p className="font-semibold text-foreground">Tipo de receta</p>
+                  <p className="text-muted-foreground">{recipe.dishType.trim()}</p>
+                </div>
+              )}
+              {categories.length > 0 && (
+                <div>
+                  <p className="font-semibold text-foreground">Categoría</p>
+                  <p className="text-muted-foreground">{categories.join(', ')}</p>
+                </div>
+              )}
+              {collectionNames.some(n => n && n.trim()) && (
+                <div>
+                  <p className="font-semibold text-foreground">Colección</p>
+                  <p className="text-muted-foreground">{collectionNames.filter(n => n && n.trim()).join(', ')}</p>
+                </div>
+              )}
             </>
           )}
         </div>
