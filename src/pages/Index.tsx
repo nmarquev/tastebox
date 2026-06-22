@@ -91,6 +91,16 @@ const Index = () => {
   const [showBulkUrlImportModal, setShowBulkUrlImportModal] = useState(false);
   // Panel lateral como cajón (drawer) en mobile/iPad.
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  // Panel lateral fijo en desktop (se puede ocultar con el botón de menú).
+  const [showDesktopSidebar, setShowDesktopSidebar] = useState(true);
+  // El botón de menú: en desktop (xl) alterna el panel fijo; en mobile/iPad abre el cajón.
+  const handleMenuButton = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1280px)').matches) {
+      setShowDesktopSidebar(v => !v);
+    } else {
+      setShowMobileSidebar(true);
+    }
+  };
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -2867,10 +2877,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setShowMobileSidebar(true)}
-              className="xl:hidden inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              title="Secciones (colecciones, categorías, favoritas, etc.)"
-              aria-label="Abrir secciones"
+              onClick={handleMenuButton}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Mostrar/ocultar secciones (colecciones, categorías, favoritas, etc.)"
+              aria-label="Mostrar u ocultar secciones"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -4633,7 +4643,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         <div className={!showHero ? "flex flex-col gap-6 lg:flex-row lg:items-start" : ""}>
           {!showHero && !isItemWindow && (
             <aside
-              className="hidden xl:block xl:w-64 xl:flex-shrink-0 xl:sticky xl:self-start xl:overflow-y-auto"
+              className={`hidden ${showDesktopSidebar ? 'xl:block' : 'xl:hidden'} xl:w-64 xl:flex-shrink-0 xl:sticky xl:self-start xl:overflow-y-auto`}
               style={{
                 top: 'calc(var(--tastebox-header-height, 113px) + var(--tastebox-recipe-toolbar-height, 101px) + 0.75rem)',
                 maxHeight: 'calc(100vh - var(--tastebox-header-height, 113px) - var(--tastebox-recipe-toolbar-height, 101px) - 1.5rem)'
