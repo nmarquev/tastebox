@@ -789,6 +789,21 @@ const Index = () => {
     setShowEditModal(true);
   };
 
+  // Activar/desactivar una característica de la receta (favorita, cocinada, thermomix, etc.)
+  // con update parcial y actualización optimista.
+  const handleToggleFeature = async (recipe: Recipe, field: string, value: boolean) => {
+    setRecipes(prev => prev.map(r => (r.id === recipe.id ? { ...r, [field]: value } : r)));
+    setSelectedRecipe(prev => (prev?.id === recipe.id ? { ...prev, [field]: value } : prev));
+    try {
+      await api.recipes.bulkUpdate([recipe.id], { [field]: value });
+    } catch (error) {
+      // Revertir si falla.
+      setRecipes(prev => prev.map(r => (r.id === recipe.id ? { ...r, [field]: !value } : r)));
+      setSelectedRecipe(prev => (prev?.id === recipe.id ? { ...prev, [field]: !value } : prev));
+      toast({ title: 'Error', description: 'No se pudo actualizar la característica', variant: 'destructive' });
+    }
+  };
+
   // Guardado inline (vista 1 columna) de Tipo de receta, Categoría y Colección.
   const handleInlineSaveFields = async (
     recipeId: string,
@@ -5674,6 +5689,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   categoryOptions={gridColumns === 1 ? categoryList.map(c => c.name) : undefined}
                   allCollections={gridColumns === 1 ? collections.map(c => ({ id: c.id, name: c.name })) : undefined}
                   onInlineSave={gridColumns === 1 ? handleInlineSaveFields : undefined}
+                  onToggleFeature={handleToggleFeature}
                   onView={handleViewRecipe}
                   onEdit={handleEditRecipe}
                   onDelete={handleDeleteRecipe}

@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf, X, Loader2 } from "lucide-react";
+import { Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf, X, Loader2, ToggleRight } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MultiSelectCombobox } from "@/components/MultiSelectCombobox";
 import { Recipe } from "@/types/recipe";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
@@ -34,6 +35,8 @@ interface RecipeCardProps {
   categoryOptions?: string[];
   allCollections?: { id: string; name: string }[];
   onInlineSave?: (recipeId: string, data: { dishType: string; recipeType: string; collectionIds: string[] }) => Promise<void> | void;
+  // Activar/desactivar características (favorita, cocinada, thermomix, etc.) desde el popover.
+  onToggleFeature?: (recipe: Recipe, field: string, value: boolean) => void;
   isPlayingTTS?: boolean;
   isGeneratingScript?: boolean;
   selectionMode?: boolean;
@@ -41,7 +44,19 @@ interface RecipeCardProps {
   onSelectionChange?: (recipe: Recipe, modifiers?: { shift?: boolean; ctrl?: boolean }) => void;
 }
 
-export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], allCollections = [], onInlineSave, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
+// Características editables desde el popover "ON".
+const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
+  { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
+  { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-4 w-4" /> },
+  { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+  { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+  { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
+  { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-4 w-4" /> },
+  { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+  { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
+];
+
+export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   // Edición inline (vista 1 columna) de los campos visibles.
   const [inlineEditing, setInlineEditing] = useState(false);
@@ -217,6 +232,41 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 style={{ width: 28, height: 28, color: recipe.cooked ? '#8ebf4c' : undefined }}
               />
             </Button>
+          )}
+          {onToggleFeature && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
+                  title="Características (favorita, cocinada, thermomix, etc.)"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ToggleRight className="h-5 w-5 text-gray-600" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-56 p-2" onClick={(e) => e.stopPropagation()}>
+                <p className="px-1 pb-1.5 text-xs font-medium text-muted-foreground">Características</p>
+                <div className="space-y-1">
+                  {FEATURE_TOGGLES.map(({ field, label, icon }) => {
+                    const active = Boolean((recipe as any)[field]);
+                    return (
+                      <button
+                        key={field}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onToggleFeature(recipe, field, !active); }}
+                        className={`flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-sm transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                      >
+                        <span className="flex items-center gap-2">{icon}{label}</span>
+                        <span className={`text-[11px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>{active ? 'ON' : 'OFF'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
           {onSaveToCollection && (
             <Button
