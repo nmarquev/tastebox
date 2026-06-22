@@ -48,7 +48,7 @@ interface RecipeCardProps {
 const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
   { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-5 w-5" /> },
-  { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+  { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain" /> },
   { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
   { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
   { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-5 w-5" /> },
