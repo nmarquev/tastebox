@@ -2873,8 +2873,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <div className="text-left lg:shrink-0">
             {/* En tablet (iPad portrait): título a la izquierda y "Mostrando" a la derecha, en una línea.
                 En desktop (lg+) el título queda a la izquierda y los botones a la derecha. */}
-            <div className="md:flex md:items-baseline md:justify-between md:gap-3 lg:block">
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
             <button
               type="button"
               onClick={handleMenuButton}
@@ -2884,6 +2883,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             >
               <Menu className="h-5 w-5" />
             </button>
+            <div className="min-w-0">
             <h2 className="whitespace-nowrap text-lg font-bold text-foreground xl:text-2xl">
               {showCollectionsGallery
                 ? 'Mis Colecciones'
@@ -2901,8 +2901,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           ? `Colección ${collections.find(c => c.id === filters.collectionId)?.name ?? ''}`
                           : `Recetas de ${user?.alias || user?.name || 'Usuario'}`}
             </h2>
-            </div>
-            <p className="whitespace-nowrap text-xs text-muted-foreground mt-1 md:mt-0 lg:mt-1">
+            <p className="whitespace-nowrap text-xs text-muted-foreground mt-0.5">
               {showCollectionsGallery
                 ? `${collections.length} colección${collections.length !== 1 ? 'es' : ''}`
                 : showCategoriesGallery
@@ -2917,6 +2916,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         ? `${authorList.length} autor${authorList.length !== 1 ? 'es' : ''}`
                         : `Mostrando ${filteredRecipes.length} de ${allFilteredRecipes.length} receta${allFilteredRecipes.length !== 1 ? 's' : ''}`}
             </p>
+            </div>
             </div>
             {!showCollectionsGallery && !showCategoriesGallery && !showSourcesGallery && !showDishTypesGallery && !showTagsGallery && !showAuthorsGallery && activeFilterChips.length > 0 && (
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -2946,7 +2946,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
             )}
           </div>
-          <div className="grid w-full grid-cols-3 gap-x-2 gap-y-1 pt-1.5 sm:flex sm:flex-wrap sm:items-start sm:justify-start lg:w-auto lg:gap-x-3 lg:gap-y-1">
+          <div className="grid w-full grid-cols-3 gap-x-2 gap-y-1 pt-1.5 sm:flex sm:flex-wrap sm:items-start sm:justify-end lg:w-auto lg:gap-x-3 lg:gap-y-1">
             {/* Search input (multi-palabra: escribí y Enter agrega una palabra clave) */}
             <div className="col-span-3 flex w-full flex-col gap-1 sm:w-auto">
               <div className="relative rounded-md transition-all duration-200 hover:scale-105 hover:shadow-md">

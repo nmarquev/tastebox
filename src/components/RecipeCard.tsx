@@ -196,7 +196,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           </div>
         )}
         {!minimal && (
-        <div className="absolute top-3 right-3 flex items-center justify-end gap-1.5">
+        <div className={`absolute top-3 right-3 flex items-center justify-end gap-1.5 ${compact ? 'top-2 right-2 gap-1 [&_button]:h-6 [&_button]:w-6 [&_svg]:!h-3.5 [&_svg]:!w-3.5 [&_img]:!h-4 [&_img]:!w-4' : ''}`}>
           {onToggleFavorite && (
             <Button
               variant="secondary"
