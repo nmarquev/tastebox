@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf } from "lucide-react";
+import { Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf, X, Loader2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MultiSelectCombobox } from "@/components/MultiSelectCombobox";
 import { Recipe } from "@/types/recipe";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
@@ -28,6 +29,11 @@ interface RecipeCardProps {
   isInCollection?: boolean;
   columns?: 1 | 2 | 3 | 4 | 5;
   collectionNames?: string[];
+  // Edición inline en vista de 1 columna (Tipo de receta / Categoría / Colección).
+  dishTypeOptions?: string[];
+  categoryOptions?: string[];
+  allCollections?: { id: string; name: string }[];
+  onInlineSave?: (recipeId: string, data: { dishType: string; recipeType: string; collectionIds: string[] }) => Promise<void> | void;
   isPlayingTTS?: boolean;
   isGeneratingScript?: boolean;
   selectionMode?: boolean;
@@ -35,8 +41,39 @@ interface RecipeCardProps {
   onSelectionChange?: (recipe: Recipe, modifiers?: { shift?: boolean; ctrl?: boolean }) => void;
 }
 
-export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], allCollections = [], onInlineSave, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+  // Edición inline (vista 1 columna) de los campos visibles.
+  const [inlineEditing, setInlineEditing] = useState(false);
+  const [savingInline, setSavingInline] = useState(false);
+  const [editDishType, setEditDishType] = useState<string[]>([]);
+  const [editCategories, setEditCategories] = useState<string[]>([]);
+  const [editCollections, setEditCollections] = useState<string[]>([]); // nombres
+
+  const startInlineEdit = () => {
+    setEditDishType((recipe.dishType || '').split(',').map(s => s.trim()).filter(Boolean));
+    setEditCategories(parseCategories(recipe.recipeType));
+    setEditCollections(collectionNames);
+    setInlineEditing(true);
+  };
+
+  const saveInlineEdit = async () => {
+    if (!onInlineSave) return;
+    setSavingInline(true);
+    try {
+      const collectionIds = editCollections
+        .map(name => allCollections.find(c => c.name === name)?.id)
+        .filter(Boolean) as string[];
+      await onInlineSave(recipe.id, {
+        dishType: editDishType.join(', '),
+        recipeType: editCategories.join(', '),
+        collectionIds,
+      });
+      setInlineEditing(false);
+    } finally {
+      setSavingInline(false);
+    }
+  };
   const handleCardClick = (e?: React.MouseEvent) => {
     if (selectionMode) {
       e?.preventDefault();
@@ -466,32 +503,82 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
 
       {/* Panel derecho (solo en vista de 1 columna): Tipo de receta, Categoría, Colección */}
       {oneCol && (
-        <div className="shrink-0 space-y-3 border-t p-4 text-sm sm:w-60 sm:border-l sm:border-t-0">
-          {onEdit && (
+        <div className="shrink-0 space-y-3 border-t p-4 text-sm sm:w-60 sm:border-l sm:border-t-0" onClick={inlineEditing ? (e) => e.stopPropagation() : undefined}>
+          {(onInlineSave || onEdit) && !inlineEditing && (
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onEdit(recipe); }}
+                onClick={(e) => { e.stopPropagation(); if (onInlineSave) { startInlineEdit(); } else { onEdit?.(recipe); } }}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 title="Editar estos campos"
-                aria-label="Editar receta"
+                aria-label="Editar campos"
               >
                 <Edit className="h-4 w-4" />
               </button>
             </div>
           )}
-          <div>
-            <p className="font-semibold text-foreground">Tipo de receta</p>
-            <p className="text-muted-foreground">{recipe.dishType?.trim() || '—'}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">Categoría</p>
-            <p className="text-muted-foreground">{categories.length > 0 ? categories.join(', ') : '—'}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">Colección</p>
-            <p className="text-muted-foreground">{collectionNames.length > 0 ? collectionNames.join(', ') : '—'}</p>
-          </div>
+
+          {inlineEditing ? (
+            <>
+              <div>
+                <p className="mb-1 font-semibold text-foreground">Tipo de receta</p>
+                <MultiSelectCombobox
+                  options={dishTypeOptions}
+                  selected={editDishType}
+                  onChange={setEditDishType}
+                  placeholder="Elegí uno o más"
+                  searchPlaceholder="Buscar o escribir..."
+                  closeOnSelect allowCreate createLabel="Agregar"
+                />
+              </div>
+              <div>
+                <p className="mb-1 font-semibold text-foreground">Categoría</p>
+                <MultiSelectCombobox
+                  options={categoryOptions}
+                  selected={editCategories}
+                  onChange={setEditCategories}
+                  placeholder="Elegí una o más"
+                  searchPlaceholder="Buscar o escribir..."
+                  closeOnSelect allowCreate createLabel="Agregar"
+                />
+              </div>
+              <div>
+                <p className="mb-1 font-semibold text-foreground">Colección</p>
+                <MultiSelectCombobox
+                  options={allCollections.map(c => c.name)}
+                  selected={editCollections}
+                  onChange={setEditCollections}
+                  placeholder="Elegí una o más"
+                  searchPlaceholder="Buscar colección..."
+                  closeOnSelect
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setInlineEditing(false); }} disabled={savingInline}>
+                  <X className="mr-1 h-4 w-4" /> Cancelar
+                </Button>
+                <Button type="button" size="sm" onClick={(e) => { e.stopPropagation(); void saveInlineEdit(); }} disabled={savingInline}>
+                  {savingInline ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+                  Guardar
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <p className="font-semibold text-foreground">Tipo de receta</p>
+                <p className="text-muted-foreground">{recipe.dishType?.trim() || '—'}</p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Categoría</p>
+                <p className="text-muted-foreground">{categories.length > 0 ? categories.join(', ') : '—'}</p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Colección</p>
+                <p className="text-muted-foreground">{collectionNames.length > 0 ? collectionNames.join(', ') : '—'}</p>
+              </div>
+            </>
+          )}
         </div>
       )}
     </Card>

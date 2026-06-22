@@ -789,6 +789,26 @@ const Index = () => {
     setShowEditModal(true);
   };
 
+  // Guardado inline (vista 1 columna) de Tipo de receta, Categoría y Colección.
+  const handleInlineSaveFields = async (
+    recipeId: string,
+    data: { dishType: string; recipeType: string; collectionIds: string[] }
+  ) => {
+    try {
+      await api.recipes.bulkUpdate([recipeId], { dishType: data.dishType, recipeType: data.recipeType });
+      // Colecciones: agregar/quitar según la diferencia con la pertenencia actual.
+      const current = collections.filter(c => c.recipeIds.includes(recipeId)).map(c => c.id);
+      const toAdd = data.collectionIds.filter(id => !current.includes(id));
+      const toRemove = current.filter(id => !data.collectionIds.includes(id));
+      for (const cid of toAdd) { try { await api.collections.addRecipe(cid, recipeId); } catch { /* no bloquear */ } }
+      for (const cid of toRemove) { try { await api.collections.removeRecipe(cid, recipeId); } catch { /* no bloquear */ } }
+      await loadRecipes();
+      toast({ title: 'Receta actualizada', description: 'Se guardaron los campos.' });
+    } catch (error) {
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo guardar', variant: 'destructive' });
+    }
+  };
+
   // Abre las recetas recién importadas (por sus IDs) en modo edición, una tras otra.
   const handleEditImportedRecipes = async (recipeIds: string[]) => {
     if (recipeIds.length === 0) return;
@@ -5650,6 +5670,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   recipe={recipe}
                   columns={gridColumns}
                   collectionNames={gridColumns === 1 ? collections.filter(c => c.recipeIds.includes(recipe.id)).map(c => c.name) : undefined}
+                  dishTypeOptions={gridColumns === 1 ? dishTypeList.map(d => d.name) : undefined}
+                  categoryOptions={gridColumns === 1 ? categoryList.map(c => c.name) : undefined}
+                  allCollections={gridColumns === 1 ? collections.map(c => ({ id: c.id, name: c.name })) : undefined}
+                  onInlineSave={gridColumns === 1 ? handleInlineSaveFields : undefined}
                   onView={handleViewRecipe}
                   onEdit={handleEditRecipe}
                   onDelete={handleDeleteRecipe}
