@@ -2718,6 +2718,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           style={{ top: 'var(--tastebox-header-height, 113px)' }}
         >
           <div className="text-left xl:shrink-0">
+            {/* En tablet (iPad): título a la izquierda y "Mostrando" a la derecha, en una sola línea. */}
+            <div className="md:flex md:items-baseline md:justify-between md:gap-3 xl:block">
             <h2 className="whitespace-nowrap text-lg font-bold text-foreground xl:text-2xl">
               {showCollectionsGallery
                 ? 'Mis Colecciones'
@@ -2735,7 +2737,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           ? `Colección ${collections.find(c => c.id === filters.collectionId)?.name ?? ''}`
                           : `Recetas de ${user?.alias || user?.name || 'Usuario'}`}
             </h2>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="whitespace-nowrap text-xs text-muted-foreground mt-1 md:mt-0 xl:mt-1">
               {showCollectionsGallery
                 ? `${collections.length} colección${collections.length !== 1 ? 'es' : ''}`
                 : showCategoriesGallery
@@ -2750,6 +2752,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         ? `${authorList.length} autor${authorList.length !== 1 ? 'es' : ''}`
                         : `Mostrando ${filteredRecipes.length} de ${allFilteredRecipes.length} receta${allFilteredRecipes.length !== 1 ? 's' : ''}`}
             </p>
+            </div>
             {!showCollectionsGallery && !showCategoriesGallery && !showSourcesGallery && !showDishTypesGallery && !showTagsGallery && !showAuthorsGallery && activeFilterChips.length > 0 && (
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 <button
@@ -3117,6 +3120,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            {/* Salto de fila ANTES de Filtrar, solo en tablet/iPad (md–lg):
+                fila Buscar/Ver/Ordenar + fila Filtrar/Editar/Imprimir/Eliminar. */}
+            <div className={`basis-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden md:block xl:hidden'}`} aria-hidden="true" />
             {/* Filter button (no aplica en colecciones) */}
             <Button
               variant={showFilters ? "default" : "outline"}
@@ -3132,9 +3138,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               Filtrar
               <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </Button>
-            {/* Salto de fila (solo en la vista de recetas): Buscar/Ver/Ordenar/Filtrar arriba; Editar/Imprimir/Eliminar abajo.
-                En las galerías se oculta para que los botones queden en una sola fila. */}
-            <div className={`basis-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:block'}`} aria-hidden="true" />
+            {/* Salto de fila ANTES de Editar: en celular grande (sm) y desktop (xl) →
+                Buscar/Ver/Ordenar/Filtrar arriba; Editar/Imprimir/Eliminar abajo.
+                En tablet/iPad (md–lg) este salto se desactiva (el corte se hace antes de Filtrar). */}
+            <div className={`basis-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:block md:hidden xl:block'}`} aria-hidden="true" />
             <Button
               variant={activeBulkPanel === 'edit' ? "default" : "outline"}
               size="sm"
