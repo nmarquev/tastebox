@@ -467,6 +467,19 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
       {/* Panel derecho (solo en vista de 1 columna): Tipo de receta, Categoría, Colección */}
       {oneCol && (
         <div className="shrink-0 space-y-3 border-t p-4 text-sm sm:w-60 sm:border-l sm:border-t-0">
+          {onEdit && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onEdit(recipe); }}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title="Editar estos campos"
+                aria-label="Editar receta"
+              >
+                <Edit className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <div>
             <p className="font-semibold text-foreground">Tipo de receta</p>
             <p className="text-muted-foreground">{recipe.dishType?.trim() || '—'}</p>

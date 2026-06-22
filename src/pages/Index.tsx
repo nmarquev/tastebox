@@ -30,7 +30,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Grid3X3, Grid2X2, Grid, Columns, Filter, FilterX, ChevronDown, Trash2, Play, Pause, Search, ChefHat, Heart, Bookmark, WheatOff, Leaf, ArrowUpDown, ArrowUp, ArrowDown, Check, ListChecks, Printer, Loader2, X, ExternalLink, UtensilsCrossed, MoreVertical, ImageIcon, User, List, Square, Clock, Plus, Tag, Edit } from "lucide-react";
+import { Grid3X3, Grid2X2, Grid, Columns, Filter, FilterX, ChevronDown, Trash2, Play, Pause, Search, ChefHat, Heart, Bookmark, WheatOff, Leaf, ArrowUpDown, ArrowUp, ArrowDown, Check, ListChecks, Printer, Loader2, X, ExternalLink, UtensilsCrossed, MoreVertical, ImageIcon, User, List, Square, Clock, Plus, Tag, Edit, Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { api, RecipeCollection } from "@/services/api";
@@ -88,6 +89,8 @@ const Index = () => {
   const [showHero, setShowHero] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showBulkUrlImportModal, setShowBulkUrlImportModal] = useState(false);
+  // Panel lateral como cajón (drawer) en mobile/iPad.
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -690,6 +693,11 @@ const Index = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [user, allFilteredRecipes.length, displayedCount, isLoadingMore]);
+
+  // Cerrar el cajón lateral (mobile/iPad) cuando el usuario navega a una sección/filtro.
+  useEffect(() => {
+    setShowMobileSidebar(false);
+  }, [filters, showCollectionsGallery, showCategoriesGallery, showSourcesGallery, showDishTypesGallery, showTagsGallery, showAuthorsGallery]);
 
   // Reset displayed count when filters change
   useEffect(() => {
@@ -2250,13 +2258,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       case 2:
         return 'grid grid-cols-1 md:grid-cols-2 gap-6';
       case 3:
-        return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+        // En iPad (md–lg) queda en 2 columnas; 3 columnas recién en desktop (xl).
+        return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6';
       case 4:
-        return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6';
+        return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6';
       case 5:
-        return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6';
+        return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-6';
       default:
-        return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+        return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6';
     }
   };
 
@@ -2696,6 +2705,105 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
     (k) => new URLSearchParams(window.location.search).has(k)
   );
 
+  // Panel lateral reutilizable (aside en desktop + cajón en mobile/iPad).
+  const collectionsSidebarNode = (
+    <CollectionsSidebar
+      collections={collections}
+      covers={collectionCovers}
+      activeCollectionId={filters.collectionId}
+      onSelectCollection={(id) => {
+        setShowCollectionsGallery(false);
+        setShowCategoriesGallery(false);
+        setShowSourcesGallery(false);
+        setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
+        if (id) {
+          handleFiltersChange({ ...filters, collectionId: id, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] });
+        } else {
+          handleClearFilters();
+          setSearchTerm('');
+          setSearchTerms([]);
+        }
+      }}
+      onShowCollections={() => { setShowHero(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowCollectionsGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
+      onCreateCollection={handleCreateCollection}
+      totalRecipes={recipes.length}
+      allRecipesActive={!hasActiveFilters && !showCollectionsGallery && !showCategoriesGallery && !showSourcesGallery && !showDishTypesGallery && !showTagsGallery && !showAuthorsGallery && !searchTerm && searchTerms.length === 0}
+      favoritesActive={filters.featured === true}
+      favoritesCount={recipes.filter((r) => r.featured).length}
+      onSelectFavorites={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, featured: filters.featured === true ? undefined : true }); }}
+      cookedActive={filters.cookedOnly === true}
+      cookedCount={recipes.filter((r) => r.cooked).length}
+      onSelectCooked={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, cookedOnly: filters.cookedOnly ? undefined : true }); }}
+      thermomixActive={filters.thermomixOnly === true}
+      thermomixCount={recipes.filter((r) => r.thermomix || isThermomixRecipe(r)).length}
+      onSelectThermomix={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, thermomixOnly: filters.thermomixOnly ? undefined : true }); }}
+      airFryerActive={filters.airFryerOnly === true}
+      airFryerCount={recipes.filter((r) => r.airFryer === true).length}
+      onSelectAirFryer={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, airFryerOnly: filters.airFryerOnly ? undefined : true }); }}
+      glutenFreeActive={filters.glutenFreeOnly === true}
+      glutenFreeCount={recipes.filter((r) => r.glutenFree === true).length}
+      onSelectGlutenFree={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, glutenFreeOnly: filters.glutenFreeOnly ? undefined : true }); }}
+      ketoActive={filters.ketoOnly === true}
+      ketoCount={recipes.filter((r) => r.keto === true).length}
+      onSelectKeto={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, ketoOnly: filters.ketoOnly ? undefined : true }); }}
+      healthyActive={filters.lowCarbOnly === true}
+      healthyCount={recipes.filter((r) => r.lowCarb === true).length}
+      onSelectHealthy={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, lowCarbOnly: filters.lowCarbOnly ? undefined : true }); }}
+      vegetarianActive={filters.vegetarianOnly === true}
+      vegetarianCount={recipes.filter((r) => r.vegetarian === true).length}
+      onSelectVegetarian={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, vegetarianOnly: filters.vegetarianOnly ? undefined : true }); }}
+      categories={categoryList}
+      activeCategory={filters.recipeTypes?.length === 1 ? filters.recipeTypes[0] : undefined}
+      onSelectCategory={(name) => {
+        setShowCollectionsGallery(false);
+        setShowCategoriesGallery(false);
+        setShowSourcesGallery(false);
+        setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
+        const current = filters.recipeTypes || [];
+        const isActive = current.length === 1 && current[0] === name;
+        handleFiltersChange({ ...filters, recipeTypes: isActive ? [] : [name], collectionId: undefined, sources: undefined, dishType: undefined, dishTypes: [] });
+      }}
+      onShowCategories={() => { setShowHero(false); setShowCollectionsGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowCategoriesGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
+      onCreateCategory={handleCreateCategory}
+      sources={sourceList}
+      activeSource={filters.sources?.length === 1 ? filters.sources[0] : undefined}
+      onSelectSource={(name) => {
+        setShowCollectionsGallery(false);
+        setShowCategoriesGallery(false);
+        setShowSourcesGallery(false);
+        setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
+        const isActive = filters.sources?.length === 1 && filters.sources[0] === name;
+        handleFiltersChange({ ...filters, sources: isActive ? undefined : [name], collectionId: undefined, recipeTypes: [], dishType: undefined, dishTypes: [] });
+      }}
+      onShowSources={() => { setShowHero(false); setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowSourcesGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
+      onCreateSource={handleCreateSource}
+      tags={tagList}
+      activeTag={filters.tags?.length === 1 ? filters.tags[0] : undefined}
+      onSelectTag={(name) => {
+        setShowCollectionsGallery(false);
+        setShowCategoriesGallery(false);
+        setShowSourcesGallery(false);
+        setShowTagsGallery(false);
+        setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
+        const isActive = filters.tags?.length === 1 && filters.tags[0] === name;
+        handleFiltersChange({ ...filters, tags: isActive ? [] : [name], collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] });
+      }}
+      onShowTags={() => { setShowHero(false); setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowTagsGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [], tags: [] }); }}
+      onCreateTag={handleCreateTag}
+      dishTypes={dishTypeList}
+      activeDishType={filters.dishType}
+      onSelectDishType={(name) => {
+        setShowCollectionsGallery(false);
+        setShowCategoriesGallery(false);
+        setShowSourcesGallery(false);
+        setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
+        handleFiltersChange({ ...filters, dishType: filters.dishType === name ? undefined : name, dishTypes: [], collectionId: undefined, recipeTypes: [], sources: undefined });
+      }}
+      onShowDishTypes={() => { setShowHero(false); setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowAuthorsGallery(false); setShowDishTypesGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
+      onCreateDishType={handleCreateDishType}
+    />
+  );
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header
@@ -2714,12 +2822,23 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-8">
         <div
           ref={recipeToolbarRef}
-          className="sticky z-30 -mx-4 flex flex-col gap-2 border-b border-border/50 bg-background px-4 pt-1 pb-2.5 shadow-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 xl:flex-row xl:items-center xl:justify-between xl:gap-3"
+          className="sticky z-30 -mx-4 flex flex-col gap-2 border-b border-border/50 bg-background px-4 pt-1 pb-2.5 shadow-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 lg:flex-row lg:items-center lg:justify-between lg:gap-3"
           style={{ top: 'var(--tastebox-header-height, 113px)' }}
         >
-          <div className="text-left xl:shrink-0">
-            {/* En tablet (iPad): título a la izquierda y "Mostrando" a la derecha, en una sola línea. */}
-            <div className="md:flex md:items-baseline md:justify-between md:gap-3 xl:block">
+          <div className="text-left lg:shrink-0">
+            {/* En tablet (iPad portrait): título a la izquierda y "Mostrando" a la derecha, en una línea.
+                En desktop (lg+) el título queda a la izquierda y los botones a la derecha. */}
+            <div className="md:flex md:items-baseline md:justify-between md:gap-3 lg:block">
+            <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowMobileSidebar(true)}
+              className="xl:hidden inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Secciones (colecciones, categorías, favoritas, etc.)"
+              aria-label="Abrir secciones"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
             <h2 className="whitespace-nowrap text-lg font-bold text-foreground xl:text-2xl">
               {showCollectionsGallery
                 ? 'Mis Colecciones'
@@ -2737,7 +2856,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           ? `Colección ${collections.find(c => c.id === filters.collectionId)?.name ?? ''}`
                           : `Recetas de ${user?.alias || user?.name || 'Usuario'}`}
             </h2>
-            <p className="whitespace-nowrap text-xs text-muted-foreground mt-1 md:mt-0 xl:mt-1">
+            </div>
+            <p className="whitespace-nowrap text-xs text-muted-foreground mt-1 md:mt-0 lg:mt-1">
               {showCollectionsGallery
                 ? `${collections.length} colección${collections.length !== 1 ? 'es' : ''}`
                 : showCategoriesGallery
@@ -2781,7 +2901,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
             )}
           </div>
-          <div className="grid w-full grid-cols-3 gap-x-2 gap-y-1 pt-1.5 sm:flex sm:flex-wrap sm:items-start sm:justify-end xl:w-auto xl:gap-x-3 xl:gap-y-1">
+          <div className="grid w-full grid-cols-3 gap-x-2 gap-y-1 pt-1.5 sm:flex sm:flex-wrap sm:items-start sm:justify-start lg:w-auto lg:gap-x-3 lg:gap-y-1">
             {/* Search input (multi-palabra: escribí y Enter agrega una palabra clave) */}
             <div className="col-span-3 flex w-full flex-col gap-1 sm:w-auto">
               <div className="relative rounded-md transition-all duration-200 hover:scale-105 hover:shadow-md">
@@ -2802,7 +2922,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       }
                     }
                   }}
-                  className={`pl-10 pr-9 w-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'sm:w-52' : 'sm:w-80'}`}
+                  className={`h-10 pl-10 pr-9 w-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'sm:w-52' : 'sm:w-[296px] lg:w-[300px]'}`}
                 />
                 {searchTerm && (
                   <button
@@ -2872,7 +2992,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(3); }}
-                  className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 3 ? "bg-accent" : ""}`}
+                  className={`hidden sm:flex md:hidden xl:flex ${viewMode === 'grid' && gridColumns === 3 ? "bg-accent" : ""}`}
                 >
                   <Grid3X3 className="h-4 w-4 mr-2" />
                   3 columnas
@@ -3120,9 +3240,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            {/* Salto de fila ANTES de Filtrar, solo en tablet/iPad (md–lg):
-                fila Buscar/Ver/Ordenar + fila Filtrar/Editar/Imprimir/Eliminar. */}
-            <div className={`basis-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden md:block xl:hidden'}`} aria-hidden="true" />
             {/* Filter button (no aplica en colecciones) */}
             <Button
               variant={showFilters ? "default" : "outline"}
@@ -3138,10 +3255,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               Filtrar
               <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </Button>
-            {/* Salto de fila ANTES de Editar: en celular grande (sm) y desktop (xl) →
-                Buscar/Ver/Ordenar/Filtrar arriba; Editar/Imprimir/Eliminar abajo.
-                En tablet/iPad (md–lg) este salto se desactiva (el corte se hace antes de Filtrar). */}
-            <div className={`basis-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:block md:hidden xl:block'}`} aria-hidden="true" />
+            {/* Salto de fila ANTES de Editar (vista de recetas): fila 1 Buscar/Ver/Ordenar/Filtrar;
+                fila 2 Editar/Imprimir/Eliminar. */}
+            <div className={`basis-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:block'}`} aria-hidden="true" />
+            {/* Espaciador del ancho de Buscar: alinea Editar bajo Ver, Imprimir bajo Ordenar, Eliminar bajo Filtrar. */}
+            <div className={`shrink-0 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:block sm:w-[296px] lg:w-[300px]'}`} aria-hidden="true" />
             <Button
               variant={activeBulkPanel === 'edit' ? "default" : "outline"}
               size="sm"
@@ -4480,109 +4598,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         <div className={!showHero ? "flex flex-col gap-6 lg:flex-row lg:items-start" : ""}>
           {!showHero && !isItemWindow && (
             <aside
-              className="lg:w-64 lg:flex-shrink-0 lg:sticky lg:self-start lg:overflow-y-auto"
+              className="hidden xl:block xl:w-64 xl:flex-shrink-0 xl:sticky xl:self-start xl:overflow-y-auto"
               style={{
                 top: 'calc(var(--tastebox-header-height, 113px) + var(--tastebox-recipe-toolbar-height, 101px) + 0.75rem)',
                 maxHeight: 'calc(100vh - var(--tastebox-header-height, 113px) - var(--tastebox-recipe-toolbar-height, 101px) - 1.5rem)'
               }}
             >
-              <CollectionsSidebar
-                collections={collections}
-                covers={collectionCovers}
-                activeCollectionId={filters.collectionId}
-                onSelectCollection={(id) => {
-                  setShowCollectionsGallery(false);
-                  setShowCategoriesGallery(false);
-                  setShowSourcesGallery(false);
-                  setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
-                  if (id) {
-                    // Al elegir una colección, limpiar los otros filtros del panel (categoría, fuente, tipo).
-                    handleFiltersChange({ ...filters, collectionId: id, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] });
-                  } else {
-                    // "Todas las recetas": limpiar todos los filtros activos y la búsqueda
-                    handleClearFilters();
-                    setSearchTerm('');
-                    setSearchTerms([]);
-                  }
-                }}
-                onShowCollections={() => { setShowHero(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowCollectionsGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
-                onCreateCollection={handleCreateCollection}
-                totalRecipes={recipes.length}
-                allRecipesActive={!hasActiveFilters && !showCollectionsGallery && !showCategoriesGallery && !showSourcesGallery && !showDishTypesGallery && !showTagsGallery && !showAuthorsGallery && !searchTerm && searchTerms.length === 0}
-                favoritesActive={filters.featured === true}
-                favoritesCount={recipes.filter((r) => r.featured).length}
-                onSelectFavorites={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, featured: filters.featured === true ? undefined : true }); }}
-                cookedActive={filters.cookedOnly === true}
-                cookedCount={recipes.filter((r) => r.cooked).length}
-                onSelectCooked={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, cookedOnly: filters.cookedOnly ? undefined : true }); }}
-                thermomixActive={filters.thermomixOnly === true}
-                thermomixCount={recipes.filter((r) => r.thermomix || isThermomixRecipe(r)).length}
-                onSelectThermomix={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, thermomixOnly: filters.thermomixOnly ? undefined : true }); }}
-                airFryerActive={filters.airFryerOnly === true}
-                airFryerCount={recipes.filter((r) => r.airFryer === true).length}
-                onSelectAirFryer={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, airFryerOnly: filters.airFryerOnly ? undefined : true }); }}
-                glutenFreeActive={filters.glutenFreeOnly === true}
-                glutenFreeCount={recipes.filter((r) => r.glutenFree === true).length}
-                onSelectGlutenFree={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, glutenFreeOnly: filters.glutenFreeOnly ? undefined : true }); }}
-                ketoActive={filters.ketoOnly === true}
-                ketoCount={recipes.filter((r) => r.keto === true).length}
-                onSelectKeto={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, ketoOnly: filters.ketoOnly ? undefined : true }); }}
-                healthyActive={filters.lowCarbOnly === true}
-                healthyCount={recipes.filter((r) => r.lowCarb === true).length}
-                onSelectHealthy={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, lowCarbOnly: filters.lowCarbOnly ? undefined : true }); }}
-                vegetarianActive={filters.vegetarianOnly === true}
-                vegetarianCount={recipes.filter((r) => r.vegetarian === true).length}
-                onSelectVegetarian={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, vegetarianOnly: filters.vegetarianOnly ? undefined : true }); }}
-                categories={categoryList}
-                activeCategory={filters.recipeTypes?.length === 1 ? filters.recipeTypes[0] : undefined}
-                onSelectCategory={(name) => {
-                  setShowCollectionsGallery(false);
-                  setShowCategoriesGallery(false);
-                  setShowSourcesGallery(false);
-                  setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
-                  const current = filters.recipeTypes || [];
-                  const isActive = current.length === 1 && current[0] === name;
-                  handleFiltersChange({ ...filters, recipeTypes: isActive ? [] : [name], collectionId: undefined, sources: undefined, dishType: undefined, dishTypes: [] });
-                }}
-                onShowCategories={() => { setShowHero(false); setShowCollectionsGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowCategoriesGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
-                onCreateCategory={handleCreateCategory}
-                sources={sourceList}
-                activeSource={filters.sources?.length === 1 ? filters.sources[0] : undefined}
-                onSelectSource={(name) => {
-                  setShowCollectionsGallery(false);
-                  setShowCategoriesGallery(false);
-                  setShowSourcesGallery(false);
-                  setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
-                  const isActive = filters.sources?.length === 1 && filters.sources[0] === name;
-                  handleFiltersChange({ ...filters, sources: isActive ? undefined : [name], collectionId: undefined, recipeTypes: [], dishType: undefined, dishTypes: [] });
-                }}
-                onShowSources={() => { setShowHero(false); setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowSourcesGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
-                onCreateSource={handleCreateSource}
-                tags={tagList}
-                activeTag={filters.tags?.length === 1 ? filters.tags[0] : undefined}
-                onSelectTag={(name) => {
-                  setShowCollectionsGallery(false);
-                  setShowCategoriesGallery(false);
-                  setShowSourcesGallery(false);
-                  setShowTagsGallery(false);
-                  setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
-                  const isActive = filters.tags?.length === 1 && filters.tags[0] === name;
-                  handleFiltersChange({ ...filters, tags: isActive ? [] : [name], collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] });
-                }}
-                onShowTags={() => { setShowHero(false); setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowTagsGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [], tags: [] }); }}
-                onCreateTag={handleCreateTag}
-                dishTypes={dishTypeList}
-                activeDishType={filters.dishType}
-                onSelectDishType={(name) => {
-                  setShowCollectionsGallery(false);
-                  setShowCategoriesGallery(false);
-                  setShowSourcesGallery(false);
-                  setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
-                  handleFiltersChange({ ...filters, dishType: filters.dishType === name ? undefined : name, dishTypes: [], collectionId: undefined, recipeTypes: [], sources: undefined });
-                }}
-                onShowDishTypes={() => { setShowHero(false); setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowAuthorsGallery(false); setShowDishTypesGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
-                onCreateDishType={handleCreateDishType}
-              />
+              {collectionsSidebarNode}
             </aside>
           )}
           <div className="min-w-0 flex-1">
@@ -5742,6 +5764,18 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         recipes={selectedActionRecipes}
         onApplied={() => { loadRecipes(); setSelectedRecipeIds(new Set()); setActiveBulkPanel(null); }}
       />
+
+      {/* Panel lateral como cajón en mobile/iPad (en desktop se muestra fijo a la izquierda) */}
+      <Sheet open={showMobileSidebar} onOpenChange={setShowMobileSidebar}>
+        <SheetContent side="left" className="w-72 overflow-y-auto p-0 sm:w-80">
+          <SheetHeader className="border-b px-4 py-3">
+            <SheetTitle>Secciones</SheetTitle>
+          </SheetHeader>
+          <div className="p-2">
+            {collectionsSidebarNode}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <CreateRecipeModal
         isOpen={showCreateModal}

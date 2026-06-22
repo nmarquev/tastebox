@@ -92,7 +92,7 @@ export const Header = ({
           <button
             type="button"
             onClick={onLogoClick}
-            className="flex items-center rounded-md bg-white px-2 py-1 transition-transform hover:scale-105"
+            className="flex shrink-0 items-center rounded-md bg-white px-2 py-1 transition-transform hover:scale-105"
             title="Ir a la página principal"
             aria-label="Ir a la página principal"
           >
@@ -135,7 +135,7 @@ export const Header = ({
             </Button>
           )}
 
-          <div className={`flex items-center justify-end gap-3 flex-wrap ${minimal ? 'hidden' : ''}`}>
+          <div className={`flex items-center justify-end gap-2 [&>*]:shrink-0 ${minimal ? 'hidden' : ''}`}>
               <ThemeSwitcher />
 
               <DropdownMenu>
