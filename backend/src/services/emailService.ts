@@ -31,10 +31,10 @@ export class EmailService {
             <p>Hola,</p>
             <p>Has solicitado recuperar tu contraseña para TasteBox.</p>
             <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <p style="margin: 0;"><strong>Tu contraseña actual es:</strong></p>
+              <p style="margin: 0;"><strong>Tu nueva contraseña temporal es:</strong></p>
               <p style="font-size: 18px; color: #ff6b35; margin: 10px 0;"><code>${password}</code></p>
             </div>
-            <p><strong>⚠️ Por seguridad, te recomendamos cambiar tu contraseña después de iniciar sesión.</strong></p>
+            <p><strong>⚠️ Iniciá sesión con esta contraseña temporal y cambiala desde tu perfil.</strong></p>
             <p>Si no solicitaste este email, ignóralo.</p>
             <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
             <p style="color: #999; font-size: 12px;">TasteBox - Tu recetario digital</p>

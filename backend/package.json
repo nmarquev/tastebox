@@ -11,7 +11,8 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx src/scripts/seed.ts"
+    "db:seed": "tsx src/scripts/seed.ts",
+    "reset-password": "tsx src/scripts/resetPassword.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

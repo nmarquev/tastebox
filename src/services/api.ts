@@ -122,6 +122,20 @@ export const api = {
       localStorage.removeItem('auth_token');
     },
 
+    // Recuperación de contraseña: el backend manda una clave temporal por email (requiere SMTP).
+    forgotPassword: async (email: string): Promise<{ success: boolean; message: string }> => {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || 'No se pudo procesar la solicitud');
+      }
+      return data;
+    },
+
     updateProfile: async (profileData: {
       email?: string;
       name?: string;
