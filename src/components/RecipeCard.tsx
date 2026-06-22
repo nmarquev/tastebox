@@ -449,7 +449,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           </div>
         )}
 
-        {!minimal && (recipe.thermomix || isThermomixRecipe(recipe) || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.vegetarian) && (
+        {!minimal && (recipe.thermomix || isThermomixRecipe(recipe) || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.vegetarian || recipe.cooked || recipe.featured) && (
           <div className={`flex items-center flex-wrap gap-2 text-muted-foreground ${oneCol ? "[&>span]:h-9 [&>span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6" : ""}`}>
             {(recipe.thermomix || isThermomixRecipe(recipe)) && (
               <span
@@ -512,6 +512,17 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
               >
                 <Leaf className="h-[18px] w-[18px]" />
+              </span>
+            )}
+            {/* Cocinada y Favorita (1 a 4 columnas) */}
+            {recipe.cooked && (
+              <span title="Cocinada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+                <RecipePreparedIcon style={{ width: 22, height: 22, color: '#8ebf4c' }} />
+              </span>
+            )}
+            {recipe.featured && (
+              <span title="Favorita" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+                <Heart className="h-[18px] w-[18px] fill-red-500 text-red-500" />
               </span>
             )}
           </div>

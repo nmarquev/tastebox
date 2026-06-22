@@ -5617,21 +5617,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <User className="h-5 w-5" />{recipe.servings}
                           </span>
                         )}
-                        {/* Corazón pequeño de favorito */}
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleFavorite(recipe); }}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleToggleFavorite(recipe); } }}
-                          className="flex cursor-pointer items-center"
-                          title={recipe.featured ? 'Quitar de favoritos' : 'Marcar como favorito'}
-                          aria-label={recipe.featured ? 'Quitar de favoritos' : 'Marcar como favorito'}
-                        >
-                          <Heart className={`h-5 w-5 transition-colors ${recipe.featured ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-500'}`} />
-                        </span>
                       </span>
-                      {/* Fila 2: iconos de características */}
-                      {(recipe.thermomix || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.vegetarian) && (
+                      {/* Fila 2: iconos de características (solo los activos), en orden:
+                          thermomix, air fryer, sin gluten, keto, low carb, vegetariana, cocinada, favorita */}
+                      {(recipe.thermomix || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.vegetarian || recipe.cooked || recipe.featured) && (
                         <span className="flex items-center gap-2">
                           {recipe.thermomix && (
                             <img src="/thermomix-logo.png" alt="" title="Thermomix" className="h-6 w-6 object-contain mix-blend-multiply" />
@@ -5650,6 +5639,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           )}
                           {recipe.vegetarian && (
                             <Leaf className="h-5 w-5 text-muted-foreground" />
+                          )}
+                          {recipe.cooked && (
+                            <span title="Cocinada" className="flex items-center">
+                              <RecipePreparedIcon style={{ width: 24, height: 24, color: '#8ebf4c' }} />
+                            </span>
+                          )}
+                          {recipe.featured && (
+                            <Heart className="h-5 w-5 fill-red-500 text-red-500" aria-label="Favorita" />
                           )}
                         </span>
                       )}

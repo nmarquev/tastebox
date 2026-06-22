@@ -964,7 +964,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   </div>
                 )}
               </div>
-              {/* Línea 2: Thermomix, Air Fryer, Cocinada, Favorita */}
+              {/* Características en orden: thermomix, air fryer, sin gluten, keto, low carb, vegetariana, cocinada, favorita */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 {isThermomixRecipe(localRecipe) && (
                   <div className="flex items-center gap-2">
@@ -988,21 +988,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     <span>Air Fryer</span>
                   </div>
                 )}
-                {localRecipe.cooked && (
-                  <div className="flex items-center gap-2" title="Receta cocinada">
-                    <RecipePreparedIcon className="h-5 w-5" />
-                    <span>Cocinada</span>
-                  </div>
-                )}
-                {localRecipe.featured && (
-                  <div className="flex items-center gap-2" title="Receta favorita">
-                    <Heart className="h-5 w-5 fill-current" />
-                    <span>Favorita</span>
-                  </div>
-                )}
-              </div>
-              {/* Línea 3: Sin gluten, Keto, Low Carb, Vegetariana */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 {localRecipe.glutenFree && (
                   <div className="flex items-center gap-2" title="Sin gluten">
                     <WheatOff className="h-5 w-5" />
@@ -1030,6 +1015,18 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   <div className="flex items-center gap-2" title="Vegetariana">
                     <Leaf className="h-5 w-5" />
                     <span>Vegetariana</span>
+                  </div>
+                )}
+                {localRecipe.cooked && (
+                  <div className="flex items-center gap-2" title="Receta cocinada">
+                    <RecipePreparedIcon className="h-5 w-5" />
+                    <span>Cocinada</span>
+                  </div>
+                )}
+                {localRecipe.featured && (
+                  <div className="flex items-center gap-2" title="Receta favorita">
+                    <Heart className="h-5 w-5 fill-current" />
+                    <span>Favorita</span>
                   </div>
                 )}
               </div>
