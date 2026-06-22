@@ -964,69 +964,55 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   </div>
                 )}
               </div>
-              {/* Características en orden: thermomix, air fryer, sin gluten, keto, low carb, vegetariana, cocinada, favorita */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              {/* Características en grilla de 4 columnas → 2 filas de 4 (con las 8 activas).
+                  Cada ícono va en un casillero fijo (h-6 w-6) para que todos midan parejo. */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4 whitespace-nowrap [&_.feat-ico]:flex [&_.feat-ico]:h-6 [&_.feat-ico]:w-6 [&_.feat-ico]:shrink-0 [&_.feat-ico]:items-center [&_.feat-ico]:justify-center">
                 {isThermomixRecipe(localRecipe) && (
                   <div className="flex items-center gap-2">
-                    <img
-                      src="/thermomix-logo.png"
-                      alt=""
-                      aria-hidden="true"
-                      className="h-5 w-5 object-contain mix-blend-multiply"
-                    />
+                    <span className="feat-ico"><img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain mix-blend-multiply" /></span>
                     <span>Thermomix</span>
                   </div>
                 )}
                 {localRecipe.airFryer && (
                   <div className="flex items-center gap-2" title="Receta para freidora de aire">
-                    <img
-                      src="/air-fryer.png"
-                      alt=""
-                      aria-hidden="true"
-                      className="h-5 w-5 object-contain mix-blend-multiply"
-                    />
+                    <span className="feat-ico"><img src="/air-fryer.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain mix-blend-multiply" /></span>
                     <span>Air Fryer</span>
-                  </div>
-                )}
-                {localRecipe.glutenFree && (
-                  <div className="flex items-center gap-2" title="Sin gluten">
-                    <WheatOff className="h-5 w-5" />
-                    <span>Sin gluten</span>
-                  </div>
-                )}
-                {localRecipe.keto && (
-                  <div className="flex items-center gap-2" title="Receta keto">
-                    <AvocadoIcon className="h-5 w-5" />
-                    <span>Keto</span>
-                  </div>
-                )}
-                {localRecipe.lowCarb && (
-                  <div className="flex items-center gap-2" title="Low Carb">
-                    <img
-                      src="/logo-saludable.png"
-                      alt=""
-                      aria-hidden="true"
-                      className="h-5 w-5 object-contain grayscale opacity-70"
-                    />
-                    <span>Low Carb</span>
-                  </div>
-                )}
-                {localRecipe.vegetarian && (
-                  <div className="flex items-center gap-2" title="Vegetariana">
-                    <Leaf className="h-5 w-5" />
-                    <span>Vegetariana</span>
                   </div>
                 )}
                 {localRecipe.cooked && (
                   <div className="flex items-center gap-2" title="Receta cocinada">
-                    <RecipePreparedIcon className="h-5 w-5" />
+                    <span className="feat-ico"><RecipePreparedIcon className="h-5 w-5" /></span>
                     <span>Cocinada</span>
                   </div>
                 )}
                 {localRecipe.featured && (
                   <div className="flex items-center gap-2" title="Receta favorita">
-                    <Heart className="h-5 w-5 fill-current" />
+                    <span className="feat-ico"><Heart className="h-5 w-5 fill-current" /></span>
                     <span>Favorita</span>
+                  </div>
+                )}
+                {localRecipe.glutenFree && (
+                  <div className="flex items-center gap-2" title="Sin gluten">
+                    <span className="feat-ico"><WheatOff className="h-5 w-5" /></span>
+                    <span>Sin gluten</span>
+                  </div>
+                )}
+                {localRecipe.keto && (
+                  <div className="flex items-center gap-2" title="Receta keto">
+                    <span className="feat-ico"><AvocadoIcon className="h-5 w-5" /></span>
+                    <span>Keto</span>
+                  </div>
+                )}
+                {localRecipe.lowCarb && (
+                  <div className="flex items-center gap-2" title="Low Carb">
+                    <span className="feat-ico"><img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain grayscale opacity-70" /></span>
+                    <span>Low Carb</span>
+                  </div>
+                )}
+                {localRecipe.vegetarian && (
+                  <div className="flex items-center gap-2" title="Vegetariana">
+                    <span className="feat-ico"><Leaf className="h-5 w-5" /></span>
+                    <span>Vegetariana</span>
                   </div>
                 )}
               </div>
