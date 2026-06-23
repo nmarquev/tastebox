@@ -55,6 +55,19 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
       return;
     }
 
+    // Evitar duplicados: si ya hay una receta con esta URL, avisar antes de bajarla.
+    try {
+      const dup = await api.recipes.checkUrl(url.trim());
+      if (dup.exists) {
+        const seguir = window.confirm(
+          `Ya tenés una receta importada de esta URL${dup.recipe?.title ? `: "${dup.recipe.title}"` : ''}.\n\n¿Querés importarla igual?`
+        );
+        if (!seguir) return;
+      }
+    } catch {
+      // Si el chequeo falla, seguimos con la importación normal.
+    }
+
     setIsLoading(true);
     cancelledRef.current = false;
     const controller = new AbortController();

@@ -233,6 +233,17 @@ export const api = {
       return response.json();
     },
 
+    // Chequea si ya existe una receta con esa URL (para evitar duplicados al importar).
+    checkUrl: async (url: string): Promise<{ exists: boolean; recipe?: { id: string; title: string } }> => {
+      try {
+        const response = await authFetch(`/recipes/check-url?url=${encodeURIComponent(url)}`);
+        if (!response.ok) return { exists: false };
+        return response.json();
+      } catch {
+        return { exists: false };
+      }
+    },
+
     // Edición masiva: aplica solo los campos provistos a varias recetas.
     bulkUpdate: async (recipeIds: string[], fields: Record<string, unknown>): Promise<{ updated: number }> => {
       const response = await authFetch('/recipes/bulk', {

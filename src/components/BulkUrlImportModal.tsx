@@ -23,7 +23,7 @@ interface BulkUrlImportModalProps {
   onEditRecipes?: (recipeIds: string[]) => void;
 }
 
-type ImportStatus = 'pending' | 'importing' | 'success' | 'error';
+type ImportStatus = 'pending' | 'importing' | 'success' | 'error' | 'duplicate';
 
 interface UrlResult {
   url: string;
@@ -142,6 +142,15 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
 
   const importSingle = async (url: string, signal?: AbortSignal): Promise<UrlResult> => {
     try {
+      // Evitar duplicados: si ya existe una receta con esta URL, se saltea (no se importa).
+      try {
+        const dup = await api.recipes.checkUrl(url);
+        if (cancelRef.current) return { url, status: 'pending' };
+        if (dup.exists) {
+          return { url, status: 'duplicate', title: dup.recipe?.title };
+        }
+      } catch { /* si el chequeo falla, seguir con la importación normal */ }
+
       const response = await api.import.fromUrl(url, signal);
       if (cancelRef.current) return { url, status: 'pending' };
       if (response.success && response.recipe) {
@@ -216,6 +225,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
     setResults(urls.map(url => ({ url, status: 'pending' as ImportStatus })));
 
     let okCount = 0;
+    let dupCount = 0;
     const CONCURRENCY = 3;
     let nextIndex = 0;
     const worker = async () => {
@@ -225,6 +235,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
         setResults(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'importing' } : r));
         const result = await importSingle(urls[i], controller.signal);
         if (result.status === 'success') okCount++;
+        else if (result.status === 'duplicate') dupCount++;
         setResults(prev => prev.map((r, idx) => idx === i ? result : r));
       }
     };
@@ -232,12 +243,13 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
 
     abortRef.current = null;
     setIsImporting(false);
+    const dupText = dupCount > 0 ? ` ${dupCount} ya existían y se saltearon.` : '';
     if (cancelRef.current) {
-      toast({ title: 'Importación cancelada', description: `Se importaron ${okCount} receta${okCount === 1 ? '' : 's'} antes de cancelar.` });
+      toast({ title: 'Importación cancelada', description: `Se importaron ${okCount} receta${okCount === 1 ? '' : 's'} antes de cancelar.${dupText}` });
     } else {
       toast({
         title: 'Importación finalizada',
-        description: `${okCount} de ${urls.length} receta${urls.length > 1 ? 's' : ''} importada${okCount === 1 ? '' : 's'} correctamente.`,
+        description: `${okCount} de ${urls.length} receta${urls.length > 1 ? 's' : ''} importada${okCount === 1 ? '' : 's'} correctamente.${dupText}`,
         variant: okCount > 0 ? undefined : 'destructive'
       });
     }
@@ -531,9 +543,10 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
             {!isImporting && results.length > 0 && (() => {
               const ok = results.filter(r => r.status === 'success').length;
               const failed = results.filter(r => r.status === 'error').length;
+              const dup = results.filter(r => r.status === 'duplicate').length;
               return (
                 <div className="rounded-md border border-green-600/40 bg-green-600/10 px-3 py-2 text-sm font-medium text-green-700">
-                  {ok} receta{ok === 1 ? '' : 's'} importada{ok === 1 ? '' : 's'}{failed > 0 ? ` · ${failed} con error` : ''}.
+                  {ok} receta{ok === 1 ? '' : 's'} importada{ok === 1 ? '' : 's'}{dup > 0 ? ` · ${dup} ya existían` : ''}{failed > 0 ? ` · ${failed} con error` : ''}.
                 </div>
               );
             })()}
@@ -546,12 +559,14 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                     <span className="shrink-0">
                       {result.status === 'success' && <Check className="h-4 w-4 text-green-600" />}
                       {result.status === 'error' && <X className="h-4 w-4 text-destructive" />}
+                      {result.status === 'duplicate' && <span className="block h-3.5 w-3.5 rounded-full bg-amber-400" title="Ya existe" />}
                       {result.status === 'importing' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                       {result.status === 'pending' && <span className="block h-4 w-4 rounded-full border border-muted-foreground/40" />}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{result.title || result.url}</p>
                       {result.status === 'error' && <p className="truncate text-xs text-destructive">{result.error}</p>}
+                      {result.status === 'duplicate' && <p className="truncate text-xs text-amber-600">Ya existe — no se importó</p>}
                       {result.warning && <p className="text-xs text-amber-600">{result.warning}</p>}
                       {result.title && <p className="truncate text-xs text-muted-foreground">{result.url}</p>}
                     </div>

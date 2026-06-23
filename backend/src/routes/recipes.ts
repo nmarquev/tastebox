@@ -199,6 +199,43 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
+// Normaliza una URL para comparar duplicados (ignora protocolo http/https, "www.",
+// barra final, hash y parámetros de tracking comunes).
+function normalizeUrlForCompare(url: string): string {
+  try {
+    const u = new URL(url.trim());
+    u.hash = '';
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'igshid'].forEach(p => u.searchParams.delete(p));
+    const host = u.host.replace(/^www\./i, '').toLowerCase();
+    const path = u.pathname.replace(/\/+$/, '');
+    const query = u.searchParams.toString();
+    return `${host}${path}${query ? `?${query}` : ''}`.toLowerCase();
+  } catch {
+    return (url || '').trim().replace(/\/+$/, '').toLowerCase();
+  }
+}
+
+// Chequea si el usuario ya tiene una receta con esa URL (para evitar duplicados al importar).
+router.get('/check-url', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const url = String(req.query.url || '').trim();
+    if (!url) return res.json({ exists: false });
+    const target = normalizeUrlForCompare(url);
+    const recipes = await prisma.recipe.findMany({
+      where: { userId: req.user!.id, NOT: { sourceUrl: null } },
+      select: { id: true, title: true, sourceUrl: true },
+    });
+    const match = recipes.find(r => r.sourceUrl && normalizeUrlForCompare(r.sourceUrl) === target);
+    if (match) {
+      return res.json({ exists: true, recipe: { id: match.id, title: match.title } });
+    }
+    res.json({ exists: false });
+  } catch (error) {
+    console.error('check-url error:', error);
+    res.json({ exists: false });
+  }
+});
+
 // Get single recipe
 router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
   try {
