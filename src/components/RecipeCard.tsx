@@ -244,7 +244,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   title="Características (favorita, cocinada, thermomix, etc.)"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <ToggleRight className="h-5 w-5 text-gray-600" />
+                  <ToggleRight className="!h-6 !w-6 text-gray-600" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-56 p-2" onClick={(e) => e.stopPropagation()}>
