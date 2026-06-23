@@ -450,7 +450,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         )}
 
         {!minimal && (recipe.thermomix || isThermomixRecipe(recipe) || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.vegetarian || recipe.cooked || recipe.featured) && (
-          <div className={`flex items-center flex-wrap gap-2 text-muted-foreground ${oneCol ? "[&>span]:h-9 [&>span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6" : ""}`}>
+          <div className={`flex items-center flex-wrap gap-2 text-muted-foreground ${oneCol ? "[&>span]:h-9 [&>span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6 [&_.keto-ico]:!h-8 [&_.keto-ico]:!w-8 [&_.cooked-ico]:!h-8 [&_.cooked-ico]:!w-8" : ""}`}>
             {(recipe.thermomix || isThermomixRecipe(recipe)) && (
               <span
                 title="Thermomix"
@@ -490,7 +490,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 title="Keto"
                 className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
               >
-                <AvocadoIcon className="h-[22px] w-[22px]" />
+                <AvocadoIcon className="h-[26px] w-[26px] keto-ico" />
               </span>
             )}
             {recipe.lowCarb && (
@@ -516,8 +516,8 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             )}
             {/* Cocinada y Favorita (1 a 4 columnas) */}
             {recipe.cooked && (
-              <span title="Cocinada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
-                <RecipePreparedIcon style={{ width: 22, height: 22, color: '#8ebf4c' }} />
+              <span title="Cooked" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+                <RecipePreparedIcon className="cooked-ico" style={{ width: 22, height: 22, color: '#8ebf4c' }} />
               </span>
             )}
             {recipe.featured && (
