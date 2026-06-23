@@ -47,7 +47,7 @@ interface RecipeCardProps {
 // Características editables desde el popover "ON".
 const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
-  { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-5 w-5" /> },
+  { field: 'cooked', label: 'Cooked', icon: <RecipePreparedIcon className="h-5 w-5" /> },
   { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain" /> },
   { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
   { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
@@ -212,24 +212,6 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               <Heart
                 className={recipe.featured ? 'fill-red-500 text-red-500' : 'text-gray-600'}
                 style={{ width: 20, height: 20 }}
-              />
-            </Button>
-          )}
-          {onToggleCooked && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className={`h-8 w-8 p-0 ${recipe.cooked ? 'bg-green-100/60 hover:bg-green-200/60' : 'bg-white/50 hover:bg-white/70'}`}
-              title={recipe.cooked ? "Marcar como no cocinada" : "Marcar como cocinada"}
-              onClick={(event) => {
-                event.stopPropagation();
-                onToggleCooked(recipe);
-              }}
-            >
-              <RecipePreparedIcon
-                className={recipe.cooked ? "" : "text-gray-600"}
-                style={{ width: 28, height: 28, color: recipe.cooked ? '#8ebf4c' : undefined }}
               />
             </Button>
           )}
@@ -517,7 +499,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             {/* Cocinada y Favorita (1 a 4 columnas) */}
             {recipe.cooked && (
               <span title="Cooked" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
-                <RecipePreparedIcon className="cooked-ico" style={{ width: 22, height: 22, color: '#8ebf4c' }} />
+                <RecipePreparedIcon className="cooked-ico" style={{ width: 22, height: 22 }} />
               </span>
             )}
             {recipe.featured && (
