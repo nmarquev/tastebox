@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -1053,11 +1053,11 @@ export const EditRecipeModal = ({
             </TabsContent>
 
               <TabsContent value="classification" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
-                {/* 1: Tipo de receta / Colección */}
+                {/* 1: Tipo de comida / Colección */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center justify-between">
-                      <Label>Tipo de receta</Label>
+                      <Label>Tipo de comida</Label>
                       {(watch('dishType') || '').trim() && (
                         <button type="button" onClick={() => setValue('dishType', '', { shouldDirty: true })} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
                           <X className="h-3 w-3" />
@@ -1068,7 +1068,7 @@ export const EditRecipeModal = ({
                       options={dishTypeOptions}
                       selected={(watch('dishType') || '').split(',').map(s => s.trim()).filter(Boolean)}
                       onChange={(next) => setValue('dishType', next.join(', '), { shouldDirty: true })}
-                      placeholder="Elegí uno o más tipos de receta"
+                      placeholder="Elegí uno o más tipos de comida"
                       searchPlaceholder="Buscar o escribir tipo..."
                       closeOnSelect
                       allowCreate

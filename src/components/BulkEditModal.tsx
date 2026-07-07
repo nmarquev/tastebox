@@ -250,7 +250,7 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
             <Input id="bulk-date" type="date" value={createdAt} onChange={(e) => setCreatedAt(e.target.value)} />
           </div>
           <div>
-            <Label>Tipo de receta</Label>
+            <Label>Tipo de comida</Label>
             <MultiSelectCombobox
               options={dishTypeOptions}
               selected={dishType}

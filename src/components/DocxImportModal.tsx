@@ -572,13 +572,13 @@ export const DocxImportModal = ({ isOpen, onClose, onRecipeSaved }: DocxImportMo
                     />
                   </div>
                   <div>
-                    <Label className="text-xs">Tipo de receta</Label>
+                    <Label className="text-xs">Tipo de comida</Label>
                     <Select
                       value={perRecipeFields[currentRecipe.id]?.dishType || ''}
                       onValueChange={(value) => setRecipeField(currentRecipe.id, { dishType: value })}
                     >
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Elegir tipo de receta" />
+                        <SelectValue placeholder="Elegir tipo de comida" />
                       </SelectTrigger>
                       <SelectContent>
                         {dishTypeOptions.map((dt) => (

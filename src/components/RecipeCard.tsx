@@ -30,7 +30,7 @@ interface RecipeCardProps {
   isInCollection?: boolean;
   columns?: 1 | 2 | 3 | 4 | 5;
   collectionNames?: string[];
-  // Edición inline en vista de 1 columna (Tipo de receta / Categoría / Colección).
+  // Edición inline en vista de 1 columna (Tipo de comida / Categoría / Colección).
   dishTypeOptions?: string[];
   categoryOptions?: string[];
   allCollections?: { id: string; name: string }[];
@@ -47,7 +47,7 @@ interface RecipeCardProps {
 // Características editables desde el popover "ON".
 const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
-  { field: 'cooked', label: 'Cooked', icon: <RecipePreparedIcon className="h-5 w-5" /> },
+  { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-5 w-5" /> },
   { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain" /> },
   { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
   { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
@@ -238,7 +238,18 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                       <button
                         key={field}
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); onToggleFeature(recipe, field, !active); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (field === 'featured' && onToggleFavorite) {
+                            onToggleFavorite(recipe);
+                            return;
+                          }
+                          if (field === 'cooked' && onToggleCooked) {
+                            onToggleCooked(recipe);
+                            return;
+                          }
+                          onToggleFeature(recipe, field, !active);
+                        }}
                         className={`flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-sm transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
                       >
                         <span className="flex items-center gap-2">{icon}{label}</span>
@@ -498,7 +509,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             )}
             {/* Cocinada y Favorita (1 a 4 columnas) */}
             {recipe.cooked && (
-              <span title="Cooked" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+              <span title="Cocinada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
                 <RecipePreparedIcon className="cooked-ico" style={{ width: 22, height: 22 }} />
               </span>
             )}
@@ -544,7 +555,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         )}
       </CardContent>
 
-      {/* Panel derecho (solo en vista de 1 columna): Tipo de receta, Categoría, Colección */}
+      {/* Panel derecho (solo en vista de 1 columna): Tipo de comida, Categoría, Colección */}
       {oneCol && (
         <div className="shrink-0 space-y-3 border-t p-4 text-sm sm:w-60 sm:border-l sm:border-t-0" onClick={inlineEditing ? (e) => e.stopPropagation() : undefined}>
           {(onInlineSave || onEdit) && !inlineEditing && (
@@ -564,7 +575,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           {inlineEditing ? (
             <>
               <div>
-                <p className="mb-1 font-semibold text-foreground">Tipo de receta</p>
+                <p className="mb-1 font-semibold text-foreground">Tipo de comida</p>
                 <MultiSelectCombobox
                   options={dishTypeOptions}
                   selected={editDishType}
@@ -610,7 +621,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             <>
               {recipe.dishType?.trim() && (
                 <div>
-                  <p className="font-semibold text-foreground">Tipo de receta</p>
+                  <p className="font-semibold text-foreground">Tipo de comida</p>
                   <p className="text-muted-foreground">{recipe.dishType.trim()}</p>
                 </div>
               )}

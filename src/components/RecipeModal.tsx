@@ -1165,7 +1165,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
               {localRecipe.dishType && (
                 <div className="contents">
-                  <h3 className="font-semibold text-base">Tipo de receta</h3>
+                  <h3 className="font-semibold text-base">Tipo de comida</h3>
                   <Badge>{localRecipe.dishType}</Badge>
                 </div>
               )}

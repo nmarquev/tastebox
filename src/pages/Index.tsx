@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { RecipeCard, Recipe } from "@/components/RecipeCard";
@@ -66,10 +67,20 @@ const SORT_LABELS: Partial<Record<RecipeSort, string>> = {
   source: 'Fuente',
   collection: 'Colección',
   category: 'Categoría',
-  dishType: 'Tipo de receta',
+  dishType: 'Tipo de comida',
 };
 
 const Index = () => {
+  const location = useLocation();
+  const initialAppView = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('view')
+    : null;
+  const initialSearch = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('buscar') || ""
+    : "";
+  const initialRecipeTypeFilter = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('filtro')
+    : null;
   const recipeToolbarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -81,7 +92,7 @@ const Index = () => {
   const { tags: customTags, createTag, reloadTags } = useRecipeTags(Boolean(user));
   const { authors: customAuthors, createAuthor, reloadAuthors } = useRecipeAuthors(Boolean(user));
 
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
   // Palabras clave confirmadas (con Enter) para buscar recetas por varios términos (AND).
   const [searchTerms, setSearchTerms] = useState<string[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -116,14 +127,14 @@ const Index = () => {
   const [collections, setCollections] = useState<RecipeCollection[]>([]);
   // Cuando es true, el panel derecho muestra la galería de colecciones (tarjetas)
   // en lugar de la grilla de recetas.
-  const [showCollectionsGallery, setShowCollectionsGallery] = useState(false);
+  const [showCollectionsGallery, setShowCollectionsGallery] = useState(initialAppView === 'colecciones');
   // Igual que la anterior pero para la galería de categorías.
-  const [showCategoriesGallery, setShowCategoriesGallery] = useState(false);
+  const [showCategoriesGallery, setShowCategoriesGallery] = useState(initialAppView === 'categorias');
   // Igual pero para la galería de fuentes.
-  const [showSourcesGallery, setShowSourcesGallery] = useState(false);
+  const [showSourcesGallery, setShowSourcesGallery] = useState(initialAppView === 'fuentes');
   const [showTagsGallery, setShowTagsGallery] = useState(false);
-  // Igual pero para la galería de tipos de receta.
-  const [showDishTypesGallery, setShowDishTypesGallery] = useState(false);
+  // Igual pero para la galería de tipos de comida.
+  const [showDishTypesGallery, setShowDishTypesGallery] = useState(initialAppView === 'tipo-comida');
   // Igual pero para la galería de autores.
   const [showAuthorsGallery, setShowAuthorsGallery] = useState(false);
   // Mostrar el botón "volver arriba" cuando se hizo scroll hacia abajo.
@@ -131,7 +142,7 @@ const Index = () => {
   // Gestión de colecciones desde la galería (menú de tres puntitos).
   const [deleteCollectionTarget, setDeleteCollectionTarget] = useState<RecipeCollection | null>(null);
   const [bulkDeleteCollectionsOpen, setBulkDeleteCollectionsOpen] = useState(false);
-  // Gestión de tipos de receta desde la galería (menú de tres puntitos).
+  // Gestión de tipos de comida desde la galería (menú de tres puntitos).
   const [deleteDishTypeTarget, setDeleteDishTypeTarget] = useState<string | null>(null);
   const coverChangeDishTypeName = useRef<string | null>(null);
   const dishTypeCoverInputRef = useRef<HTMLInputElement>(null);
@@ -173,13 +184,58 @@ const Index = () => {
       tags: etiqueta ? [etiqueta] : [],
       ingredients: [],
       featured: undefined,
-      thermomixOnly: undefined,
-      airFryerOnly: undefined,
+      thermomixOnly: initialAppView === 'thermomix' || initialRecipeTypeFilter === 'thermomix' ? true : undefined,
+      airFryerOnly: initialRecipeTypeFilter === 'air-fryer' ? true : undefined,
+      glutenFreeOnly: initialRecipeTypeFilter === 'sin-gluten' ? true : undefined,
+      ketoOnly: initialRecipeTypeFilter === 'keto' ? true : undefined,
+      lowCarbOnly: initialRecipeTypeFilter === 'low-carb' ? true : undefined,
+      vegetarianOnly: initialRecipeTypeFilter === 'vegetarianas' ? true : undefined,
       collectionId,
       sources: fuente ? [fuente] : undefined,
       dishType: tipo || undefined,
     };
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const view = params.get('view');
+    const keyword = params.get('buscar') || "";
+    const typeFilter = params.get('filtro');
+
+    setSearchTerm(keyword);
+    setSearchTerms([]);
+    setShowCollectionsGallery(view === 'colecciones');
+    setShowCategoriesGallery(view === 'categorias');
+    setShowSourcesGallery(view === 'fuentes');
+    setShowDishTypesGallery(view === 'tipo-comida');
+    setShowTagsGallery(false);
+    setShowAuthorsGallery(false);
+    setShowFilters(false);
+    setActiveBulkPanel(null);
+    setSelectedRecipeIds(new Set());
+
+    setFilters({
+      difficulty: [],
+      prepTimeRange: [0, 180],
+      recipeTypes: [],
+      tags: [],
+      ingredients: [],
+      featured: typeFilter === 'favoritas' ? true : undefined,
+      cookedOnly: typeFilter === 'cocinadas' ? true : undefined,
+      thermomixOnly: view === 'thermomix' || typeFilter === 'thermomix' ? true : undefined,
+      airFryerOnly: typeFilter === 'air-fryer' ? true : undefined,
+      glutenFreeOnly: typeFilter === 'sin-gluten' ? true : undefined,
+      ketoOnly: typeFilter === 'keto' ? true : undefined,
+      lowCarbOnly: typeFilter === 'low-carb' ? true : undefined,
+      vegetarianOnly: typeFilter === 'vegetarianas' ? true : undefined,
+      collectionId: undefined,
+      sources: undefined,
+      dishType: undefined,
+      dishTypes: [],
+      author: undefined,
+    });
+  }, [location.search]);
+
   const [gridColumns, setGridColumns] = useState<1 | 2 | 3 | 4 | 5>(3); // Default to 3 columns
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'detail' | 'ingredients'>('grid'); // Grilla, lista, detalle o ingredientes
   const [recipeSort, setRecipeSort] = useState<RecipeSort>(() => {
@@ -191,7 +247,7 @@ const Index = () => {
   // Orden de la galería de colecciones (por nombre o por cantidad de recetas).
   const [collectionSort, setCollectionSort] = useState<'name' | 'count'>('name');
   const [collectionSortDirection, setCollectionSortDirection] = useState<'asc' | 'desc'>('asc');
-  // Orden de la galería de tipos de receta (por nombre o por cantidad de recetas).
+  // Orden de la galería de tipos de comida (por nombre o por cantidad de recetas).
   const [dishTypeSort, setDishTypeSort] = useState<'name' | 'count'>('name');
   const [dishTypeSortDirection, setDishTypeSortDirection] = useState<'asc' | 'desc'>('asc');
   // Orden de la galería de categorías (por nombre o por cantidad de recetas).
@@ -229,7 +285,7 @@ const Index = () => {
   const [changeCoverSaving, setChangeCoverSaving] = useState(false);
   const lastSelectedRecipeId = useRef<string | null>(null); // para selección por rango (Shift)
   const lastSelectedCollectionId = useRef<string | null>(null); // selección por rango de colecciones (Shift)
-  const lastSelectedDishTypeName = useRef<string | null>(null); // selección por rango de tipos de receta (Shift)
+  const lastSelectedDishTypeName = useRef<string | null>(null); // selección por rango de tipos de comida (Shift)
   const lastSelectedCategoryName = useRef<string | null>(null); // selección por rango de categorías (Shift)
   const lastSelectedSourceName = useRef<string | null>(null); // selección por rango de fuentes (Shift)
   const lastSelectedTagName = useRef<string | null>(null); // selección por rango de etiquetas (Shift)
@@ -263,14 +319,14 @@ const Index = () => {
   const [newCategoryCoverPreview, setNewCategoryCoverPreview] = useState<string | null>(null);
   const [newCategoryCoverLoading, setNewCategoryCoverLoading] = useState(false);
   const [creatingCategory, setCreatingCategory] = useState(false);
-  // Diálogo de opciones al imprimir tarjetas/lista de colecciones o tipos de receta.
+  // Diálogo de opciones al imprimir tarjetas/lista de colecciones o tipos de comida.
   const [galleryPrint, setGalleryPrint] = useState<{ kind: 'cards' | 'list'; label: string; items: PrintCollectionItem[] } | null>(null);
   const [galleryPrintTitle, setGalleryPrintTitle] = useState('');
   const [galleryPrintHeader, setGalleryPrintHeader] = useState('');
   const [galleryPrintFooter, setGalleryPrintFooter] = useState('');
   const [galleryPrintPageNumber, setGalleryPrintPageNumber] = useState(false);
   const [galleryPrintColumns, setGalleryPrintColumns] = useState(4);
-  // Selección masiva / diálogos de la galería de tipos de receta (imprimir, eliminar, nuevo).
+  // Selección masiva / diálogos de la galería de tipos de comida (imprimir, eliminar, nuevo).
   const [selectedDishTypeBulkNames, setSelectedDishTypeBulkNames] = useState<Set<string>>(new Set());
   const [bulkDeleteDishTypesOpen, setBulkDeleteDishTypesOpen] = useState(false);
   const [showNewDishTypeDialog, setShowNewDishTypeDialog] = useState(false);
@@ -423,7 +479,7 @@ const Index = () => {
     .map(([name, { count, cover }]) => ({ name, count, cover }))
     .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
 
-  // Lista de tipos de receta (dishType) con cantidad y miniatura.
+  // Lista de tipos de comida (dishType) con cantidad y miniatura.
   const dishTypeMap = new Map<string, { count: number; cover?: string }>();
   recipes.forEach(recipe => {
     const names = (recipe.dishType || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -436,7 +492,7 @@ const Index = () => {
       dishTypeMap.set(name, entry);
     });
   });
-  // Incluir tipos de receta creados manualmente y aplicar portada personalizada.
+  // Incluir tipos de comida creados manualmente y aplicar portada personalizada.
   customDishTypes.forEach(({ name, coverImage }) => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -814,7 +870,7 @@ const Index = () => {
     }
   };
 
-  // Guardado inline (vista 1 columna) de Tipo de receta, Categoría y Colección.
+  // Guardado inline (vista 1 columna) de Tipo de comida, Categoría y Colección.
   const handleInlineSaveFields = async (
     recipeId: string,
     data: { dishType: string; recipeType: string; collectionIds: string[] }
@@ -981,7 +1037,7 @@ const Index = () => {
     resetNewCollectionDialog();
   };
 
-  // --- Diálogo "Nuevo tipo de receta" (con portada, igual que nueva colección) ---
+  // --- Diálogo "Nuevo tipo de comida" (con portada, igual que nueva colección) ---
   const resetNewDishTypeDialog = () => {
     setNewDishTypeName('');
     setNewDishTypeCoverFile(null);
@@ -1164,7 +1220,7 @@ const Index = () => {
     }
   };
 
-  // Cambiar la portada de un tipo de receta subiendo una imagen desde la PC.
+  // Cambiar la portada de un tipo de comida subiendo una imagen desde la PC.
   const handleChangeDishTypeCover = async (name: string, file: File) => {
     try {
       const result = await api.upload.images([file]);
@@ -1182,7 +1238,7 @@ const Index = () => {
     }
   };
 
-  // Eliminar un tipo de receta (las recetas se mantienen, pierden la etiqueta).
+  // Eliminar un tipo de comida (las recetas se mantienen, pierden la etiqueta).
   const handleDeleteDishType = async (name: string) => {
     setDeleteDishTypeTarget(null); // cerrar el diálogo de inmediato
     if (filters.dishType === name || filters.dishTypes?.includes(name)) {
@@ -1191,10 +1247,10 @@ const Index = () => {
     try {
       await api.dishTypes.remove(name);
       await Promise.all([reloadDishTypes(), loadRecipes()]);
-      toast({ title: "Tipo de receta eliminado", description: "Las recetas siguen disponibles en tu lista." });
+      toast({ title: "Tipo de comida eliminado", description: "Las recetas siguen disponibles en tu lista." });
     } catch (error) {
       toast({
-        title: "No se pudo eliminar el tipo de receta",
+        title: "No se pudo eliminar el tipo de comida",
         description: error instanceof Error ? error.message : "Intentá nuevamente",
         variant: "destructive",
       });
@@ -1341,7 +1397,7 @@ const Index = () => {
     }
   };
 
-  // --- Diálogo "Nueva categoría" (con portada, igual que nuevo tipo de receta) ---
+  // --- Diálogo "Nueva categoría" (con portada, igual que nuevo tipo de comida) ---
   const resetNewCategoryDialog = () => {
     setNewCategoryName('');
     setNewCategoryCoverFile(null);
@@ -1402,12 +1458,12 @@ const Index = () => {
         await reloadDishTypes();
       }
       toast({
-        title: "Tipo de receta creado",
+        title: "Tipo de comida creado",
         description: `Se creó "${name}". Asignalo a una receta para que aparezca en la lista.`,
       });
     } catch (error) {
       toast({
-        title: "No se pudo crear el tipo de receta",
+        title: "No se pudo crear el tipo de comida",
         description: error instanceof Error ? error.message : "Intentá nuevamente",
         variant: "destructive",
       });
@@ -2049,7 +2105,7 @@ const Index = () => {
     activeFilterChips.push({ label: 'Colección', value: collections.find(c => c.id === filters.collectionId)?.name || '', onRemove: () => handleFiltersChange({ ...filters, collectionId: undefined }) });
   }
   const activeDishTypes = [...(filters.dishTypes || []), ...(filters.dishType ? [filters.dishType] : [])];
-  if (activeDishTypes.length) activeFilterChips.push({ label: 'Tipo de receta', value: activeDishTypes.join(', '), onRemove: () => handleFiltersChange({ ...filters, dishTypes: [], dishType: undefined }) });
+  if (activeDishTypes.length) activeFilterChips.push({ label: 'Tipo de comida', value: activeDishTypes.join(', '), onRemove: () => handleFiltersChange({ ...filters, dishTypes: [], dishType: undefined }) });
   if (filters.recipeTypes?.length) activeFilterChips.push({ label: 'Categoría', value: filters.recipeTypes.join(', '), onRemove: () => handleFiltersChange({ ...filters, recipeTypes: [] }) });
   if (filters.sources?.length) activeFilterChips.push({ label: 'Fuente', value: filters.sources.join(', '), onRemove: () => handleFiltersChange({ ...filters, sources: undefined }) });
   if (filters.tags?.length) activeFilterChips.push({ label: 'Etiquetas', value: filters.tags.join(', '), onRemove: () => handleFiltersChange({ ...filters, tags: [] }) });
@@ -2427,7 +2483,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
   const handleBulkPrintCollectionCards = () => openGalleryPrint('cards', 'colecciones', collectionsForPrint());
   const handleBulkPrintCollectionList = () => openGalleryPrint('list', 'colecciones', collectionsForPrint());
 
-  // --- Galería de tipos de receta: búsqueda, orden y selección masiva (igual que colecciones) ---
+  // --- Galería de tipos de comida: búsqueda, orden y selección masiva (igual que colecciones) ---
   const galleryDishTypes = (() => {
     let list = dishTypeList;
     if (showDishTypesGallery && searchTerm.trim()) {
@@ -2477,10 +2533,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
     setSelectedDishTypeBulkNames(allSel ? new Set() : new Set(names));
   };
   const dishTypesForPrint = () => selectedActionDishTypes.map((d) => ({ name: d.name, count: d.count, cover: d.cover }));
-  const handleBulkPrintDishTypeCards = () => openGalleryPrint('cards', 'tipos de receta', dishTypesForPrint());
-  const handleBulkPrintDishTypeList = () => openGalleryPrint('list', 'tipos de receta', dishTypesForPrint());
+  const handleBulkPrintDishTypeCards = () => openGalleryPrint('cards', 'tipos de comida', dishTypesForPrint());
+  const handleBulkPrintDishTypeList = () => openGalleryPrint('list', 'tipos de comida', dishTypesForPrint());
 
-  // --- Galería de categorías: búsqueda, orden y selección masiva (igual que tipos de receta) ---
+  // --- Galería de categorías: búsqueda, orden y selección masiva (igual que tipos de comida) ---
   const galleryCategories = (() => {
     let list = categoryList;
     if (showCategoriesGallery && searchTerm.trim()) {
@@ -2714,7 +2770,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       setBulkDeleteCategoriesOpen(false);
     }
   };
-  // Eliminar varios tipos de receta seleccionados (las recetas se mantienen).
+  // Eliminar varios tipos de comida seleccionados (las recetas se mantienen).
   const handleBulkDeleteDishTypes = async () => {
     const names = Array.from(selectedDishTypeBulkNames);
     if (names.length === 0) return;
@@ -2729,13 +2785,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       await Promise.all(names.map((n) => api.dishTypes.remove(n)));
       await Promise.all([reloadDishTypes(), loadRecipes()]);
       toast({
-        title: names.length > 1 ? `${names.length} tipos de receta eliminados` : "Tipo de receta eliminado",
+        title: names.length > 1 ? `${names.length} tipos de comida eliminados` : "Tipo de comida eliminado",
         description: "Las recetas siguen disponibles en tu lista.",
       });
       setSelectedDishTypeBulkNames(new Set());
     } catch (error) {
       toast({
-        title: "No se pudieron eliminar los tipos de receta",
+        title: "No se pudieron eliminar los tipos de comida",
         description: error instanceof Error ? error.message : "Intentá nuevamente",
         variant: "destructive",
       });
@@ -2867,10 +2923,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-8">
         <div
           ref={recipeToolbarRef}
-          className="sticky z-30 -mx-4 flex flex-col gap-2 border-b border-border/50 bg-background px-4 pt-1 pb-2.5 shadow-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 lg:flex-row lg:items-center lg:justify-between lg:gap-3"
+          className="sticky z-30 -mx-4 flex flex-col gap-2 border-b border-border/50 bg-background px-4 pt-1 pb-2.5 shadow-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 xl:flex-row xl:items-center xl:justify-between xl:gap-3"
           style={{ top: 'var(--tastebox-header-height, 113px)' }}
         >
-          <div className="text-left lg:shrink-0">
+          <div className="text-left xl:shrink-0">
             {/* En tablet (iPad portrait): título a la izquierda y "Mostrando" a la derecha, en una línea.
                 En desktop (lg+) el título queda a la izquierda y los botones a la derecha. */}
             <div className="flex items-start gap-2">
@@ -2892,7 +2948,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   : showSourcesGallery
                     ? 'Fuentes'
                     : showDishTypesGallery
-                      ? 'Tipos de recetas'
+                      ? 'Tipos de comidas'
                       : showTagsGallery
                         ? 'Etiquetas'
                       : showAuthorsGallery
@@ -2946,13 +3002,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
             )}
           </div>
-          <div className="grid w-full grid-cols-3 gap-x-2 gap-y-1 pt-1.5 sm:flex sm:flex-wrap sm:items-start sm:justify-end lg:w-auto lg:gap-x-3 lg:gap-y-1">
+          <div className="grid w-full grid-cols-2 gap-x-3 gap-y-3 pt-1.5 md:grid-cols-[minmax(220px,1fr)_8.5rem_8.5rem_8.5rem]">
             {/* Search input (multi-palabra: escribí y Enter agrega una palabra clave) */}
-            <div className="col-span-3 flex w-full flex-col gap-1 sm:w-auto">
+            <div className="col-span-2 ml-4 flex w-full flex-col gap-1 md:col-span-1 md:ml-5 xl:ml-16 xl:w-auto">
               <div className="relative rounded-md transition-all duration-200 hover:scale-105 hover:shadow-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={showCollectionsGallery ? "Buscar colección" : showDishTypesGallery ? "Buscar tipo de receta" : showCategoriesGallery ? "Buscar categoría" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar (Enter agrega palabra)"}
+                  placeholder={showCollectionsGallery ? "Buscar colección" : showDishTypesGallery ? "Buscar tipo de comida" : showCategoriesGallery ? "Buscar categoría" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar (Enter agrega palabra)"}
                   title="Escribí una palabra o frase y pulsá Enter para agregarla. Podés sumar varias."
                   value={searchTerm}
                   onChange={(e) => { if (e.target.value && !showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery) { setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); } setSearchTerm(e.target.value); }}
@@ -2967,7 +3023,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       }
                     }
                   }}
-                  className={`h-10 pl-10 pr-9 w-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'sm:w-52' : 'sm:w-[296px] lg:w-[300px]'}`}
+                  className={`h-10 pl-10 pr-9 w-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:w-48' : 'md:w-full xl:w-[260px]'}`}
                 />
                 {searchTerm && (
                   <button
@@ -3012,7 +3068,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {/* Column selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md">
+                <Button variant="outline" size="sm" className="h-9 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-36">
                   {viewMode === 'list' || viewMode === 'detail' || viewMode === 'ingredients' ? <List className="h-4 w-4" /> : getColumnIcon(gridColumns)}
                   <span className="ml-2">Ver</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
@@ -3086,7 +3142,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {/* Sort selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md">
+                <Button variant="outline" size="sm" className="h-9 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-36">
                   <ArrowUpDown className="h-4 w-4" />
                   <span className="ml-2">Ordenar</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
@@ -3294,7 +3350,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 setActiveBulkPanel(null);
                 setSelectedRecipeIds(new Set());
               }}
-              className={`h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
+              className={`h-9 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-36 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
             >
               <Filter className="h-4 w-4 mr-2" />
               Filtrar
@@ -3302,13 +3358,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </Button>
             {/* Salto de fila ANTES de Editar (vista de recetas): fila 1 Buscar/Ver/Ordenar/Filtrar;
                 fila 2 Editar/Imprimir/Eliminar. */}
-            <div className={`basis-full ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:block'}`} aria-hidden="true" />
-            {/* Espaciador del ancho de Buscar: alinea Editar bajo Ver, Imprimir bajo Ordenar, Eliminar bajo Filtrar. */}
-            <div className={`shrink-0 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:block sm:w-[296px] lg:w-[300px]'}`} aria-hidden="true" />
+            <div className="hidden" aria-hidden="true" />
+            {/* Segunda fila: Editar, Imprimir, Eliminar. */}
+            <div className="hidden" aria-hidden="true" />
             <Button
               variant={activeBulkPanel === 'edit' ? "default" : "outline"}
               size="sm"
-              className={`h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
+              className={`h-9 w-full transition-all duration-200 hover:scale-105 hover:shadow-md md:col-start-2 xl:w-36 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
               onClick={() => {
                 if (activeBulkPanel === 'edit') {
                   setActiveBulkPanel(null);
@@ -3326,7 +3382,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'print' ? "default" : "outline"}
               size="sm"
-              className="h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md"
+              className="h-9 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-36"
               onClick={() => {
                 if (activeBulkPanel === 'print') {
                   setActiveBulkPanel(null);
@@ -3344,7 +3400,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'delete' ? "default" : "outline"}
               size="sm"
-              className="h-9 sm:w-36 transition-all duration-200 hover:scale-105 hover:shadow-md"
+              className="h-9 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-36"
               onClick={() => {
                 if (activeBulkPanel === 'delete') {
                   setActiveBulkPanel(null);
@@ -3447,7 +3503,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 </div>
               </div>
 
-              {/* Fila 1: Colección + Tipo de receta + Categorías (renglón 1) / Fuente + Etiquetas + Ingredientes (renglón 2) */}
+              {/* Fila 1: Colección + Tipo de comida + Categorías (renglón 1) / Fuente + Etiquetas + Ingredientes (renglón 2) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 gap-y-0 [&_button]:text-[13px] [&_input]:text-[13px] [&_.justify-between]:h-9 [&_input]:h-9">
                 <div>
                   <div className="-mb-1.5 flex items-center justify-between">
@@ -3484,7 +3540,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
                 <div>
                   <div className="-mb-1.5 flex items-center justify-between">
-                    <Label className="text-[13px] font-medium">Tipo de receta</Label>
+                    <Label className="text-[13px] font-medium">Tipo de comida</Label>
                     {(!!filters.dishTypes?.length || filters.dishType) && (
                       <button type="button" onClick={() => handleFiltersChange({ ...filters, dishType: undefined, dishTypes: [] })} className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Limpiar" title="Limpiar">
                         <X className="h-3.5 w-3.5" />
@@ -3495,7 +3551,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     options={dishTypeList.map(dt => dt.name)}
                     selected={[...(filters.dishTypes || []), ...(filters.dishType ? [filters.dishType] : [])]}
                     onChange={(newTypes) => handleFiltersChange({ ...filters, dishTypes: newTypes, dishType: undefined })}
-                    placeholder="Filtrar por tipo de receta"
+                    placeholder="Filtrar por tipo de comida"
                     searchPlaceholder="Buscar tipo..."
                     closeOnSelect
                   />
@@ -3868,12 +3924,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 <div className="absolute left-0 top-1/2 hidden -translate-y-1/2 lg:block">
                   <h3 className="flex items-center gap-2 font-medium text-foreground">
                     <Printer className="h-4 w-4" />
-                    Imprimir tipos de receta
+                    Imprimir tipos de comida
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {selectedDishTypeBulkNames.size
                       ? `${selectedDishTypeBulkNames.size} tipo${selectedDishTypeBulkNames.size > 1 ? "s seleccionados" : " seleccionado"}`
-                      : "Seleccioná los tipos de receta"}
+                      : "Seleccioná los tipos de comida"}
                   </p>
                 </div>
                 <div className="flex flex-col gap-4">
@@ -3956,12 +4012,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 <div className="absolute left-0 top-1/2 hidden -translate-y-1/2 lg:block">
                   <h3 className="flex items-center gap-2 font-medium text-foreground">
                     <Trash2 className="h-4 w-4" />
-                    Eliminar tipos de receta
+                    Eliminar tipos de comida
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {selectedDishTypeBulkNames.size
                       ? `${selectedDishTypeBulkNames.size} tipo${selectedDishTypeBulkNames.size > 1 ? "s seleccionados" : " seleccionado"}`
-                      : "Seleccioná los tipos de receta"}
+                      : "Seleccioná los tipos de comida"}
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -5230,7 +5286,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     <button
                       type="button"
                       onClick={(e) => handleToggleDishTypeSelection(dishType.name, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey })}
-                      aria-label={selectedDishTypeBulkNames.has(dishType.name) ? 'Quitar selección' : 'Seleccionar tipo de receta'}
+                      aria-label={selectedDishTypeBulkNames.has(dishType.name) ? 'Quitar selección' : 'Seleccionar tipo de comida'}
                       className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${selectedDishTypeBulkNames.has(dishType.name) ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 text-transparent'}`}
                     >
                       <Check className="h-3.5 w-3.5" />
@@ -5257,14 +5313,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   </button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Opciones del tipo de receta">
+                      <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Opciones del tipo de comida">
                         <MoreVertical className="h-4 w-4" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onSelect={() => window.open(`/?tipo=${encodeURIComponent(dishType.name)}`, '_blank')}>
                         <ExternalLink className="mr-2 h-4 w-4" />
-                        Abrir tipo de receta en ventana nueva
+                        Abrir tipo de comida en ventana nueva
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => { coverChangeDishTypeName.current = dishType.name; dishTypeCoverInputRef.current?.click(); }}>
                         <ImageIcon className="mr-2 h-4 w-4" />
@@ -5326,7 +5382,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         type="button"
                         onClick={(e) => e.stopPropagation()}
                         className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-md bg-white/50 text-gray-600 shadow-sm transition-colors hover:bg-white/70"
-                        aria-label="Opciones del tipo de receta"
+                        aria-label="Opciones del tipo de comida"
                       >
                         <MoreVertical className="h-4 w-4" />
                       </button>
@@ -5334,7 +5390,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onSelect={() => window.open(`/?tipo=${encodeURIComponent(dishType.name)}`, '_blank')}>
                         <ExternalLink className="mr-2 h-4 w-4" />
-                        Abrir tipo de receta en ventana nueva
+                        Abrir tipo de comida en ventana nueva
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={() => {
@@ -5361,8 +5417,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           ) : (
             <div className="py-12 text-center">
               <div className="mb-4 text-6xl">🍽️</div>
-              <h3 className="mb-2 text-xl font-semibold text-foreground">Todavía no hay tipos de receta</h3>
-              <p className="text-muted-foreground">Asigná un tipo de receta a tus recetas para verlos acá.</p>
+              <h3 className="mb-2 text-xl font-semibold text-foreground">Todavía no hay tipos de comida</h3>
+              <p className="text-muted-foreground">Asigná un tipo de comida a tus recetas para verlos acá.</p>
             </div>
           )
         ) : showAuthorsGallery ? (
@@ -5548,10 +5604,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           )}
                         </span>
                       )}
-                      {/* Tipo de receta y categorías */}
+                      {/* Tipo de comida y categorías */}
                       <span className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                         {recipe.dishType?.trim() && (
-                          <span><span className="font-semibold text-foreground">Tipo de receta:</span> {recipe.dishType}</span>
+                          <span><span className="font-semibold text-foreground">Tipo de comida:</span> {recipe.dishType}</span>
                         )}
                         {ingCategories.length > 0 && (
                           <span><span className="font-semibold text-foreground">Categoría:</span> {ingCategories.join(', ')}</span>
@@ -6029,13 +6085,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Confirmación para eliminar varios tipos de receta */}
+      {/* Confirmación para eliminar varios tipos de comida */}
       <AlertDialog open={bulkDeleteDishTypesOpen} onOpenChange={setBulkDeleteDishTypesOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar tipos de receta</AlertDialogTitle>
+            <AlertDialogTitle>Eliminar tipos de comida</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Seguro que querés eliminar {selectedDishTypeBulkNames.size} tipo{selectedDishTypeBulkNames.size > 1 ? 's' : ''} de receta? Las recetas no se eliminarán, solo perderán este tipo de receta.
+              ¿Seguro que querés eliminar {selectedDishTypeBulkNames.size} tipo{selectedDishTypeBulkNames.size > 1 ? 's' : ''} de comida? Las recetas no se eliminarán, solo perderán este tipo de comida.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6050,7 +6106,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Input oculto para subir la portada de un tipo de receta desde la PC */}
+      {/* Input oculto para subir la portada de un tipo de comida desde la PC */}
       <input
         ref={dishTypeCoverInputRef}
         type="file"
@@ -6127,13 +6183,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         }}
       />
 
-      {/* Confirmación para eliminar un tipo de receta */}
+      {/* Confirmación para eliminar un tipo de comida */}
       <AlertDialog open={!!deleteDishTypeTarget} onOpenChange={(open) => { if (!open) setDeleteDishTypeTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar tipo de receta</AlertDialogTitle>
+            <AlertDialogTitle>Eliminar tipo de comida</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Seguro que querés eliminar "{deleteDishTypeTarget}"? Las recetas no se eliminarán, solo perderán este tipo de receta.
+              ¿Seguro que querés eliminar "{deleteDishTypeTarget}"? Las recetas no se eliminarán, solo perderán este tipo de comida.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6399,13 +6455,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Diálogo para crear un nuevo tipo de receta (con portada) */}
+      {/* Diálogo para crear un nuevo tipo de comida (con portada) */}
       <AlertDialog open={showNewDishTypeDialog} onOpenChange={(open) => { if (!open) { setShowNewDishTypeDialog(false); resetNewDishTypeDialog(); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Nuevo tipo de receta</AlertDialogTitle>
+            <AlertDialogTitle>Nuevo tipo de comida</AlertDialogTitle>
             <AlertDialogDescription>
-              Ingresá un nombre y, opcionalmente, elegí una portada para el nuevo tipo de receta.
+              Ingresá un nombre y, opcionalmente, elegí una portada para el nuevo tipo de comida.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4">
@@ -6413,7 +6469,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               value={newDishTypeName}
               onChange={(e) => setNewDishTypeName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && newDishTypeName.trim()) { e.preventDefault(); void submitNewDishType(); } }}
-              placeholder="Nombre del tipo de receta"
+              placeholder="Nombre del tipo de comida"
               autoFocus
             />
             <div>
@@ -6440,7 +6496,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Diálogo de opciones al imprimir tarjetas/lista de colecciones o tipos de receta */}
+      {/* Diálogo de opciones al imprimir tarjetas/lista de colecciones o tipos de comida */}
       <AlertDialog open={!!galleryPrint} onOpenChange={(open) => { if (!open) setGalleryPrint(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -6646,7 +6702,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 {([
                   { key: 'source', label: 'Fuente' },
                   { key: 'difficulty', label: 'Dificultad' },
-                  { key: 'dishType', label: 'Tipo de receta' },
+                  { key: 'dishType', label: 'Tipo de comida' },
                   { key: 'category', label: 'Categoría' },
                   { key: 'times', label: 'Tiempos y porciones' },
                   { key: 'icons', label: 'Iconos' },

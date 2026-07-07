@@ -465,12 +465,12 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                     />
                   </div>
                   <div>
-                    <Label>Tipo de receta</Label>
+                    <Label>Tipo de comida</Label>
                     <MultiSelectCombobox
                       options={dishTypeOptions}
                       selected={common.dishType ? [common.dishType] : []}
                       onChange={(next) => setCommon(c => ({ ...c, dishType: next[0] || '' }))}
-                      placeholder="Elegí un tipo de receta"
+                      placeholder="Elegí un tipo de comida"
                       searchPlaceholder="Buscar o escribir tipo..."
                       singleSelect closeOnSelect allowCreate createLabel="Agregar"
                     />

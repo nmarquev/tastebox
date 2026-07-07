@@ -358,7 +358,7 @@ export const CollectionsSidebar = ({
         </div>
       )}
 
-      {/* Encabezado colapsable de tipos de receta */}
+      {/* Encabezado colapsable de tipos de comida */}
       {((dishTypes && dishTypes.length > 0) || onCreateDishType) && (
         <>
           <button
@@ -369,7 +369,7 @@ export const CollectionsSidebar = ({
             }`}
             aria-expanded={dishTypesOpen}
           >
-            <span>Tipo de receta</span>
+            <span>Tipo de comida</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${dishTypesOpen ? "" : "-rotate-90"}`} />
           </button>
           {dishTypesOpen && (
@@ -414,7 +414,7 @@ export const CollectionsSidebar = ({
                           setNewDishName("");
                         }
                       }}
-                      placeholder="Nombre del tipo de receta"
+                      placeholder="Nombre del tipo de comida"
                       className="h-8 text-sm"
                     />
                     <Button size="sm" className="h-8" onClick={submitNewDishType} disabled={savingDish || !newDishName.trim()}>
@@ -430,7 +430,7 @@ export const CollectionsSidebar = ({
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-dashed border-primary/50">
                       <Plus className="h-4 w-4" />
                     </span>
-                    <span className="flex-1 text-left">Crear tipo de receta</span>
+                    <span className="flex-1 text-left">Crear tipo de comida</span>
                   </button>
                 )
               )}

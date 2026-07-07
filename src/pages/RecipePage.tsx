@@ -1,11 +1,41 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, RecipeCollection } from "@/services/api";
 import { Recipe } from "@/types/recipe";
 import { RecipeModal } from "@/components/RecipeModal";
 import { SaveToCollectionModal } from "@/components/SaveToCollectionModal";
+import { MainNav } from "@/components/MainNav";
+import { Theme, useTheme } from "@/contexts/ThemeContext";
+
+const themeLogos: Record<Theme, string> = {
+  carrot: "/logos/logo_carrot.png",
+  violetas: "/logos/logo_violetas.png",
+  tierra: "/logos/logo_tierra.png",
+  frutilla: "/logos/logo_frutilla.png",
+  aguamarina: "/logos/logo_aguamarina.png",
+  pasteles: "/logos/logo_pasteles.png",
+};
+
+const RecipePageHeader = () => {
+  const { theme } = useTheme();
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-border/50 bg-white shadow-sm">
+      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <Link to="/" className="inline-flex shrink-0 items-center justify-center sm:justify-start">
+          <img
+            src={themeLogos[theme]}
+            alt="TasteBox"
+            className="h-14 w-auto max-w-[280px] object-contain"
+          />
+        </Link>
+        <MainNav />
+      </div>
+    </header>
+  );
+};
 
 // Página dedicada que muestra UNA sola receta (ej. al abrir en una nueva pestaña).
 // Reutiliza el RecipeModal sobre un fondo limpio: en la pestaña se ve solo la receta.
@@ -82,34 +112,41 @@ const RecipePage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <>
+        <RecipePageHeader />
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </>
     );
   }
 
   if (error || !recipe) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background p-6 text-center">
-        <p className="text-muted-foreground">{error || "Receta no encontrada"}</p>
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="text-primary hover:underline"
-        >
-          Ir al inicio
-        </button>
-      </div>
+      <>
+        <RecipePageHeader />
+        <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background p-6 text-center">
+          <p className="text-muted-foreground">{error || "Receta no encontrada"}</p>
+          <button
+            type="button"
+            onClick={() => navigate("/app")}
+            className="text-primary hover:underline"
+          >
+            Ir al inicio
+          </button>
+        </div>
+      </>
     );
   }
 
   return (
     <>
+      <RecipePageHeader />
       <RecipeModal
         recipe={recipe}
         isOpen
         variant="page"
-        onClose={() => navigate("/")}
+        onClose={() => navigate("/app")}
         onRecipeUpdate={setRecipe}
         collections={collections}
         onToggleFavorite={() => persistToggle({ featured: !recipe.featured })}

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import Home from "./pages/Home";
 import Index from "./pages/Index";
 import RecipePage from "./pages/RecipePage";
 import NotFound from "./pages/NotFound";
@@ -22,7 +23,9 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Home />} />
+                <Route path="/buscar" element={<Index />} />
+                <Route path="/app" element={<Index />} />
                 <Route path="/receta/:id" element={<RecipePage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
