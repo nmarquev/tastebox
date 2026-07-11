@@ -115,6 +115,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       keto: recipeData.keto ?? false,
       lowCarb: recipeData.lowCarb ?? false,
       vegetarian: recipeData.vegetarian ?? false,
+      proteica: recipeData.proteica ?? false,
       // Nutrición exacta (Cookidoo). Si no hay, queda undefined y se calcula luego.
       calories: recipeData.nutrition?.calories,
       protein: recipeData.nutrition?.protein,

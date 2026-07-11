@@ -43,6 +43,7 @@ const transformRecipeForPdf = (recipe: any) => ({
   keto: recipe.keto ?? false,
   lowCarb: recipe.lowCarb ?? false,
   vegetarian: recipe.vegetarian ?? false,
+  proteica: recipe.proteica ?? false,
   createdAt: recipe.createdAt,
   updatedAt: recipe.updatedAt,
   images: recipe.images.map((img: any) => ({
@@ -212,6 +213,7 @@ router.get('/recipe/:id', authenticateToken, async (req: AuthRequest, res) => {
       keto: recipe.keto ?? false,
       lowCarb: recipe.lowCarb ?? false,
       vegetarian: recipe.vegetarian ?? false,
+      proteica: recipe.proteica ?? false,
       createdAt: recipe.createdAt,
       updatedAt: recipe.updatedAt,
       images: recipe.images.map(img => ({

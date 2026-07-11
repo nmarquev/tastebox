@@ -60,17 +60,68 @@ router.patch('/:name', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const name = decodeURIComponent(req.params.name).trim();
     if (!name) return res.status(400).json({ error: 'Nombre de fuente inválido' });
-    const { coverImage } = z.object({
-      coverImage: z.string().trim().min(1).nullable()
+    const { name: nextNameInput, coverImage } = z.object({
+      name: z.string().trim().min(1).max(120).optional(),
+      coverImage: z.string().trim().min(1).nullable().optional()
     }).parse(req.body);
+    const nextName = nextNameInput || name;
+    const lower = name.toLocaleLowerCase();
+    const nextLower = nextName.toLocaleLowerCase();
 
-    const existing = (await prisma.recipeSource.findMany({
+    const savedSources = await prisma.recipeSource.findMany({
       where: { userId: req.user!.id }
-    })).find(s => s.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+    });
+    const existing = savedSources.find(s => s.name.toLocaleLowerCase() === lower);
+    const existingNext = savedSources.find(s => s.name.toLocaleLowerCase() === nextLower);
 
-    const source = existing
-      ? await prisma.recipeSource.update({ where: { id: existing.id }, data: { coverImage } })
-      : await prisma.recipeSource.create({ data: { userId: req.user!.id, name, coverImage } });
+    const recipeUpdates = (await prisma.recipe.findMany({
+      where: {
+        userId: req.user!.id,
+        OR: [{ source: { not: null } }, { sourceUrl: { not: null } }]
+      },
+      select: { id: true, source: true, sourceUrl: true }
+    }))
+      .filter(recipe => {
+        const explicit = (recipe.source || '').trim();
+        if (explicit) return explicit.toLocaleLowerCase() === lower;
+        return getSourceFromUrl(recipe.sourceUrl || '').toLocaleLowerCase() === lower;
+      })
+      .map(recipe => prisma.recipe.update({
+        where: { id: recipe.id },
+        data: { source: nextName }
+      }));
+
+    let source;
+    if (existing && existingNext && existing.id !== existingNext.id) {
+      source = coverImage !== undefined
+        ? await prisma.recipeSource.update({
+          where: { id: existingNext.id },
+          data: { coverImage }
+        })
+        : existingNext;
+      await prisma.$transaction([
+        prisma.recipeSource.delete({ where: { id: existing.id } }),
+        ...recipeUpdates
+      ]);
+    } else if (existing) {
+      source = await prisma.recipeSource.update({
+        where: { id: existing.id },
+        data: {
+          name: nextName,
+          ...(coverImage !== undefined ? { coverImage } : {})
+        }
+      });
+      if (recipeUpdates.length) await prisma.$transaction(recipeUpdates);
+    } else {
+      source = await prisma.recipeSource.create({
+        data: {
+          userId: req.user!.id,
+          name: nextName,
+          ...(coverImage !== undefined ? { coverImage } : {})
+        }
+      });
+      if (recipeUpdates.length) await prisma.$transaction(recipeUpdates);
+    }
 
     res.json(source);
   } catch (error) {

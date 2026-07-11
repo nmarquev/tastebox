@@ -58,6 +58,7 @@ export interface Recipe {
   keto?: boolean;
   lowCarb?: boolean;
   vegetarian?: boolean;
+  proteica?: boolean;
   locution?: string;
   // InformaciÃ³n nutricional por porciÃ³n
   calories?: number | null;
@@ -96,6 +97,7 @@ export interface ImportRecipeResponse {
     keto?: boolean;
     lowCarb?: boolean;
     vegetarian?: boolean;
+    proteica?: boolean;
     images: RecipeImage[];
     ingredients: Ingredient[];
     instructions: Instruction[];

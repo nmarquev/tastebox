@@ -87,6 +87,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         lowCarb: recipeData.lowCarb,
         keto: recipeData.keto,
         vegetarian: recipeData.vegetarian,
+        proteica: recipeData.proteica,
       }
     );
     const savedRecipe = await prisma.recipe.create({
@@ -112,6 +113,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         keto: recipeData.keto ?? false,
         lowCarb: recipeData.lowCarb ?? false,
         vegetarian: recipeData.vegetarian ?? false,
+        proteica: recipeData.proteica ?? false,
         // Nutrición exacta de Cookidoo (si vino en el HTML)
         calories: recipeData.nutrition?.calories,
         protein: recipeData.nutrition?.protein,

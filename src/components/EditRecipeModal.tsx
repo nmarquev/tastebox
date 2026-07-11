@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNutritionCalculator } from '@/hooks/useNutritionCalculator';
 import { api, RecipeCollection } from '@/services/api';
 import { Recipe } from '@/types/recipe';
-import { Loader2, Plus, X, Upload, Edit, Calculator, Globe, Check, ClipboardList, ClipboardPaste, Heart, WheatOff, Leaf } from 'lucide-react';
+import { Beef, Loader2, Plus, X, Upload, Edit, Calculator, Globe, Check, ClipboardList, ClipboardPaste, Heart, WheatOff, Leaf } from 'lucide-react';
 import { resolveImageUrl } from '@/utils/api';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
@@ -56,6 +56,7 @@ interface RecipeFormData {
   keto: boolean;
   lowCarb: boolean;
   vegetarian: boolean;
+  proteica: boolean;
   thermomix: boolean;
   airFryer: boolean;
   featured: boolean;
@@ -217,6 +218,7 @@ export const EditRecipeModal = ({
         keto: recipe.keto || false,
         lowCarb: recipe.lowCarb || false,
         vegetarian: recipe.vegetarian || false,
+        proteica: recipe.proteica || false,
         thermomix: recipe.thermomix || false,
         airFryer: recipe.airFryer || false,
         featured: recipe.featured || false,
@@ -627,6 +629,7 @@ export const EditRecipeModal = ({
         keto: data.keto,
         lowCarb: data.lowCarb,
         vegetarian: data.vegetarian,
+        proteica: data.proteica,
         thermomix: data.thermomix,
         airFryer: data.airFryer,
         featured: data.featured,
@@ -1168,7 +1171,7 @@ export const EditRecipeModal = ({
                 </div>
 
                 {/* c-f: Características (switches sí/no con ícono) — 4 por renglón, 2 renglones */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {([
                     { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
                     { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-4 w-4" /> },
@@ -1177,6 +1180,7 @@ export const EditRecipeModal = ({
                     { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
                     { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-4 w-4" /> },
                     { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+                    { field: 'proteica', label: 'Proteica', icon: <Beef className="h-4 w-4" /> },
                     { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
                   ] as const).map(({ field, label, icon }) => {
                     const active = Boolean(watch(field as any));

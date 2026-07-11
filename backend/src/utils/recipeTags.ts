@@ -8,6 +8,7 @@ type RecipeTagFeatures = {
   lowCarb?: boolean;
   keto?: boolean;
   vegetarian?: boolean;
+  proteica?: boolean;
 };
 
 const GENERIC_INGREDIENTS = new Set([
@@ -87,6 +88,7 @@ export function getRecipeTags(
     features.lowCarb ? 'low carb' : '',
     features.keto ? 'keto' : '',
     features.vegetarian ? 'vegetariana' : '',
+    features.proteica ? 'proteica' : '',
   ].filter(Boolean);
 
   const seen = new Set<string>();

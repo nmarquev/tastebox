@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Chrome, Cpu, LogOut, Settings, Volume2 } from "lucide-react";
+import { Chrome, Cpu, LogIn, LogOut, Settings, Volume2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,6 +30,30 @@ export const UserMenu = () => {
     .join("")
     .toUpperCase();
 
+  if (!user) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-[#bce5df] text-xs text-[#6f6f6d]">
+                <LogIn className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-48" align="end" forceMount>
+          <DropdownMenuItem asChild>
+            <Link to="/app" className="flex items-center">
+              <LogIn className="mr-2 h-4 w-4" />
+              Iniciar sesion
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return (
     <>
       <DropdownMenu>
@@ -39,7 +64,7 @@ export const UserMenu = () => {
                 src={user?.profilePhoto ? `${getServerBaseUrl()}${user.profilePhoto}` : undefined}
                 alt={user?.name || "Usuario"}
               />
-              <AvatarFallback className="bg-[#a8dce9] text-xs text-[#6f6f6d]">
+              <AvatarFallback className="bg-[#bce5df] text-xs text-[#6f6f6d]">
                 {initials}
               </AvatarFallback>
             </Avatar>

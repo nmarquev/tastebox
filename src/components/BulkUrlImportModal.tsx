@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
 import { Recipe } from '@/types/recipe';
 import { getRecipeSource } from '@/utils/siteUtils';
-import { Loader2, Check, X, Globe, Heart, WheatOff, Leaf, ClipboardPaste } from 'lucide-react';
+import { Beef, Loader2, Check, X, Globe, Heart, WheatOff, Leaf, ClipboardPaste } from 'lucide-react';
 
 interface BulkUrlImportModalProps {
   isOpen: boolean;
@@ -51,6 +51,7 @@ interface CommonFields {
   glutenFree: boolean;
   keto: boolean;
   lowCarb: boolean;
+  proteica: boolean;
   vegetarian: boolean;
 }
 
@@ -59,7 +60,7 @@ const MAX_URLS = 20;
 
 const EMPTY_COMMON: CommonFields = {
   source: '', importedFrom: '', difficulty: '', language: '', country: '', dishType: '', collectionId: '', recipeType: '',
-  featured: false, cooked: false, thermomix: false, airFryer: false, glutenFree: false, keto: false, lowCarb: false, vegetarian: false,
+  featured: false, cooked: false, thermomix: false, airFryer: false, glutenFree: false, keto: false, lowCarb: false, proteica: false, vegetarian: false,
 };
 
 export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecipes }: BulkUrlImportModalProps) => {
@@ -185,6 +186,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
           glutenFree: common.glutenFree || recipe.glutenFree,
           keto: common.keto || recipe.keto,
           lowCarb: common.lowCarb || recipe.lowCarb,
+          proteica: common.proteica || recipe.proteica,
           vegetarian: common.vegetarian || recipe.vegetarian,
           calories: recipe.calories,
           protein: recipe.protein,
@@ -311,6 +313,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
     { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
     { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-4 w-4" /> },
     { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+    { field: 'proteica', label: 'Proteica', icon: <Beef className="h-4 w-4" /> },
     { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
   ] as const);
 

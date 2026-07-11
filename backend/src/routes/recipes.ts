@@ -38,6 +38,7 @@ const createRecipeSchema = z.object({
   keto: z.boolean().optional(),
   lowCarb: z.boolean().optional(),
   vegetarian: z.boolean().optional(),
+  proteica: z.boolean().optional(),
 
   // Nutritional information (optional)
   calories: z.number().optional().nullable(),
@@ -101,6 +102,7 @@ const updateRecipeSchema = z.object({
   keto: z.boolean().optional(),
   lowCarb: z.boolean().optional(),
   vegetarian: z.boolean().optional(),
+  proteica: z.boolean().optional(),
 
   // Nutritional information (optional)
   calories: z.number().optional().nullable(),
@@ -316,6 +318,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         lowCarb: data.lowCarb,
         keto: data.keto,
         vegetarian: data.vegetarian,
+        proteica: data.proteica,
       }
     );
     let recipeImages = data.images;
@@ -355,6 +358,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         keto: data.keto,
         lowCarb: data.lowCarb,
         vegetarian: data.vegetarian,
+        proteica: data.proteica,
         locution: data.locution,
 
         // Nutritional information
@@ -467,6 +471,7 @@ router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
       keto: z.boolean().optional(),
       lowCarb: z.boolean().optional(),
       vegetarian: z.boolean().optional(),
+      proteica: z.boolean().optional(),
     }),
   });
 
@@ -490,7 +495,7 @@ router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
     if (fields.createdAt !== undefined) data.createdAt = new Date(fields.createdAt);
     if (fields.dishType !== undefined) data.dishType = fields.dishType?.trim() || null;
     if (fields.recipeType !== undefined) data.recipeType = fields.recipeType?.trim() || null;
-    (['featured', 'cooked', 'thermomix', 'airFryer', 'glutenFree', 'keto', 'lowCarb', 'vegetarian'] as const)
+    (['featured', 'cooked', 'thermomix', 'airFryer', 'glutenFree', 'keto', 'lowCarb', 'vegetarian', 'proteica'] as const)
       .forEach(f => { if (fields[f] !== undefined) data[f] = fields[f]; });
 
     const hasScalar = Object.keys(data).length > 0;
@@ -561,6 +566,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
       lowCarb: data.lowCarb,
       keto: data.keto,
       vegetarian: data.vegetarian,
+      proteica: data.proteica,
     });
     console.log('📝 Validation successful!');
 
@@ -611,6 +617,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
         keto: data.keto,
         lowCarb: data.lowCarb,
         vegetarian: data.vegetarian,
+        proteica: data.proteica,
         locution: data.locution,
 
         // Nutritional information

@@ -108,6 +108,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           glutenFree: recipe.glutenFree,
           keto: recipe.keto,
           lowCarb: recipe.lowCarb,
+          proteica: recipe.proteica,
           vegetarian: recipe.vegetarian,
           calories: recipe.calories,
           protein: recipe.protein,

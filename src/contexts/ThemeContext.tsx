@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type Theme = 'carrot' | 'violetas' | 'tierra' | 'frutilla' | 'aguamarina' | 'pasteles';
+export type Theme = 'carrot' | 'violetas' | 'tierra' | 'frutilla' | 'aguamarina' | 'pasteles' | 'salmon' | 'grises';
 
 interface ThemeContextType {
   theme: Theme;

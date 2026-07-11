@@ -386,6 +386,18 @@ export const api = {
       }
     },
 
+    update: async (name: string, data: { name?: string; coverImage?: string | null }): Promise<{ name: string; coverImage: string | null }> => {
+      const response = await authFetch(`/sources/${encodeURIComponent(name)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'No se pudo actualizar la fuente');
+      }
+      return response.json();
+    },
+
     remove: async (name: string): Promise<void> => {
       const response = await authFetch(`/sources/${encodeURIComponent(name)}`, {
         method: 'DELETE',

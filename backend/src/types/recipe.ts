@@ -100,6 +100,7 @@ export interface RecipeImportResponse {
   keto?: boolean; // true si es receta keto / cetogénica
   lowCarb?: boolean; // true si es receta baja en carbohidratos
   vegetarian?: boolean; // true si es receta vegetariana
+  proteica?: boolean; // true si es receta proteica
   // Información nutricional por porción (ej. extraída exacta de Cookidoo).
   nutrition?: {
     calories?: number;

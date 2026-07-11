@@ -22,6 +22,7 @@ export interface RecipeFilters {
   glutenFreeOnly?: boolean;
   ketoOnly?: boolean;
   lowCarbOnly?: boolean;
+  proteicaOnly?: boolean;
   vegetarianOnly?: boolean;
   ingredients?: string[];
   collectionId?: string;

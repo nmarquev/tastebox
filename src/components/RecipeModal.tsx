@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Recipe } from "@/types/recipe";
-import { Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2 } from "lucide-react";
+import { Beef, Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { resolveImageUrl } from "@/utils/api";
 import { getSourceFromUrl, isValidUrl, getRecipeSource } from "@/utils/siteUtils";
@@ -448,6 +448,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             recipeType: updatedRecipe.recipeType,
             dishType: updatedRecipe.dishType,
             vegetarian: updatedRecipe.vegetarian,
+            proteica: updatedRecipe.proteica,
             locution: updatedRecipe.locution || "",
             calories: updatedRecipe.calories,
             protein: updatedRecipe.protein,
@@ -616,6 +617,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             recipeType: updatedRecipe.recipeType,
             dishType: updatedRecipe.dishType,
             vegetarian: updatedRecipe.vegetarian,
+            proteica: updatedRecipe.proteica,
             locution: updatedRecipe.locution,
             images: updatedRecipe.images,
             ingredients: updatedRecipe.ingredients.map(ing => ({
@@ -1007,6 +1009,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   <div className="flex items-center gap-2" title="Low Carb">
                     <span className="feat-ico"><img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain grayscale opacity-70" /></span>
                     <span>Low Carb</span>
+                  </div>
+                )}
+                {localRecipe.proteica && (
+                  <div className="flex items-center gap-2" title="Proteica">
+                    <span className="feat-ico"><Beef className="h-5 w-5" /></span>
+                    <span>Proteica</span>
                   </div>
                 )}
                 {localRecipe.vegetarian && (

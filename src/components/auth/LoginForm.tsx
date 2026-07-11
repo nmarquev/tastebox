@@ -25,7 +25,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email || !password) {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !cleanPassword) {
       toast({
         title: "Error",
         description: "Por favor completa todos los campos",
@@ -34,7 +37,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
       return;
     }
 
-    const success = await login(email, password);
+    const success = await login(cleanEmail, cleanPassword);
 
     if (!success) {
       toast({

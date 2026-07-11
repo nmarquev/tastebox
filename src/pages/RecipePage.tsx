@@ -7,16 +7,8 @@ import { Recipe } from "@/types/recipe";
 import { RecipeModal } from "@/components/RecipeModal";
 import { SaveToCollectionModal } from "@/components/SaveToCollectionModal";
 import { MainNav } from "@/components/MainNav";
-import { Theme, useTheme } from "@/contexts/ThemeContext";
-
-const themeLogos: Record<Theme, string> = {
-  carrot: "/logos/logo_carrot.png",
-  violetas: "/logos/logo_violetas.png",
-  tierra: "/logos/logo_tierra.png",
-  frutilla: "/logos/logo_frutilla.png",
-  aguamarina: "/logos/logo_aguamarina.png",
-  pasteles: "/logos/logo_pasteles.png",
-};
+import { useTheme } from "@/contexts/ThemeContext";
+import { THEME_LOGOS } from "@/utils/themeLogos";
 
 const RecipePageHeader = () => {
   const { theme } = useTheme();
@@ -26,7 +18,7 @@ const RecipePageHeader = () => {
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <Link to="/" className="inline-flex shrink-0 items-center justify-center sm:justify-start">
           <img
-            src={themeLogos[theme]}
+            src={THEME_LOGOS[theme]}
             alt="TasteBox"
             className="h-14 w-auto max-w-[280px] object-contain"
           />

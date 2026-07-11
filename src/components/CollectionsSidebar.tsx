@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronRight, ChevronDown, ImageIcon, Plus, Loader2, Heart, WheatOff, Leaf, ChefHat } from "lucide-react";
+import { Beef, ChevronRight, ChevronDown, ImageIcon, Plus, Loader2, Heart, WheatOff, Leaf, ChefHat } from "lucide-react";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { RecipeCollection } from "@/services/api";
@@ -42,6 +42,9 @@ interface CollectionsSidebarProps {
   healthyActive?: boolean;
   healthyCount?: number;
   onSelectHealthy?: () => void;
+  proteicaActive?: boolean;
+  proteicaCount?: number;
+  onSelectProteica?: () => void;
   vegetarianActive?: boolean;
   vegetarianCount?: number;
   onSelectVegetarian?: () => void;
@@ -104,6 +107,9 @@ export const CollectionsSidebar = ({
   healthyActive,
   healthyCount,
   onSelectHealthy,
+  proteicaActive,
+  proteicaCount,
+  onSelectProteica,
   vegetarianActive,
   vegetarianCount,
   onSelectVegetarian,
@@ -890,6 +896,25 @@ export const CollectionsSidebar = ({
             <span className="text-xs text-muted-foreground">{healthyCount ?? 0}</span>
             <span className="flex h-6 w-6 items-center justify-center">
               <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain grayscale opacity-70" />
+            </span>
+          </span>
+        </button>
+      )}
+
+      {/* Proteicas */}
+      {onSelectProteica && (
+        <button
+          type="button"
+          onClick={onSelectProteica}
+          className={`flex w-full items-center justify-between border-t border-border/60 h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
+            proteicaActive ? "bg-accent/60 text-foreground" : "text-muted-foreground hover:bg-muted/50"
+          }`}
+        >
+          <span>Proteicas</span>
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{proteicaCount ?? 0}</span>
+            <span className="flex h-6 w-6 items-center justify-center">
+              <Beef className="h-[18px] w-[18px]" />
             </span>
           </span>
         </button>

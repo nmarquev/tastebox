@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf, X, Loader2, ToggleRight } from "lucide-react";
+import { Beef, Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf, X, Loader2, ToggleRight } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MultiSelectCombobox } from "@/components/MultiSelectCombobox";
@@ -53,6 +53,7 @@ const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
   { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-5 w-5" /> },
   { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+  { field: 'proteica', label: 'Proteica', icon: <Beef className="h-4 w-4" /> },
   { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
 ];
 
@@ -442,7 +443,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           </div>
         )}
 
-        {!minimal && (recipe.thermomix || isThermomixRecipe(recipe) || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.vegetarian || recipe.cooked || recipe.featured) && (
+        {!minimal && (recipe.thermomix || isThermomixRecipe(recipe) || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.cooked || recipe.featured) && (
           <div className={`flex items-center flex-wrap gap-2 text-muted-foreground ${oneCol ? "[&>span]:h-9 [&>span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6 [&_.keto-ico]:!h-8 [&_.keto-ico]:!w-8 [&_.cooked-ico]:!h-8 [&_.cooked-ico]:!w-8" : ""}`}>
             {(recipe.thermomix || isThermomixRecipe(recipe)) && (
               <span
@@ -497,6 +498,14 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   aria-hidden="true"
                   className="h-5 w-5 object-contain grayscale opacity-70"
                 />
+              </span>
+            )}
+            {recipe.proteica && (
+              <span
+                title="Proteica"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
+              >
+                <Beef className="h-[18px] w-[18px]" />
               </span>
             )}
             {recipe.vegetarian && (

@@ -2,16 +2,8 @@ import { useState } from 'react';
 import { LoginForm } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
 import { ChefHat, Sparkles, BookOpen, Heart } from 'lucide-react';
-import { Theme, useTheme } from '@/contexts/ThemeContext';
-
-const THEME_LOGOS: Record<Theme, string> = {
-  carrot: '/logos/logo_carrot.png',
-  violetas: '/logos/logo_violetas.png',
-  tierra: '/logos/logo_tierra.png',
-  frutilla: '/logos/logo_frutilla.png',
-  aguamarina: '/logos/logo_aguamarina.png',
-  pasteles: '/logos/logo_pasteles.png',
-};
+import { useTheme } from '@/contexts/ThemeContext';
+import { THEME_LOGOS } from '@/utils/themeLogos';
 
 export const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);

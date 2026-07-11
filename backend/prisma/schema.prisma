@@ -57,6 +57,7 @@ model Recipe {
   keto         Boolean  @default(false) // Receta keto / cetogénica
   lowCarb      Boolean  @default(false) // Receta baja en carbohidratos
   vegetarian   Boolean  @default(false) // Receta vegetariana
+  proteica     Boolean  @default(false) // Receta proteica
   locution     String? // TTS script text for audio playback
 
   // Nutritional information (per serving)

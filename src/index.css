@@ -2,6 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "ReenieBeanie";
+  src: url("./assets/fonts/ReenieBeanie.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Rochester";
+  src: url("./assets/fonts/Rochester-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bird House";
+  src: url("./assets/fonts/Bird House.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Audrey Medium";
+  src: url("./assets/fonts/Audrey-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Magnolia";
+  src: url("./assets/fonts/Magnolia.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Morning Farmhouse";
+  src: url("./assets/fonts/Morning-Farmhouse.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SimpleHandmade";
+  src: url("./assets/fonts/SimpleHandmade.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* The browser extension must not show its importer inside TasteBox itself. */
 #tastebox-import-button {
   display: none !important;
@@ -285,38 +341,38 @@ All colors MUST be HSL.
     --popover-foreground: 60 2% 43%;
 
     /* Carmesí primary (#c70039) */
-    --primary: 189 60% 77%;
+    --primary: 171 44% 82%;
     --primary-foreground: 60 2% 30%;
-    --primary-glow: 189 60% 86%;
+    --primary-glow: 171 48% 90%;
 
     /* Carmesí secondary (#c90036) */
-    --secondary: 189 60% 77%;
+    --secondary: 171 44% 82%;
     --secondary-foreground: 60 2% 30%;
 
     /* Cian claro muted */
-    --muted: 189 50% 93%;
+    --muted: 171 42% 94%;
     --muted-foreground: 60 2% 43%;
 
     /* Cian accent (#a4e3e6) */
-    --accent: 189 60% 77%;
+    --accent: 171 44% 82%;
     --accent-foreground: 60 2% 30%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 189 40% 86%;
-    --input: 189 40% 95%;
-    --ring: 189 60% 77%;
+    --border: 171 34% 84%;
+    --input: 171 42% 96%;
+    --ring: 171 44% 82%;
 
     /* Logo gradient system (carmesí → cian) */
-    --gradient-primary: linear-gradient(135deg, hsl(189 60% 77%), hsl(189 60% 84%), hsl(189 60% 90%));
-    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(189 60% 95%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(189 40% 97%));
-    --gradient-hero: linear-gradient(135deg, hsl(189 60% 77%), hsl(189 60% 82%), hsl(189 55% 87%), hsl(189 50% 92%), hsl(189 45% 96%));
+    --gradient-primary: linear-gradient(135deg, hsl(171 44% 82%), hsl(171 48% 88%), hsl(171 50% 93%));
+    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(171 42% 96%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(171 34% 97%));
+    --gradient-hero: linear-gradient(135deg, hsl(171 44% 82%), hsl(171 46% 86%), hsl(171 48% 90%), hsl(171 50% 94%), hsl(171 52% 97%));
 
     /* Logo shadows */
-    --shadow-recipe-card: 0 4px 20px -2px hsl(189 60% 60% / 0.15);
-    --shadow-elegant: 0 10px 40px -10px hsl(189 60% 60% / 0.2);
+    --shadow-recipe-card: 0 4px 20px -2px hsl(171 36% 58% / 0.15);
+    --shadow-elegant: 0 10px 40px -10px hsl(171 36% 58% / 0.2);
 
     /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -374,6 +430,108 @@ All colors MUST be HSL.
 
     --shadow-recipe-card: 0 4px 20px -2px hsl(350 60% 80% / 0.2);
     --shadow-elegant: 0 10px 40px -10px hsl(350 60% 80% / 0.25);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  [data-theme="salmon"] {
+    --background: 0 0% 100%;
+    --foreground: 60 2% 43%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 60 2% 43%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 60 2% 43%;
+
+    --primary: 0 68.1% 64.3%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 0 72% 76%;
+
+    --secondary: 0 68.1% 64.3%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 62% 95%;
+    --muted-foreground: 60 2% 43%;
+
+    --accent: 0 68.1% 64.3%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 48% 88%;
+    --input: 0 48% 96%;
+    --ring: 0 68.1% 64.3%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(0 68% 64%), hsl(0 72% 74%), hsl(0 76% 86%));
+    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(0 62% 96%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(0 48% 98%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 68% 64%), hsl(0 72% 74%), hsl(0 76% 84%), hsl(0 78% 92%), hsl(0 80% 96%));
+
+    --shadow-recipe-card: 0 4px 20px -2px hsl(0 68% 50% / 0.15);
+    --shadow-elegant: 0 10px 40px -10px hsl(0 68% 50% / 0.2);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  [data-theme="grises"] {
+    --background: 0 0% 100%;
+    --foreground: 60 2% 43%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 60 2% 43%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 60 2% 43%;
+
+    --primary: 217.5 5.6% 72.2%;
+    --primary-foreground: 60 2% 26%;
+    --primary-glow: 218 8% 84%;
+
+    --secondary: 217.5 5.6% 72.2%;
+    --secondary-foreground: 60 2% 26%;
+
+    --muted: 218 10% 94%;
+    --muted-foreground: 60 2% 43%;
+
+    --accent: 217.5 5.6% 72.2%;
+    --accent-foreground: 60 2% 26%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 218 8% 86%;
+    --input: 218 10% 96%;
+    --ring: 217.5 5.6% 72.2%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(218 6% 72%), hsl(218 8% 82%), hsl(218 10% 92%));
+    --gradient-warm: linear-gradient(135deg, hsl(0 0% 100%), hsl(218 10% 96%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(218 10% 98%));
+    --gradient-hero: linear-gradient(135deg, hsl(218 6% 72%), hsl(218 8% 80%), hsl(218 10% 88%), hsl(218 12% 94%), hsl(218 14% 97%));
+
+    --shadow-recipe-card: 0 4px 20px -2px hsl(218 6% 52% / 0.15);
+    --shadow-elegant: 0 10px 40px -10px hsl(218 6% 52% / 0.2);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --radius: 0.5rem;
@@ -517,6 +675,139 @@ All colors MUST be HSL.
     }
   }
 
+  .home-banner-logo {
+    filter: drop-shadow(0 14px 22px rgb(0 0 0 / 0.18));
+    animation: home-logo-intro 900ms ease-out both;
+    transform-origin: center;
+  }
+
+  .home-banner-title {
+    color: #e26666;
+    font-family: "ReenieBeanie", ui-sans-serif, system-ui, sans-serif;
+    font-size: clamp(1.75rem, 4vw, 3.4rem);
+    font-weight: 400;
+    line-height: 0.95;
+    text-align: center;
+    text-shadow: 0 8px 18px rgb(255 255 255 / 0.58);
+  }
+
+  .home-banner-title-letter {
+    display: inline-block;
+  }
+
+  .home-pink-banner-copy {
+    color: #e26666;
+    font-family: "ReenieBeanie", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    text-shadow: 0 7px 16px rgb(255 255 255 / 0.68);
+  }
+
+  .home-pink-banner-line {
+    font-size: clamp(0.92rem, 2.25vw, 1.7rem);
+    line-height: 1.08;
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  .home-pink-banner-copy--active .home-pink-banner-line {
+    animation: pink-banner-line-in 900ms ease-out forwards;
+  }
+
+  .home-pink-banner-line + .home-pink-banner-line {
+    margin-top: clamp(0.1rem, 0.55vw, 0.45rem);
+  }
+
+  .home-pink-banner-number {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-weight: 800;
+  }
+
+  .home-cooking-love {
+    filter: drop-shadow(0 16px 22px rgb(0 0 0 / 0.16));
+    animation: cooking-love-intro 950ms ease-out both, cooking-love-float 4.5s ease-in-out 950ms infinite;
+    transform-origin: center;
+  }
+
+  .home-banner-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 9999px;
+    border: 1px solid rgb(255 255 255 / 0.9);
+    background:
+      radial-gradient(circle at 35% 30%, rgb(255 255 255 / 0.95) 0 16%, transparent 18%),
+      radial-gradient(circle at 70% 65%, rgb(255 255 255 / 0.55) 0 11%, transparent 13%),
+      rgb(255 255 255 / 0.42);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.22),
+      0 1px 3px rgb(0 0 0 / 0.08);
+    opacity: 0.92;
+    transition: transform 180ms ease, background-color 180ms ease, opacity 180ms ease;
+  }
+
+  .home-banner-dot:hover {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+
+  .home-banner-dot--active {
+    background:
+      radial-gradient(circle at 30% 25%, rgb(255 255 255) 0 18%, transparent 20%),
+      radial-gradient(circle at 68% 70%, rgb(255 255 255 / 0.72) 0 12%, transparent 14%),
+      rgb(255 255 255 / 0.96);
+    opacity: 1;
+    transform: scale(1.18);
+  }
+
+  .home-section-title {
+    font-family: "ReenieBeanie", ui-sans-serif, system-ui, sans-serif;
+    font-size: clamp(2rem, 3.2vw, 2.8rem);
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  @keyframes pink-banner-line-in {
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes cooking-love-intro {
+    0% {
+      opacity: 0;
+      transform: translateY(18px) scale(0.86) rotate(-3deg);
+    }
+    70% {
+      opacity: 1;
+      transform: translateY(-3px) scale(1.03) rotate(1deg);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1) rotate(0deg);
+    }
+  }
+
+  @keyframes cooking-love-float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-7px) rotate(1deg);
+    }
+  }
+
+  @keyframes home-logo-intro {
+    0% {
+      opacity: 0;
+      transform: translateY(12px) scale(0.92);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   /* Bubble animations for cooking pot simulation */
   @keyframes bubble-rise {
     0% {
@@ -595,4 +886,16 @@ All colors MUST be HSL.
   .animate-bubble-11 { animation: bubble-rise-wobble 3.8s ease-out infinite 1.3s; }
   .animate-bubble-12 { animation: bubble-rise-spiral 4.2s ease-out infinite 1.8s; }
   .animate-bubble-13 { animation: bubble-rise 2.5s ease-out infinite 2.3s; }
+
+  .toolbar-search-field:focus-within {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+
+  .toolbar-search-field,
+  .toolbar-new-button {
+    height: 2.5rem;
+    min-height: 2.5rem;
+    max-height: 2.5rem;
+  }
 }

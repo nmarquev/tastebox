@@ -19,17 +19,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VoiceSettingsModal } from "@/components/VoiceSettingsModal";
 import { ModelSettingsModal } from "@/components/ModelSettingsModal";
 import { getServerBaseUrl } from "@/utils/api";
-import { Theme, useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { MainNav } from "@/components/MainNav";
-
-const THEME_LOGOS: Record<Theme, string> = {
-  carrot: "/logos/logo_carrot.png",
-  violetas: "/logos/logo_violetas.png",
-  tierra: "/logos/logo_tierra.png",
-  frutilla: "/logos/logo_frutilla.png",
-  aguamarina: "/logos/logo_aguamarina.png",
-  pasteles: "/logos/logo_pasteles.png",
-};
+import { THEME_LOGOS } from "@/utils/themeLogos";
 
 interface HeaderProps {
   onAddRecipe: () => void;
@@ -123,8 +115,8 @@ export const Header = ({
               window.location.href = "/";
             }}
             className="flex shrink-0 items-center rounded-md bg-white px-2 py-1 transition-transform hover:scale-105"
-            title="Ir a la página principal"
-            aria-label="Ir a la página principal"
+            title="Ir a la pagina principal"
+            aria-label="Ir a la pagina principal"
           >
             <img
               src={THEME_LOGOS[theme]}
@@ -146,7 +138,7 @@ export const Header = ({
                       src={user?.profilePhoto ? `${getServerBaseUrl()}${user.profilePhoto}` : undefined}
                       alt={user?.name || 'Usuario'}
                     />
-                    <AvatarFallback className="bg-[#a8dce9] text-[#6f6f6d] text-xs">
+                    <AvatarFallback className="bg-[#bce5df] text-[#6f6f6d] text-xs">
                       {getUserInitials(user?.name || 'U')}
                     </AvatarFallback>
                   </Avatar>
@@ -168,20 +160,20 @@ export const Header = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsVoiceSettingsModalOpen(true)}>
                   <Volume2 className="mr-2 h-4 w-4" />
-                  ConfiguraciÃ³n de voz
+                  Configuracion de voz
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsModelSettingsModalOpen(true)}>
                   <Cpu className="mr-2 h-4 w-4" />
-                  ConfiguraciÃ³n de IA
+                  Configuracion de IA
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsExtensionModalOpen(true)}>
                   <Chrome className="mr-2 h-4 w-4" />
-                  Instalar ExtensiÃ³n Chrome
+                  Instalar Extension Chrome
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar sesiÃ³n
+                  Cerrar sesion
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -258,7 +250,7 @@ export const Header = ({
                 variant="secondary"
                 size="sm"
                 className="flex items-center gap-2 bg-accent text-accent-foreground hover:bg-accent/80 border-0 transition-all duration-200 hover:scale-105 hover:shadow-md"
-                title="Búsqueda Inteligente con IA"
+                title="Busqueda Inteligente con IA"
               >
                 <Sparkles className="h-4 w-4 animate-pulse" />
                 <span className="hidden sm:inline font-medium">Buscador Inteligente</span>
@@ -273,7 +265,7 @@ export const Header = ({
                         src={user?.profilePhoto ? `${getServerBaseUrl()}${user.profilePhoto}` : undefined}
                         alt={user?.name || 'Usuario'}
                       />
-                      <AvatarFallback className="bg-[#a8dce9] text-[#6f6f6d] text-xs">
+                      <AvatarFallback className="bg-[#bce5df] text-[#6f6f6d] text-xs">
                         {getUserInitials(user?.name || 'U')}
                       </AvatarFallback>
                     </Avatar>
@@ -295,20 +287,20 @@ export const Header = ({
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setIsVoiceSettingsModalOpen(true)}>
                     <Volume2 className="mr-2 h-4 w-4" />
-                    Configuración de voz
+                    Configuracion de voz
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setIsModelSettingsModalOpen(true)}>
                     <Cpu className="mr-2 h-4 w-4" />
-                    Configuración de IA
+                    Configuracion de IA
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setIsExtensionModalOpen(true)}>
                     <Chrome className="mr-2 h-4 w-4" />
-                    Instalar Extensión Chrome
+                    Instalar Extension Chrome
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar sesión
+                    Cerrar sesion
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

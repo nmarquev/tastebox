@@ -36,6 +36,7 @@ const emptyRecipe: Recipe = {
   keto: false,
   lowCarb: false,
   vegetarian: false,
+  proteica: false,
   locution: '',
   createdAt: new Date(),
   updatedAt: new Date(),

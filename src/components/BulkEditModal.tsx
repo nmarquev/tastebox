@@ -29,6 +29,7 @@ const FEATURE_FIELDS = [
   { field: 'glutenFree', label: 'Sin Gluten' },
   { field: 'keto', label: 'Keto' },
   { field: 'lowCarb', label: 'Low Carb' },
+  { field: 'proteica', label: 'Proteica' },
   { field: 'vegetarian', label: 'Vegetariana' },
 ] as const;
 

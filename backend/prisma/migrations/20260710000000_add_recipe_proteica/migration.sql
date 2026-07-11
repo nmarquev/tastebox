@@ -1,0 +1,1 @@
+ALTER TABLE "recipes" ADD COLUMN "proteica" BOOLEAN NOT NULL DEFAULT false;

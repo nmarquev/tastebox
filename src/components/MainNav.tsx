@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
+  Beef,
   ChevronDown,
   Download,
   Flame,
@@ -47,6 +48,7 @@ const recipeTypeItems = [
     to: "/app?filtro=low-carb",
     icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />,
   },
+  { label: "Proteicas", to: "/app?filtro=proteicas", icon: <Beef className="h-4 w-4" /> },
   { label: "Vegetarianas", to: "/app?filtro=vegetarianas", icon: <Leaf className="h-4 w-4" /> },
 ];
 
