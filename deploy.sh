@@ -76,6 +76,23 @@ else
     pm2 save
 fi
 
+echo -e "${YELLOW}Verificando que el backend responda...${NC}"
+BACKEND_PORT="${BACKEND_PORT:-5000}"
+BACKEND_READY=0
+for attempt in {1..15}; do
+    if curl --fail --silent --show-error "http://127.0.0.1:${BACKEND_PORT}/api/health" > /dev/null; then
+        BACKEND_READY=1
+        break
+    fi
+    sleep 1
+done
+
+if [ "$BACKEND_READY" != "1" ]; then
+    echo -e "${RED}El backend no respondio despues del reinicio.${NC}"
+    pm2 logs "$APP_NAME" --lines 40 --nostream || true
+    exit 1
+fi
+
 echo -e "${YELLOW}🧹 Paso 6: Limpieza...${NC}"
 # Limpiar node_modules de desarrollo
 npm prune --production

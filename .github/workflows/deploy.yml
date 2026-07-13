@@ -1,9 +1,7 @@
 name: Deploy a producción (VPS)
 
-# Se dispara en cada push a main, o a mano desde la pestaña Actions.
+# Respaldo manual. El deploy habitual se inicia localmente o mediante el webhook.
 on:
-  push:
-    branches: [main]
   workflow_dispatch: {}
 
 # Evita deploys solapados: si entra un push mientras corre otro, espera (no cancela).

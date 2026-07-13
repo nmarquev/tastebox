@@ -19,7 +19,7 @@
     "@types/cookie-parser": "^1.4.9",
     "@types/nodemailer": "^7.0.2",
     "axios": "^1.12.2",
-    "axios-cookiejar-support": "^7.0.0",
+    "axios-cookiejar-support": "5.0.5",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
