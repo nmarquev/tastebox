@@ -216,3 +216,29 @@ SEED=1 ./deploy.sh       # además corre el seed (usuario inicial; definí SEED_
   DB y backups.)
 - **CORS**: el backend en `NODE_ENV=production` solo permite el origen `https://tastebox.beweb.com.ar`
   y extensiones de Chrome (ver `backend/src/index.ts`).
+
+## Deploy desde una PC local
+
+El script `deploy.sh` debe correr dentro del servidor CloudPanel. Para publicar desde Windows sin entrar al servidor manualmente, usar los scripts locales:
+
+```powershell
+npm run deploy:setup-key
+npm run deploy:prod
+```
+
+`deploy:setup-key` se ejecuta una sola vez. Crea una llave SSH local en `~/.ssh/tastebox_deploy_ed25519` y la instala en el usuario `tastebox` del VPS. Durante ese primer setup Windows pedira la contrasena del usuario del servidor.
+
+`deploy:prod` hace lo siguiente:
+
+1. Verifica que estes en la rama `main`.
+2. Verifica que no haya cambios locales sin commit.
+3. Ejecuta `git push origin main`.
+4. Se conecta por SSH a `vps1.beweb.com.ar`.
+5. Entra en `/home/tastebox/htdocs/tastebox.beweb.com.ar`.
+6. Ejecuta `bash deploy.sh` en el servidor.
+
+Para ejecutar el seed durante la publicacion:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/deploy-local.ps1 -Seed
+```
