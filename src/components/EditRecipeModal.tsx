@@ -92,6 +92,22 @@ const toDateInputValue = (value?: string | Date | null) => {
   return date.toISOString().slice(0, 10);
 };
 
+const normalizeSnapshotValue = (value: unknown): unknown => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number') return Number.isFinite(value) ? value : '';
+  if (Array.isArray(value)) return value.map(normalizeSnapshotValue);
+  if (typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, item]) => [key, normalizeSnapshotValue(item)])
+    );
+  }
+  return value;
+};
+
+const getFormSnapshot = (value: unknown) => JSON.stringify(normalizeSnapshotValue(value));
+
 export const EditRecipeModal = ({
   isOpen,
   onClose,
@@ -138,7 +154,7 @@ export const EditRecipeModal = ({
     [...selectedCollectionIds].sort().join(',') !== [...initialCollectionIds].sort().join(',');
   const formChanged =
     initialFormSnapshot.current !== null
-    && JSON.stringify(watch()) !== initialFormSnapshot.current;
+    && getFormSnapshot(watch()) !== initialFormSnapshot.current;
   const hasChanges =
     formChanged
     || uploadedImages.length > 0
@@ -248,7 +264,7 @@ export const EditRecipeModal = ({
         })) || [{ description: '', function: '', time: '', temperature: '', speed: '', section: '' }]
       });
       // Foto de los valores ya cargados: punto de partida para detectar cambios reales.
-      initialFormSnapshot.current = JSON.stringify(getValues());
+      initialFormSnapshot.current = getFormSnapshot(getValues());
     }
   }, [recipe, isOpen, reset, getValues]);
 
@@ -283,8 +299,8 @@ export const EditRecipeModal = ({
     if (!isOpen) return;
     let cancelled = false;
     const sortEs = (arr: string[]) => Array.from(new Set(arr)).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
-    const DEFAULT_LANGUAGES = ['Español', 'Inglés', 'Portugués', 'Italiano', 'Francés', 'Alemán'];
-    const DEFAULT_COUNTRIES = ['Argentina', 'España', 'México', 'Chile', 'Uruguay', 'Colombia', 'Perú', 'Estados Unidos', 'Italia', 'Francia'];
+    const DEFAULT_LANGUAGES = ['Espanol', 'Ingles', 'Portugues', 'Italiano', 'Frances', 'Aleman'];
+    const DEFAULT_COUNTRIES = ['Argentina', 'Espana', 'Mexico', 'Chile', 'Uruguay', 'Colombia', 'Peru', 'Estados Unidos', 'Italia', 'Francia'];
     Promise.all([
       api.recipes.getAll().catch(() => [] as Recipe[]),
       api.sources.getAll().catch(() => [] as Array<{ name: string }>),
@@ -701,7 +717,7 @@ export const EditRecipeModal = ({
           setInitialImageCount(persistedImages.length);
           setInitialCollectionIds(selectedCollectionIds);
           reset(data);
-          initialFormSnapshot.current = JSON.stringify(getValues());
+          initialFormSnapshot.current = getFormSnapshot(getValues());
         }
       } else {
         // Receta sin ID (aún no persistida): solo actualiza el estado local y deja
@@ -714,6 +730,7 @@ export const EditRecipeModal = ({
           setUploadedImages([]);
           setInitialImageCount(existingImages.length);
           reset(data);
+          initialFormSnapshot.current = getFormSnapshot(data);
         }
       }
     } catch (error) {
@@ -765,11 +782,11 @@ export const EditRecipeModal = ({
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
             <div className="px-6 pt-4 flex-shrink-0">
               <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="info">Información</TabsTrigger>
-                <TabsTrigger value="classification">Clasificación</TabsTrigger>
+                <TabsTrigger value="info">Informacion</TabsTrigger>
+                <TabsTrigger value="classification">Clasificacion</TabsTrigger>
                 <TabsTrigger value="ingredients">Ingredientes</TabsTrigger>
-                <TabsTrigger value="instructions">Preparación</TabsTrigger>
-                <TabsTrigger value="locution">Locución</TabsTrigger>
+                <TabsTrigger value="instructions">Preparacion</TabsTrigger>
+                <TabsTrigger value="locution">Locucion</TabsTrigger>
               </TabsList>
             </div>
 
@@ -778,10 +795,10 @@ export const EditRecipeModal = ({
               <TabsContent value="info" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
               {/* a: Título */}
               <div>
-                <Label htmlFor="title">Título *</Label>
+                <Label htmlFor="title">Titulo *</Label>
                 <Input
                   id="title"
-                  {...register('title', { required: 'El título es requerido' })}
+                  {...register('title', { required: 'El titulo es requerido' })}
                   placeholder="Nombre de tu receta"
                 />
                 {errors.title && (
@@ -791,11 +808,11 @@ export const EditRecipeModal = ({
 
               {/* b: Descripción */}
               <div>
-                <Label htmlFor="description">Descripción</Label>
+                <Label htmlFor="description">Descripcion</Label>
                 <Textarea
                   id="description"
                   {...register('description')}
-                  placeholder="Describí tu receta"
+                  placeholder="Describi tu receta"
                   rows={3}
                 />
               </div>
@@ -808,7 +825,7 @@ export const EditRecipeModal = ({
                     options={sourceOptions}
                     selected={watch('source') ? [watch('source')] : []}
                     onChange={(next) => setValue('source', next[0] || '', { shouldDirty: true })}
-                    placeholder="Elegí una fuente"
+                    placeholder="Elegi una fuente"
                     searchPlaceholder="Buscar o escribir fuente..."
                     singleSelect
                     closeOnSelect
@@ -829,11 +846,11 @@ export const EditRecipeModal = ({
                     onValueChange={(value) => setValue('importedFrom', value === 'own' ? undefined : value as RecipeFormData['importedFrom'], { shouldDirty: true })}
                   >
                     <SelectTrigger className="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary">
-                      <SelectValue placeholder="Seleccioná de donde proviene la receta" />
+                      <SelectValue placeholder="Selecciona de donde proviene la receta" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="own">Receta propia</SelectItem>
-                      <SelectItem value="www">Página web</SelectItem>
+                      <SelectItem value="www">Pagina web</SelectItem>
                       <SelectItem value="instagram">Instagram</SelectItem>
                       <SelectItem value="youtube">YouTube</SelectItem>
                       <SelectItem value="doc">DOC</SelectItem>
@@ -844,12 +861,12 @@ export const EditRecipeModal = ({
                   <Label>Dificultad</Label>
                   <Select value={watch('difficulty')} onValueChange={(value) => setValue('difficulty', value as any, { shouldDirty: true })}>
                     <SelectTrigger className="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary">
-                      <SelectValue placeholder="Seleccioná dificultad de la receta" />
+                      <SelectValue placeholder="Selecciona dificultad de la receta" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Fácil">Fácil</SelectItem>
+                      <SelectItem value="Facil">Facil</SelectItem>
                       <SelectItem value="Medio">Medio</SelectItem>
-                      <SelectItem value="Difícil">Difícil</SelectItem>
+                      <SelectItem value="Dificil">Dificil</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -861,7 +878,7 @@ export const EditRecipeModal = ({
                     options={languageOptions}
                     selected={watch('language') ? [watch('language')] : []}
                     onChange={(next) => setValue('language', next[0] || '', { shouldDirty: true })}
-                    placeholder="Elegí un idioma"
+                    placeholder="Elegi un idioma"
                     searchPlaceholder="Buscar o escribir idioma..."
                     singleSelect
                     closeOnSelect
@@ -870,13 +887,13 @@ export const EditRecipeModal = ({
                   />
                 </div>
                 <div>
-                  <Label>País</Label>
+                  <Label>Pais</Label>
                   <MultiSelectCombobox
                     options={countryOptions}
                     selected={watch('country') ? [watch('country')] : []}
                     onChange={(next) => setValue('country', next[0] || '', { shouldDirty: true })}
-                    placeholder="Elegí un país"
-                    searchPlaceholder="Buscar o escribir país..."
+                    placeholder="Elegi un pais"
+                    searchPlaceholder="Buscar o escribir pais..."
                     singleSelect
                     closeOnSelect
                     allowCreate
@@ -894,7 +911,7 @@ export const EditRecipeModal = ({
               {/* f: Tiempo de preparación / Tiempo total / Porciones */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="prepTime">Tiempo de preparación (min)</Label>
+                  <Label htmlFor="prepTime">Tiempo de preparacion (min)</Label>
                   <Input id="prepTime" type="number" {...register('prepTime', { valueAsNumber: true })} />
                 </div>
                 <div>
@@ -910,7 +927,7 @@ export const EditRecipeModal = ({
               {/* Nutrition Section */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <Label className="text-lg font-semibold">Información Nutricional</Label>
+                  <Label className="text-lg font-semibold">Informacion Nutricional</Label>
                   <Button
                     type="button"
                     onClick={handleCalculateNutrition}
@@ -935,11 +952,11 @@ export const EditRecipeModal = ({
                 {/* g.1: Calorías / Proteína / Carbohidratos / Grasa */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <Label htmlFor="calories">Calorías</Label>
+                    <Label htmlFor="calories">Calorias</Label>
                     <Input id="calories" type="number" step="0.1" {...register('calories')} placeholder="kcal" />
                   </div>
                   <div>
-                    <Label htmlFor="protein">Proteína</Label>
+                    <Label htmlFor="protein">Proteina</Label>
                     <Input id="protein" type="number" step="0.1" {...register('protein')} placeholder="g" />
                   </div>
                   <div>
@@ -958,7 +975,7 @@ export const EditRecipeModal = ({
                     <Input id="fiber" type="number" step="0.1" {...register('fiber')} placeholder="g" />
                   </div>
                   <div>
-                    <Label htmlFor="sugar">Azúcar</Label>
+                    <Label htmlFor="sugar">Azucar</Label>
                     <Input id="sugar" type="number" step="0.1" {...register('sugar')} placeholder="g" />
                   </div>
                   <div>
@@ -970,7 +987,7 @@ export const EditRecipeModal = ({
 
               {/* h: Imágenes (máximo 3) */}
               <div>
-                <Label>Imágenes (máximo 3)</Label>
+                <Label>Imagenes (maximo 3)</Label>
 
                 {/* h.1: mostrar las imágenes (actuales + nuevas) */}
                 {(existingImages.length > 0 || uploadedImages.length > 0) && (
@@ -1022,7 +1039,7 @@ export const EditRecipeModal = ({
                   >
                     {addingWebImage ? <Loader2 className="h-6 w-6 animate-spin text-gray-400" /> : <Upload className="h-6 w-6 text-gray-400" />}
                     <span className="text-xs text-gray-600">
-                      {totalImages >= 3 ? 'Máximo 3 imágenes' : 'Arrastrá aquí la imagen desde la página web o desde Mi PC'}
+                      {totalImages >= 3 ? 'Maximo 3 imagenes' : 'Arrastra aqui la imagen desde la pagina web o desde Mi PC'}
                     </span>
                   </div>
                   <div className="flex flex-col items-stretch justify-center gap-2">
@@ -1042,7 +1059,7 @@ export const EditRecipeModal = ({
                       value={webImageUrl}
                       onChange={(e) => setWebImageUrl(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addWebImageFromUrl(webImageUrl); } }}
-                      placeholder="Pegá el enlace de la imagen (https://...)"
+                      placeholder="Pega el enlace de la imagen (https://...)"
                       className="h-9"
                       autoFocus
                     />
@@ -1055,7 +1072,7 @@ export const EditRecipeModal = ({
               </div>
             </TabsContent>
 
-              <TabsContent value="classification" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
+              <TabsContent value="classification" className="space-y-4 mt-4 bg-muted/20 px-6 pt-6 pb-1 rounded-lg m-0">
                 {/* 1: Tipo de comida / Colección */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1071,7 +1088,7 @@ export const EditRecipeModal = ({
                       options={dishTypeOptions}
                       selected={(watch('dishType') || '').split(',').map(s => s.trim()).filter(Boolean)}
                       onChange={(next) => setValue('dishType', next.join(', '), { shouldDirty: true })}
-                      placeholder="Elegí uno o más tipos de comida"
+                      placeholder="Elegi uno o mas tipos de comida"
                       searchPlaceholder="Buscar o escribir tipo..."
                       closeOnSelect
                       allowCreate
@@ -1080,7 +1097,7 @@ export const EditRecipeModal = ({
                   </div>
                   <div>
                     <div className="flex items-center justify-between">
-                      <Label>Colección</Label>
+                      <Label>Coleccion</Label>
                       {selectedCollectionIds.length > 0 && (
                         <button type="button" onClick={() => setSelectedCollectionIds([])} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
                           <X className="h-3 w-3" />
@@ -1101,16 +1118,16 @@ export const EditRecipeModal = ({
                           const created = await api.collections.create(name);
                           setCollections(prev => [...prev, created]);
                           setSelectedCollectionIds(prev => [...prev, created.id]);
-                          toast({ title: 'Colección creada', description: `Se creó "${created.name}".` });
+                          toast({ title: 'Coleccion creada', description: `Se creo "${created.name}".` });
                         } catch (error: any) {
-                          toast({ title: 'No se pudo crear la colección', description: error?.message || 'Intentá nuevamente', variant: 'destructive' });
+                          toast({ title: 'No se pudo crear la coleccion', description: error?.message || 'Intenta nuevamente', variant: 'destructive' });
                         }
                       }}
-                      placeholder={isLoadingCollections ? 'Cargando colecciones...' : 'Elegí una o más colecciones'}
-                      searchPlaceholder="Buscar o crear colección..."
+                      placeholder={isLoadingCollections ? 'Cargando colecciones...' : 'Elegi una o mas colecciones'}
+                      searchPlaceholder="Buscar o crear coleccion..."
                       closeOnSelect
                       allowCreate
-                      createLabel="Crear colección"
+                      createLabel="Crear coleccion"
                     />
                   </div>
                 </div>
@@ -1118,7 +1135,7 @@ export const EditRecipeModal = ({
                 {/* 2: Categoría */}
                 <div>
                   <div className="flex items-center justify-between">
-                    <Label>Categoría</Label>
+                    <Label>Categoria</Label>
                     {(watch('recipeType') || '').trim() && (
                       <button type="button" onClick={() => setValue('recipeType', '', { shouldDirty: true })} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
                         <X className="h-3 w-3" />
@@ -1129,8 +1146,8 @@ export const EditRecipeModal = ({
                     options={categoryOptions}
                     selected={(watch('recipeType') || '').split(',').map(s => s.trim()).filter(Boolean)}
                     onChange={(next) => setValue('recipeType', next.join(', '), { shouldDirty: true })}
-                    placeholder="Elegí una o más categorías"
-                    searchPlaceholder="Buscar o escribir categoría..."
+                    placeholder="Elegi una o mas categorias"
+                    searchPlaceholder="Buscar o escribir categoria..."
                     closeOnSelect
                     allowCreate
                     createLabel="Agregar"
@@ -1171,7 +1188,7 @@ export const EditRecipeModal = ({
                 </div>
 
                 {/* c-f: Características (switches sí/no con ícono) — 4 por renglón, 2 renglones */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {([
                     { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
                     { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-4 w-4" /> },
@@ -1185,12 +1202,12 @@ export const EditRecipeModal = ({
                   ] as const).map(({ field, label, icon }) => {
                     const active = Boolean(watch(field as any));
                     return (
-                      <label key={field} className="flex cursor-pointer items-center justify-between rounded-md border bg-background px-3 py-2">
+                      <label key={field} className="flex min-h-10 cursor-pointer items-center justify-between rounded-md border bg-background px-2.5 py-1.5">
                         <span className="flex items-center gap-2 text-sm">
                           <span className="text-muted-foreground">{icon}</span>
                           {label}
                         </span>
-                        <Switch className="scale-90 data-[state=checked]:!bg-[#9eddee]" checked={active} onCheckedChange={(v) => setValue(field as any, v, { shouldDirty: true })} />
+                        <Switch className="scale-[0.85] data-[state=checked]:!bg-[#9eddee]" checked={active} onCheckedChange={(v) => setValue(field as any, v, { shouldDirty: true })} />
                       </label>
                     );
                   })}
@@ -1252,7 +1269,7 @@ export const EditRecipeModal = ({
                         )}
                       </div>
                       <div className="w-full space-y-2">
-                        <Label className="text-xs">Sección (opcional)</Label>
+                        <Label className="text-xs">Seccion (opcional)</Label>
                         {!showNewIngredientSection[index] ? (
                           <Select
                             value={watch(`ingredients.${index}.section`) || '__none__'}
@@ -1268,21 +1285,21 @@ export const EditRecipeModal = ({
                             }}
                           >
                             <SelectTrigger className="text-sm">
-                              <SelectValue placeholder="Sin sección" />
+                              <SelectValue placeholder="Sin seccion" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__none__">Sin sección</SelectItem>
+                              <SelectItem value="__none__">Sin seccion</SelectItem>
                               {uniqueSections.map(section => (
                                 <SelectItem key={section} value={section}>{section}</SelectItem>
                               ))}
-                              <SelectItem value="__new__">+ Nueva sección</SelectItem>
+                              <SelectItem value="__new__">+ Nueva seccion</SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
                           <div className="flex gap-2">
                             <Input
                               {...register(`ingredients.${index}.section`)}
-                              placeholder="Nombre de la nueva sección"
+                              placeholder="Nombre de la nueva seccion"
                               className="text-sm"
                               autoFocus
                             />
@@ -1307,7 +1324,7 @@ export const EditRecipeModal = ({
               {/* Instructions */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label>Preparación</Label>
+                  <Label>Preparacion</Label>
                   <div className="flex gap-2">
                     <Button type="button" onClick={handlePasteInstructions} size="sm" variant="outline">
                       <ClipboardList className="h-4 w-4 mr-1" />
@@ -1346,7 +1363,7 @@ export const EditRecipeModal = ({
                         className="mb-2"
                       />
                       <div className="mb-2">
-                        <Label className="text-xs">Sección (opcional)</Label>
+                        <Label className="text-xs">Seccion (opcional)</Label>
                         {!showNewInstructionSection[index] ? (
                           <Select
                             value={watch(`instructions.${index}.section`) || '__none__'}
@@ -1362,21 +1379,21 @@ export const EditRecipeModal = ({
                             }}
                           >
                             <SelectTrigger className="text-sm">
-                              <SelectValue placeholder="Sin sección" />
+                              <SelectValue placeholder="Sin seccion" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__none__">Sin sección</SelectItem>
+                              <SelectItem value="__none__">Sin seccion</SelectItem>
                               {uniqueSections.map(section => (
                                 <SelectItem key={section} value={section}>{section}</SelectItem>
                               ))}
-                              <SelectItem value="__new__">+ Nueva sección</SelectItem>
+                              <SelectItem value="__new__">+ Nueva seccion</SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
                           <div className="flex gap-2 mb-2">
                             <Input
                               {...register(`instructions.${index}.section`)}
-                              placeholder="Nombre de la nueva sección"
+                              placeholder="Nombre de la nueva seccion"
                               className="text-sm"
                               autoFocus
                             />
@@ -1393,7 +1410,7 @@ export const EditRecipeModal = ({
                       </div>
                       <div className="grid grid-cols-2 gap-2 mb-2">
                         <div>
-                          <Label className="text-xs">Función Thermomix</Label>
+                          <Label className="text-xs">Funcion Thermomix</Label>
                           <Input
                             {...register(`instructions.${index}.function`)}
                             placeholder="ej: Amasar, Batir, Picar"
@@ -1414,7 +1431,7 @@ export const EditRecipeModal = ({
                           <Label className="text-xs">Temperatura</Label>
                           <Input
                             {...register(`instructions.${index}.temperature`)}
-                            placeholder="ej: 100°"
+                            placeholder="ej: 100 grados"
                             size="sm"
                           />
                         </div>
@@ -1447,7 +1464,7 @@ export const EditRecipeModal = ({
               <TabsContent value="locution" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
               {/* Locution */}
               <div>
-                <Label htmlFor="locution">Locución (Script para TTS)</Label>
+                <Label htmlFor="locution">Locucion (Script para TTS)</Label>
                 <Textarea
                   id="locution"
                   {...register('locution')}
@@ -1456,7 +1473,7 @@ export const EditRecipeModal = ({
                   className="resize-none"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Texto que se reproducirá cuando se use la función de voz. Si está vacío, se generará automáticamente.
+                  Texto que se reproducira cuando se use la funcion de voz. Si esta vacio, se generara automaticamente.
                 </p>
               </div>
             </TabsContent>
@@ -1531,7 +1548,7 @@ export const EditRecipeModal = ({
           {/* Lista de etiquetas existentes (orden alfabético) para marcar */}
           <div className="max-h-60 overflow-y-auto rounded-md border divide-y">
             {tagOptions.length === 0 && (
-              <p className="px-3 py-4 text-sm text-muted-foreground">Todavía no hay etiquetas. Creá una arriba.</p>
+              <p className="px-3 py-4 text-sm text-muted-foreground">Todavia no hay etiquetas. Crea una arriba.</p>
             )}
             {tagOptions.map((tag) => {
               const checked = tags.includes(tag);
@@ -1555,7 +1572,7 @@ export const EditRecipeModal = ({
           <div>
             <p className="mb-1 text-xs font-medium text-muted-foreground">Seleccionadas ({tags.length})</p>
             <div className="flex flex-wrap gap-1">
-              {tags.length === 0 && <span className="text-xs text-muted-foreground">Ninguna todavía.</span>}
+              {tags.length === 0 && <span className="text-xs text-muted-foreground">Ninguna todavia.</span>}
               {tags.map((tag, index) => (
                 <Badge key={index} variant="secondary" className="flex items-center gap-1">
                   {tag}

@@ -58,6 +58,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "JennaSue";
+  src: url("./assets/fonts/JennaSue.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* The browser extension must not show its importer inside TasteBox itself. */
 #tastebox-import-button {
   display: none !important;
@@ -683,7 +691,7 @@ All colors MUST be HSL.
 
   .home-banner-title {
     color: #e26666;
-    font-family: "ReenieBeanie", ui-sans-serif, system-ui, sans-serif;
+    font-family: "JennaSue", ui-sans-serif, system-ui, sans-serif;
     font-size: clamp(1.75rem, 4vw, 3.4rem);
     font-weight: 400;
     line-height: 0.95;
@@ -697,13 +705,13 @@ All colors MUST be HSL.
 
   .home-pink-banner-copy {
     color: #e26666;
-    font-family: "ReenieBeanie", ui-sans-serif, system-ui, sans-serif;
+    font-family: "JennaSue", ui-sans-serif, system-ui, sans-serif;
     font-weight: 400;
     text-shadow: 0 7px 16px rgb(255 255 255 / 0.68);
   }
 
   .home-pink-banner-line {
-    font-size: clamp(0.92rem, 2.25vw, 1.7rem);
+    font-size: clamp(1.05rem, 2.55vw, 1.95rem);
     line-height: 1.08;
     opacity: 0;
     transform: translateY(10px) scale(0.98);
@@ -759,7 +767,7 @@ All colors MUST be HSL.
   }
 
   .home-section-title {
-    font-family: "ReenieBeanie", ui-sans-serif, system-ui, sans-serif;
+    font-family: "JennaSue", ui-sans-serif, system-ui, sans-serif;
     font-size: clamp(2rem, 3.2vw, 2.8rem);
     font-weight: 400;
     line-height: 1;

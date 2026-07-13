@@ -33,8 +33,9 @@ interface RecipeCardProps {
   // Edición inline en vista de 1 columna (Tipo de comida / Categoría / Colección).
   dishTypeOptions?: string[];
   categoryOptions?: string[];
+  sourceOptions?: string[];
   allCollections?: { id: string; name: string }[];
-  onInlineSave?: (recipeId: string, data: { dishType: string; recipeType: string; collectionIds: string[] }) => Promise<void> | void;
+  onInlineSave?: (recipeId: string, data: { source: string; dishType: string; recipeType: string; collectionIds: string[] }) => Promise<void> | void;
   // Activar/desactivar características (favorita, cocinada, thermomix, etc.) desde el popover.
   onToggleFeature?: (recipe: Recipe, field: string, value: boolean) => void;
   isPlayingTTS?: boolean;
@@ -57,7 +58,7 @@ const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
 ];
 
-export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   // Edición inline (vista 1 columna) de los campos visibles.
   const [inlineEditing, setInlineEditing] = useState(false);
@@ -584,36 +585,50 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           {inlineEditing ? (
             <>
               <div>
+                <p className="mb-1 font-semibold text-foreground">Coleccion</p>
+                <MultiSelectCombobox
+                  options={allCollections.map(c => c.name)}
+                  selected={editCollections}
+                  onChange={setEditCollections}
+                  placeholder="Elegi una o mas"
+                  searchPlaceholder="Buscar coleccion..."
+                  closeOnSelect
+                />
+              </div>
+              <div>
                 <p className="mb-1 font-semibold text-foreground">Tipo de comida</p>
                 <MultiSelectCombobox
                   options={dishTypeOptions}
                   selected={editDishType}
                   onChange={setEditDishType}
-                  placeholder="Elegí uno o más"
+                  placeholder="Elegi uno o mas"
                   searchPlaceholder="Buscar o escribir..."
                   closeOnSelect allowCreate createLabel="Agregar"
                 />
               </div>
               <div>
-                <p className="mb-1 font-semibold text-foreground">Categoría</p>
+                <p className="mb-1 font-semibold text-foreground">Categoria</p>
                 <MultiSelectCombobox
                   options={categoryOptions}
                   selected={editCategories}
                   onChange={setEditCategories}
-                  placeholder="Elegí una o más"
+                  placeholder="Elegi una o mas"
                   searchPlaceholder="Buscar o escribir..."
                   closeOnSelect allowCreate createLabel="Agregar"
                 />
               </div>
               <div>
-                <p className="mb-1 font-semibold text-foreground">Colección</p>
+                <p className="mb-1 font-semibold text-foreground">Fuente</p>
                 <MultiSelectCombobox
-                  options={allCollections.map(c => c.name)}
-                  selected={editCollections}
-                  onChange={setEditCollections}
-                  placeholder="Elegí una o más"
-                  searchPlaceholder="Buscar colección..."
+                  options={sourceOptions}
+                  selected={editSource}
+                  onChange={setEditSource}
+                  placeholder="Elegi una fuente"
+                  searchPlaceholder="Buscar o escribir fuente..."
+                  singleSelect
                   closeOnSelect
+                  allowCreate
+                  createLabel="Agregar"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-1">
@@ -636,13 +651,13 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               )}
               {categories.length > 0 && (
                 <div>
-                  <p className="font-semibold text-foreground">Categoría</p>
+                  <p className="font-semibold text-foreground">Categoria</p>
                   <p className="text-muted-foreground">{categories.join(', ')}</p>
                 </div>
               )}
               {collectionNames.some(n => n && n.trim()) && (
                 <div>
-                  <p className="font-semibold text-foreground">Colección</p>
+                  <p className="font-semibold text-foreground">Coleccion</p>
                   <p className="text-muted-foreground">{collectionNames.filter(n => n && n.trim()).join(', ')}</p>
                 </div>
               )}

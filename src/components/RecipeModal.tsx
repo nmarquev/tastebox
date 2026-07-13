@@ -106,6 +106,92 @@ const normalizeSourceIdentity = (value: string) => {
     .replace(/[^a-z0-9]+/g, '');
 };
 
+const OUNCE_TO_GRAMS = 28.349523125;
+const OUNCE_UNITS = new Set(['oz', 'oz.', 'ounce', 'ounces', 'onza', 'onzas']);
+const UNIT_TRANSLATIONS: Record<string, string> = {
+  tsp: 'cucharadita',
+  'tsp.': 'cucharadita',
+  teaspoon: 'cucharadita',
+  teaspoons: 'cucharadita',
+  tbsp: 'cucharada',
+  'tbsp.': 'cucharada',
+  tablespoon: 'cucharada',
+  tablespoons: 'cucharada',
+};
+
+const unicodeFractions: Record<string, number> = {
+  '¼': 1 / 4,
+  '½': 1 / 2,
+  '¾': 3 / 4,
+  '⅓': 1 / 3,
+  '⅔': 2 / 3,
+  '⅛': 1 / 8,
+  '⅜': 3 / 8,
+  '⅝': 5 / 8,
+  '⅞': 7 / 8,
+};
+
+const isOunceUnit = (unit?: string) => {
+  return OUNCE_UNITS.has((unit || '').trim().toLowerCase());
+};
+
+const translateIngredientUnit = (unit?: string) => {
+  const normalized = (unit || '').trim().toLowerCase();
+  return UNIT_TRANSLATIONS[normalized] || unit;
+};
+
+const parseAmountNumber = (value: string): number | null => {
+  const normalized = value.trim().replace(',', '.');
+  if (!normalized) return null;
+  if (unicodeFractions[normalized] !== undefined) return unicodeFractions[normalized];
+
+  const mixedFractionMatch = normalized.match(/^(\d+(?:\.\d+)?)\s+(\d+)\/(\d+)$/);
+  if (mixedFractionMatch) {
+    const whole = Number(mixedFractionMatch[1]);
+    const numerator = Number(mixedFractionMatch[2]);
+    const denominator = Number(mixedFractionMatch[3]);
+    return denominator ? whole + numerator / denominator : null;
+  }
+
+  const simpleFractionMatch = normalized.match(/^(\d+)\/(\d+)$/);
+  if (simpleFractionMatch) {
+    const numerator = Number(simpleFractionMatch[1]);
+    const denominator = Number(simpleFractionMatch[2]);
+    return denominator ? numerator / denominator : null;
+  }
+
+  const compactUnicodeFractionMatch = normalized.match(/^(\d+(?:\.\d+)?)([¼½¾⅓⅔⅛⅜⅝⅞])$/);
+  if (compactUnicodeFractionMatch) {
+    return Number(compactUnicodeFractionMatch[1]) + unicodeFractions[compactUnicodeFractionMatch[2]];
+  }
+
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const formatGramAmount = (ounces: number) => {
+  const grams = ounces * OUNCE_TO_GRAMS;
+  if (grams < 1) return grams.toFixed(1).replace(/\.0$/, '');
+  return String(Math.round(grams));
+};
+
+const convertOunceAmountToGrams = (amount?: string) => {
+  const rawAmount = (amount || '').trim();
+  if (!rawAmount) return null;
+
+  const rangeParts = rawAmount.split(/\s*(?:-|–|—|a|to)\s*/i);
+  if (rangeParts.length === 2 && rangeParts.every(Boolean)) {
+    const converted = rangeParts.map(part => {
+      const parsed = parseAmountNumber(part);
+      return parsed === null ? null : formatGramAmount(parsed);
+    });
+    return converted.every(Boolean) ? converted.join('-') : null;
+  }
+
+  const parsed = parseAmountNumber(rawAmount);
+  return parsed === null ? null : formatGramAmount(parsed);
+};
+
 export const RecipeModal = ({
   recipe,
   isOpen,
@@ -532,10 +618,16 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         description: result.description || localRecipe.description,
         suggestions: result.suggestions || localRecipe.suggestions,
         language: 'Español',
-        ingredients: (localRecipe.ingredients || []).map((ing, index) => ({
-          ...ing,
-          name: result.ingredients[index] ?? ing.name,
-        })),
+        ingredients: (localRecipe.ingredients || []).map((ing, index) => {
+          const convertedGrams = isOunceUnit(ing.unit) ? convertOunceAmountToGrams(ing.amount) : null;
+          const translatedUnit = translateIngredientUnit(ing.unit);
+          return {
+            ...ing,
+            name: result.ingredients[index] ?? ing.name,
+            amount: convertedGrams ?? ing.amount,
+            unit: convertedGrams ? 'g' : translatedUnit,
+          };
+        }),
         instructions: (localRecipe.instructions || []).map((inst, index) => ({
           ...inst,
           description: result.instructions[index] ?? inst.description,
@@ -968,7 +1060,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
               {/* Características en grilla de 4 columnas → 2 filas de 4 (con las 8 activas).
                   Cada ícono va en un casillero fijo (h-6 w-6) para que todos midan parejo. */}
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4 whitespace-nowrap [&_.feat-ico]:flex [&_.feat-ico]:h-6 [&_.feat-ico]:w-6 [&_.feat-ico]:shrink-0 [&_.feat-ico]:items-center [&_.feat-ico]:justify-center">
+              <div className="grid grid-cols-3 gap-x-6 gap-y-2 whitespace-nowrap [&_.feat-ico]:flex [&_.feat-ico]:h-6 [&_.feat-ico]:w-6 [&_.feat-ico]:shrink-0 [&_.feat-ico]:items-center [&_.feat-ico]:justify-center">
                 {isThermomixRecipe(localRecipe) && (
                   <div className="flex items-center gap-2">
                     <span className="feat-ico"><img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain mix-blend-multiply" /></span>

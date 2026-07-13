@@ -60,7 +60,7 @@ export interface Recipe {
   vegetarian?: boolean;
   proteica?: boolean;
   locution?: string;
-  // InformaciÃ³n nutricional por porciÃ³n
+  // Informacion nutricional por porcion
   calories?: number | null;
   protein?: number | null;
   carbohydrates?: number | null;

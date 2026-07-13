@@ -103,6 +103,9 @@ Devolvé EXCLUSIVAMENTE un JSON válido, sin texto adicional, con esta forma exa
 {"title": string, "description": string, "suggestions": string, "ingredients": string[], "instructions": string[]}
 Mantené el mismo orden y la misma cantidad de elementos en "ingredients" e "instructions".
 
+Importante: si un ingrediente menciona oz, ounce, ounces, onza u onzas, converti esa cantidad a gramos usando 1 oz = 28.35 g, redondea al gramo mas cercano y usa la unidad "g".
+Importante: si un ingrediente menciona tsp, teaspoon o teaspoons, traducilo como "cucharadita"; si menciona tbsp, tablespoon o tablespoons, traducilo como "cucharada".
+
 Receta a traducir (en JSON):
 ${JSON.stringify(data)}`;
 

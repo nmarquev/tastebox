@@ -60,6 +60,7 @@ import { printCollectionCards, printCollectionList, PrintCollectionItem } from "
 import { CoverPicker } from "@/components/CoverPicker";
 import { saveRecentCategory } from "@/utils/recentCategories";
 import { saveRecentRecipe } from "@/utils/recentRecipes";
+import { saveRecentSource } from "@/utils/recentSources";
 
 type RecipeSort = 'title' | 'category' | 'date' | 'collection' | 'source' | 'dishType' | 'difficulty' | 'prepTime' | 'totalTime';
 type EditableGalleryKind = 'category' | 'source' | 'tag' | 'dishType';
@@ -111,18 +112,18 @@ const Index = () => {
   const { authors: customAuthors, createAuthor, reloadAuthors } = useRecipeAuthors(Boolean(user));
 
   const [searchTerm, setSearchTerm] = useState(initialSearch);
-  // Palabras clave confirmadas (con Enter) para buscar recetas por varios tÃ©rminos (AND).
+  // Palabras clave confirmadas (con Enter) para buscar recetas por varios terminos (AND).
   const [searchTerms, setSearchTerms] = useState<string[]>(initialSearchValues.length > 1 ? initialSearchValues : []);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  // El banner (Hero) ya no se muestra: una sola pÃ¡gina.
+  // El banner (Hero) ya no se muestra: una sola pagina.
   const [showHero, setShowHero] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showBulkUrlImportModal, setShowBulkUrlImportModal] = useState(false);
-  // Panel lateral como cajÃ³n (drawer) en mobile/iPad.
+  // Panel lateral como cajon (drawer) en mobile/iPad.
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
-  // Panel lateral fijo en desktop (se puede ocultar con el botÃ³n de menÃº).
+  // Panel lateral fijo en desktop (se puede ocultar con el boton de menu).
   const [showDesktopSidebar, setShowDesktopSidebar] = useState(true);
-  // El botÃ³n de menÃº: en desktop (xl) alterna el panel fijo; en mobile/iPad abre el cajÃ³n.
+  // El boton de menu: en desktop (xl) alterna el panel fijo; en mobile/iPad abre el cajon.
   const handleMenuButton = () => {
     if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1280px)').matches) {
       setShowDesktopSidebar(v => !v);
@@ -143,21 +144,21 @@ const Index = () => {
   const [collectionRecipe, setCollectionRecipe] = useState<Recipe | null>(null);
   const [collectionRecipeIds, setCollectionRecipeIds] = useState<Set<string>>(new Set());
   const [collections, setCollections] = useState<RecipeCollection[]>([]);
-  // Cuando es true, el panel derecho muestra la galerÃ­a de colecciones (tarjetas)
+  // Cuando es true, el panel derecho muestra la galeria de colecciones (tarjetas)
   // en lugar de la grilla de recetas.
   const [showCollectionsGallery, setShowCollectionsGallery] = useState(initialAppView === 'colecciones');
-  // Igual que la anterior pero para la galerÃ­a de categorÃ­as.
+  // Igual que la anterior pero para la galeria de categorias.
   const [showCategoriesGallery, setShowCategoriesGallery] = useState(initialAppView === 'categorias');
-  // Igual pero para la galerÃ­a de fuentes.
+  // Igual pero para la galeria de fuentes.
   const [showSourcesGallery, setShowSourcesGallery] = useState(initialAppView === 'fuentes');
   const [showTagsGallery, setShowTagsGallery] = useState(false);
-  // Igual pero para la galerÃ­a de tipos de comida.
+  // Igual pero para la galeria de tipos de comida.
   const [showDishTypesGallery, setShowDishTypesGallery] = useState(initialAppView === 'tipo-comida');
-  // Igual pero para la galerÃ­a de autores.
+  // Igual pero para la galeria de autores.
   const [showAuthorsGallery, setShowAuthorsGallery] = useState(false);
-  // Mostrar el botÃ³n "volver arriba" cuando se hizo scroll hacia abajo.
+  // Mostrar el boton "volver arriba" cuando se hizo scroll hacia abajo.
   const [showScrollTop, setShowScrollTop] = useState(false);
-  // GestiÃ³n de colecciones desde la galerÃ­a (menÃº de tres puntitos).
+  // Gestion de colecciones desde la galeria (menu de tres puntitos).
   const [deleteCollectionTarget, setDeleteCollectionTarget] = useState<RecipeCollection | null>(null);
   const [editCollectionTarget, setEditCollectionTarget] = useState<RecipeCollection | null>(null);
   const [editCollectionName, setEditCollectionName] = useState('');
@@ -166,23 +167,23 @@ const Index = () => {
   const [editGalleryName, setEditGalleryName] = useState('');
   const [editingGallery, setEditingGallery] = useState(false);
   const [bulkDeleteCollectionsOpen, setBulkDeleteCollectionsOpen] = useState(false);
-  // GestiÃ³n de tipos de comida desde la galerÃ­a (menÃº de tres puntitos).
+  // Gestion de tipos de comida desde la galeria (menu de tres puntitos).
   const [deleteDishTypeTarget, setDeleteDishTypeTarget] = useState<string | null>(null);
   const coverChangeDishTypeName = useRef<string | null>(null);
   const dishTypeCoverInputRef = useRef<HTMLInputElement>(null);
-  // GestiÃ³n de categorÃ­as desde la galerÃ­a.
+  // Gestion de categorias desde la galeria.
   const [deleteCategoryTarget, setDeleteCategoryTarget] = useState<string | null>(null);
   const coverChangeCategoryName = useRef<string | null>(null);
   const categoryCoverInputRef = useRef<HTMLInputElement>(null);
-  // GestiÃ³n de fuentes desde la galerÃ­a.
+  // Gestion de fuentes desde la galeria.
   const [deleteSourceTarget, setDeleteSourceTarget] = useState<string | null>(null);
   const coverChangeSourceName = useRef<string | null>(null);
   const sourceCoverInputRef = useRef<HTMLInputElement>(null);
-  // GestiÃ³n de etiquetas desde la galerÃ­a.
+  // Gestion de etiquetas desde la galeria.
   const [deleteTagTarget, setDeleteTagTarget] = useState<string | null>(null);
   const coverChangeTagName = useRef<string | null>(null);
   const tagCoverInputRef = useRef<HTMLInputElement>(null);
-  // GestiÃ³n de autores desde la galerÃ­a.
+  // Gestion de autores desde la galeria.
   const [deleteAuthorTarget, setDeleteAuthorTarget] = useState<string | null>(null);
   const coverChangeAuthorName = useRef<string | null>(null);
   const authorCoverInputRef = useRef<HTMLInputElement>(null);
@@ -193,7 +194,7 @@ const Index = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoadingRecipes, setIsLoadingRecipes] = useState(true);
   const [filters, setFilters] = useState<RecipeFilters>(() => {
-    // Permite abrir en pestaÃ±a nueva una colecciÃ³n/categorÃ­a/fuente/tipo:
+    // Permite abrir en pestana nueva una coleccion/categoria/fuente/tipo:
     // /?collection=<id> | /?categoria=<nombre> | /?fuente=<nombre> | /?tipo=<nombre>
     const params = new URLSearchParams(window.location.search);
     const collectionId = params.get('collection') || undefined;
@@ -201,6 +202,7 @@ const Index = () => {
     const fuente = params.get('fuente') || undefined;
     const tipo = params.get('tipo') || undefined;
     const etiqueta = params.get('etiqueta') || undefined;
+    if (fuente) saveRecentSource(fuente);
     return {
       difficulty: [],
       prepTimeRange: [0, 180],
@@ -272,23 +274,23 @@ const Index = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => {
     return (localStorage.getItem('recipe-sort-direction') as 'asc' | 'desc') || 'desc';
   });
-  // Orden de la galerÃ­a de colecciones (por nombre o por cantidad de recetas).
+  // Orden de la galeria de colecciones (por nombre o por cantidad de recetas).
   const [collectionSort, setCollectionSort] = useState<'name' | 'count'>('name');
   const [collectionSortDirection, setCollectionSortDirection] = useState<'asc' | 'desc'>('asc');
-  // Orden de la galerÃ­a de tipos de comida (por nombre o por cantidad de recetas).
+  // Orden de la galeria de tipos de comida (por nombre o por cantidad de recetas).
   const [dishTypeSort, setDishTypeSort] = useState<'name' | 'count'>('name');
   const [dishTypeSortDirection, setDishTypeSortDirection] = useState<'asc' | 'desc'>('asc');
-  // Orden de la galerÃ­a de categorÃ­as (por nombre o por cantidad de recetas).
+  // Orden de la galeria de categorias (por nombre o por cantidad de recetas).
   const [categorySort, setCategorySort] = useState<'name' | 'count'>('name');
   const [categorySortDirection, setCategorySortDirection] = useState<'asc' | 'desc'>('asc');
-  // Orden de la galerÃ­a de fuentes (por nombre o por cantidad de recetas).
+  // Orden de la galeria de fuentes (por nombre o por cantidad de recetas).
   const [sourceSort, setSourceSort] = useState<'name' | 'count'>('name');
   const [sourceSortDirection, setSourceSortDirection] = useState<'asc' | 'desc'>('asc');
-  // Orden de la galerÃ­a de etiquetas (por nombre o por cantidad de recetas).
+  // Orden de la galeria de etiquetas (por nombre o por cantidad de recetas).
   const [tagSort, setTagSort] = useState<'name' | 'count'>('name');
   const [tagSortDirection, setTagSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showFilters, setShowFilters] = useState(false);
-  // Recordar el Ãºltimo orden aplicado entre sesiones.
+  // Recordar el ?ltimo orden aplicado entre sesiones.
   useEffect(() => {
     localStorage.setItem('recipe-sort', recipeSort);
     localStorage.setItem('recipe-sort-direction', sortDirection);
@@ -304,20 +306,20 @@ const Index = () => {
   const [newCollectionCoverPreview, setNewCollectionCoverPreview] = useState<string | null>(null);
   const [creatingCollection, setCreatingCollection] = useState(false);
   const [newCollectionCoverLoading, setNewCollectionCoverLoading] = useState(false);
-  // DiÃ¡logo "Cambiar portada" de una colecciÃ³n existente.
+  // Dialogo "Cambiar portada" de una coleccion existente.
   const [changeCoverCollection, setChangeCoverCollection] = useState<RecipeCollection | null>(null);
   const [changeCoverFile, setChangeCoverFile] = useState<File | null>(null);
   const [changeCoverUrl, setChangeCoverUrl] = useState<string | null>(null);
   const [changeCoverPreview, setChangeCoverPreview] = useState<string | null>(null);
   const [changeCoverLoading, setChangeCoverLoading] = useState(false);
   const [changeCoverSaving, setChangeCoverSaving] = useState(false);
-  const lastSelectedRecipeId = useRef<string | null>(null); // para selecciÃ³n por rango (Shift)
-  const lastSelectedCollectionId = useRef<string | null>(null); // selecciÃ³n por rango de colecciones (Shift)
-  const lastSelectedDishTypeName = useRef<string | null>(null); // selecciÃ³n por rango de tipos de comida (Shift)
-  const lastSelectedCategoryName = useRef<string | null>(null); // selecciÃ³n por rango de categorÃ­as (Shift)
-  const lastSelectedSourceName = useRef<string | null>(null); // selecciÃ³n por rango de fuentes (Shift)
-  const lastSelectedTagName = useRef<string | null>(null); // selecciÃ³n por rango de etiquetas (Shift)
-  // SelecciÃ³n masiva / diÃ¡logos de la galerÃ­a de fuentes (imprimir, eliminar, nuevo).
+  const lastSelectedRecipeId = useRef<string | null>(null); // para seleccion por rango (Shift)
+  const lastSelectedCollectionId = useRef<string | null>(null); // seleccion por rango de colecciones (Shift)
+  const lastSelectedDishTypeName = useRef<string | null>(null); // seleccion por rango de tipos de comida (Shift)
+  const lastSelectedCategoryName = useRef<string | null>(null); // seleccion por rango de categorias (Shift)
+  const lastSelectedSourceName = useRef<string | null>(null); // seleccion por rango de fuentes (Shift)
+  const lastSelectedTagName = useRef<string | null>(null); // seleccion por rango de etiquetas (Shift)
+  // Seleccion masiva / dialogos de la galeria de fuentes (imprimir, eliminar, nuevo).
   const [selectedSourceBulkNames, setSelectedSourceBulkNames] = useState<Set<string>>(new Set());
   const [bulkDeleteSourcesOpen, setBulkDeleteSourcesOpen] = useState(false);
   const [showNewSourceDialog, setShowNewSourceDialog] = useState(false);
@@ -327,7 +329,7 @@ const Index = () => {
   const [newSourceCoverPreview, setNewSourceCoverPreview] = useState<string | null>(null);
   const [newSourceCoverLoading, setNewSourceCoverLoading] = useState(false);
   const [creatingSource, setCreatingSource] = useState(false);
-  // SelecciÃ³n masiva / diÃ¡logos de la galerÃ­a de etiquetas (imprimir, eliminar, nuevo).
+  // Seleccion masiva / dialogos de la galeria de etiquetas (imprimir, eliminar, nuevo).
   const [selectedTagBulkNames, setSelectedTagBulkNames] = useState<Set<string>>(new Set());
   const [bulkDeleteTagsOpen, setBulkDeleteTagsOpen] = useState(false);
   const [showNewTagDialog, setShowNewTagDialog] = useState(false);
@@ -337,7 +339,7 @@ const Index = () => {
   const [newTagCoverPreview, setNewTagCoverPreview] = useState<string | null>(null);
   const [newTagCoverLoading, setNewTagCoverLoading] = useState(false);
   const [creatingTag, setCreatingTag] = useState(false);
-  // SelecciÃ³n masiva / diÃ¡logos de la galerÃ­a de categorÃ­as (imprimir, eliminar, nuevo).
+  // Seleccion masiva / dialogos de la galeria de categorias (imprimir, eliminar, nuevo).
   const [selectedCategoryBulkNames, setSelectedCategoryBulkNames] = useState<Set<string>>(new Set());
   const [bulkDeleteCategoriesOpen, setBulkDeleteCategoriesOpen] = useState(false);
   const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
@@ -347,14 +349,14 @@ const Index = () => {
   const [newCategoryCoverPreview, setNewCategoryCoverPreview] = useState<string | null>(null);
   const [newCategoryCoverLoading, setNewCategoryCoverLoading] = useState(false);
   const [creatingCategory, setCreatingCategory] = useState(false);
-  // DiÃ¡logo de opciones al imprimir tarjetas/lista de colecciones o tipos de comida.
+  // Dialogo de opciones al imprimir tarjetas/lista de colecciones o tipos de comida.
   const [galleryPrint, setGalleryPrint] = useState<{ kind: 'cards' | 'list'; label: string; items: PrintCollectionItem[] } | null>(null);
   const [galleryPrintTitle, setGalleryPrintTitle] = useState('');
   const [galleryPrintHeader, setGalleryPrintHeader] = useState('');
   const [galleryPrintFooter, setGalleryPrintFooter] = useState('');
   const [galleryPrintPageNumber, setGalleryPrintPageNumber] = useState(false);
   const [galleryPrintColumns, setGalleryPrintColumns] = useState(4);
-  // SelecciÃ³n masiva / diÃ¡logos de la galerÃ­a de tipos de comida (imprimir, eliminar, nuevo).
+  // Seleccion masiva / dialogos de la galeria de tipos de comida (imprimir, eliminar, nuevo).
   const [selectedDishTypeBulkNames, setSelectedDishTypeBulkNames] = useState<Set<string>>(new Set());
   const [bulkDeleteDishTypesOpen, setBulkDeleteDishTypesOpen] = useState(false);
   const [showNewDishTypeDialog, setShowNewDishTypeDialog] = useState(false);
@@ -402,8 +404,8 @@ const Index = () => {
     return () => observer.disconnect();
   }, [user]);
 
-  // Clave de orden por colecciÃ³n: para cada receta, los nombres de las colecciones a las
-  // que pertenece, ordenados y unidos. Las recetas sin colecciÃ³n quedan con string vacÃ­o.
+  // Clave de orden por coleccion: para cada receta, los nombres de las colecciones a las
+  // que pertenece, ordenados y unidos. Las recetas sin coleccion quedan con string vacio.
   const collectionSortKeys = new Map<string, string>();
   recipes.forEach(recipe => {
     const names = collections
@@ -413,7 +415,7 @@ const Index = () => {
     collectionSortKeys.set(recipe.id, names.join(', '));
   });
 
-  // Miniatura de portada por colecciÃ³n: la imagen de la primera receta (segÃºn el orden
+  // Miniatura de portada por coleccion: la imagen de la primera receta (segun el orden
   // guardado) que tenga foto.
   const recipeById = new Map(recipes.map(recipe => [recipe.id, recipe]));
   const collectionCovers: Record<string, string | undefined> = {};
@@ -435,8 +437,8 @@ const Index = () => {
     }
   });
 
-  // Lista de categorÃ­as usadas por las recetas, con cantidad y miniatura (primera receta
-  // de esa categorÃ­a que tenga foto).
+  // Lista de categorias usadas por las recetas, con cantidad y miniatura (primera receta
+  // de esa categoria que tenga foto).
   const categoryMap = new Map<string, { count: number; cover?: string }>();
   recipes.forEach(recipe => {
     const cover = recipe.images?.[0]?.url ? resolveImageUrl(recipe.images[0].url) : undefined;
@@ -447,7 +449,7 @@ const Index = () => {
       categoryMap.set(cat, entry);
     });
   });
-  // Incluir categorÃ­as creadas manualmente y aplicar portada personalizada.
+  // Incluir categorias creadas manualmente y aplicar portada personalizada.
   customCategories.forEach(({ name, coverImage }) => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -557,8 +559,8 @@ const Index = () => {
 
   // Apply search and filters, then sort alphabetically (only when user is logged in)
   const allFilteredRecipes = user ? recipes.filter(recipe => {
-    // BÃºsqueda - por varias palabras clave (AND): tÃ­tulo, descripciÃ³n, ingredientes,
-    // instrucciones, etiquetas, categorÃ­a, fuente y colecciones.
+    // Busqueda - por varias palabras clave (AND): titulo, descripcion, ingredientes,
+    // instrucciones, etiquetas, categoria, fuente y colecciones.
     const matchesTerm = (q: string) =>
       (recipe.title || '').toLowerCase().includes(q) ||
       (recipe.description || '').toLowerCase().includes(q) ||
@@ -665,7 +667,7 @@ const Index = () => {
     if (recipeSort === 'collection') {
       const collectionA = collectionSortKeys.get(a.id) || '';
       const collectionB = collectionSortKeys.get(b.id) || '';
-      // Recetas sin colecciÃ³n siempre al final, en cualquier direcciÃ³n.
+      // Recetas sin coleccion siempre al final, en cualquier direccion.
       if (!collectionA && collectionB) return 1;
       if (collectionA && !collectionB) return -1;
       return directionFactor * (compareText(collectionA, collectionB) || titleComparison);
@@ -688,9 +690,9 @@ const Index = () => {
 
     if (recipeSort === 'difficulty') {
       const difficultyOrder: Record<string, number> = {
-        'FÃ¡cil': 0,
+        'Facil': 0,
         'Medio': 1,
-        'DifÃ­cil': 2
+        'Dificil': 2
       };
       const difficultyA = difficultyOrder[a.difficulty || ''] ?? 3;
       const difficultyB = difficultyOrder[b.difficulty || ''] ?? 3;
@@ -756,7 +758,7 @@ const Index = () => {
     loadRecipes();
   }, [user, toast]);
 
-  // Mostrar/ocultar el botÃ³n "volver arriba" segÃºn el scroll.
+  // Mostrar/ocultar el boton "volver arriba" segun el scroll.
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 400);
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -789,7 +791,7 @@ const Index = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [user, allFilteredRecipes.length, displayedCount, isLoadingMore]);
 
-  // Cerrar el cajÃ³n lateral (mobile/iPad) cuando el usuario navega a una secciÃ³n/filtro.
+  // Cerrar el cajon lateral (mobile/iPad) cuando el usuario navega a una seccion/filtro.
   useEffect(() => {
     setShowMobileSidebar(false);
   }, [filters, showCollectionsGallery, showCategoriesGallery, showSourcesGallery, showDishTypesGallery, showTagsGallery, showAuthorsGallery]);
@@ -844,23 +846,23 @@ const Index = () => {
       thermomixOnly: prev.thermomixOnly
     }));
     toast({
-      title: "Â¡Receta importada exitosamente!",
+      title: "Receta importada exitosamente!",
       description: `"${recipe.title}" ha sido anadida a tu coleccion`,
     });
   };
 
   const handleRecipeCreated = (recipe: Recipe) => {
-    console.log('ðŸŽ¯ handleRecipeCreated called with recipe:', recipe.title);
+    console.log('handleRecipeCreated called with recipe:', recipe.title);
     // Add the new recipe to the local state
     setRecipes(prev => {
-      console.log('ðŸ“‹ Adding new recipe to recipes list');
+      console.log('Adding new recipe to recipes list');
       return [recipe, ...prev];
     });
     // Hide hero to show the recipes list
-    console.log('ðŸ‘‹ Hiding hero to show recipes list');
+    console.log('Hiding hero to show recipes list');
     setShowHero(false);
     // Clear any active filters to show all recipes including the new one
-    console.log('ðŸ”§ Clearing featured filter');
+    console.log('Clearing featured filter');
     setFilters(prev => ({
       difficulty: prev.difficulty || [],
       prepTimeRange: prev.prepTimeRange || [0, 180],
@@ -870,12 +872,12 @@ const Index = () => {
       featured: undefined,
       thermomixOnly: prev.thermomixOnly
     }));
-    console.log('ðŸŽŠ Showing recipe created toast');
+    console.log('Showing recipe created toast');
     toast({
-      title: "Â¡Receta creada exitosamente!",
+      title: "Receta creada exitosamente!",
       description: `"${recipe.title}" ha sido guardada en tu coleccion`,
     });
-    console.log('âœ… handleRecipeCreated completed');
+    console.log('handleRecipeCreated completed');
   };
 
   const handleEditRecipe = (recipe: Recipe) => {
@@ -885,8 +887,8 @@ const Index = () => {
     setShowEditModal(true);
   };
 
-  // Activar/desactivar una caracterÃ­stica de la receta (favorita, cocinada, thermomix, etc.)
-  // con update parcial y actualizaciÃ³n optimista.
+  // Activar/desactivar una caracteristica de la receta (favorita, cocinada, thermomix, etc.)
+  // con update parcial y actualizacion optimista.
   const handleToggleFeature = async (recipe: Recipe, field: string, value: boolean) => {
     setRecipes(prev => prev.map(r => (r.id === recipe.id ? { ...r, [field]: value } : r)));
     setSelectedRecipe(prev => (prev?.id === recipe.id ? { ...prev, [field]: value } : prev));
@@ -896,31 +898,34 @@ const Index = () => {
       // Revertir si falla.
       setRecipes(prev => prev.map(r => (r.id === recipe.id ? { ...r, [field]: !value } : r)));
       setSelectedRecipe(prev => (prev?.id === recipe.id ? { ...prev, [field]: !value } : prev));
-      toast({ title: 'Error', description: 'No se pudo actualizar la caracterÃ­stica', variant: 'destructive' });
+      toast({ title: 'Error', description: 'No se pudo actualizar la caracteristica', variant: 'destructive' });
     }
   };
 
-  // Guardado inline (vista 1 columna) de Tipo de comida, CategorÃ­a y ColecciÃ³n.
+  // Guardado inline (vista 1 columna) de Tipo de comida, Categoria y Coleccion.
   const handleInlineSaveFields = async (
     recipeId: string,
-    data: { dishType: string; recipeType: string; collectionIds: string[] }
+    data: { source: string; dishType: string; recipeType: string; collectionIds: string[] }
   ) => {
     try {
-      await api.recipes.bulkUpdate([recipeId], { dishType: data.dishType, recipeType: data.recipeType });
-      // Colecciones: agregar/quitar segÃºn la diferencia con la pertenencia actual.
+      await api.recipes.bulkUpdate([recipeId], { source: data.source || undefined, dishType: data.dishType, recipeType: data.recipeType });
+      if (data.source.trim()) {
+        try { await api.sources.create(data.source.trim()); } catch { /* no bloquear */ }
+      }
+      // Colecciones: agregar/quitar segun la diferencia con la pertenencia actual.
       const current = collections.filter(c => c.recipeIds.includes(recipeId)).map(c => c.id);
       const toAdd = data.collectionIds.filter(id => !current.includes(id));
       const toRemove = current.filter(id => !data.collectionIds.includes(id));
       for (const cid of toAdd) { try { await api.collections.addRecipe(cid, recipeId); } catch { /* no bloquear */ } }
       for (const cid of toRemove) { try { await api.collections.removeRecipe(cid, recipeId); } catch { /* no bloquear */ } }
-      await loadRecipes();
+      await Promise.all([loadRecipes(), reloadSources()]);
       toast({ title: 'Receta actualizada', description: 'Se guardaron los campos.' });
     } catch (error) {
       toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo guardar', variant: 'destructive' });
     }
   };
 
-  // Abre las recetas reciÃ©n importadas (por sus IDs) en modo ediciÃ³n, una tras otra.
+  // Abre las recetas recien importadas (por sus IDs) en modo edicion, una tras otra.
   const handleEditImportedRecipes = async (recipeIds: string[]) => {
     if (recipeIds.length === 0) return;
     try {
@@ -937,7 +942,7 @@ const Index = () => {
     }
   };
 
-  // Cierra el modal de ediciÃ³n y limpia la cola.
+  // Cierra el modal de edicion y limpia la cola.
   const closeEditModal = () => {
     setShowEditModal(false);
     setEditQueue([]);
@@ -945,7 +950,7 @@ const Index = () => {
     setRecipeToEdit(null);
   };
 
-  // Avanza a la siguiente receta de la cola; si no hay mÃ¡s, cierra el modal.
+  // Avanza a la siguiente receta de la cola; si no hay mas, cierra el modal.
   const goToNextQueuedRecipe = () => {
     const next = editQueueIndex + 1;
     if (next >= editQueue.length) {
@@ -957,10 +962,10 @@ const Index = () => {
   };
 
   const handleRecipeUpdated = (updatedRecipe: Recipe) => {
-    console.log('ðŸ”„ handleRecipeUpdated called with recipe:', updatedRecipe.title);
+    console.log('handleRecipeUpdated called with recipe:', updatedRecipe.title);
     // Update the recipe in the local state
     setRecipes(prev => {
-      console.log('ðŸ“ Updating recipe in recipes list');
+      console.log('Updating recipe in recipes list');
       return prev.map(recipe =>
         recipe.id === updatedRecipe.id ? updatedRecipe : recipe
       );
@@ -969,17 +974,17 @@ const Index = () => {
     setSelectedRecipe(prev =>
       prev?.id === updatedRecipe.id ? updatedRecipe : prev
     );
-    // Mantener el editor abierto sincronizado: refrescar la receta en ediciÃ³n con la
-    // respuesta del servidor (deja el form "limpio" â†’ el botÃ³n vuelve a "Ver receta").
+    // Mantener el editor abierto sincronizado: refrescar la receta en edicion con la
+    // respuesta del servidor (deja el form "limpio" -> el boton vuelve a "Ver receta").
     setRecipeToEdit(prev =>
       prev && prev.id === updatedRecipe.id ? updatedRecipe : prev
     );
-    console.log('ðŸŽŠ Showing recipe updated toast');
+    console.log('Showing recipe updated toast');
     toast({
-      title: "Â¡Receta actualizada!",
+      title: "Receta actualizada!",
       description: `"${updatedRecipe.title}" se ha actualizado exitosamente`,
     });
-    console.log('âœ… handleRecipeUpdated completed');
+    console.log('handleRecipeUpdated completed');
   };
 
   const handleCollectionsUpdated = (updatedCollections: RecipeCollection[]) => {
@@ -1014,7 +1019,7 @@ const Index = () => {
     }
   };
 
-  // Limpiar el estado del diÃ¡logo "Nueva colecciÃ³n".
+  // Limpiar el estado del dialogo "Nueva coleccion".
   const resetNewCollectionDialog = () => {
     setNewCollectionName('');
     setNewCollectionCoverFile(null);
@@ -1032,8 +1037,8 @@ const Index = () => {
   // Establecer la portada desde una URL de la web (se descarga y optimiza en el server).
   const addNewCollectionCoverFromUrl = async (rawUrl: string) => {
     const url = (rawUrl || '').trim();
-    if (!/^https?:\/\//i.test(url)) {
-      toast({ title: 'URL no vÃ¡lida', description: 'PegÃ¡ el enlace de una imagen (http...).', variant: 'destructive' });
+    if (!/^httpsi:\/\//i.test(url)) {
+      toast({ title: 'URL no valida', description: 'Pega el enlace de una imagen (http...).', variant: 'destructive' });
       return;
     }
     setNewCollectionCoverLoading(true);
@@ -1044,7 +1049,7 @@ const Index = () => {
       setNewCollectionCoverPreview(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return resolveImageUrl(res.image.url) || res.image.url; });
       toast({ title: 'Portada agregada desde la web' });
     } catch (error) {
-      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'IntentÃ¡ con otra URL', variant: 'destructive' });
+      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'Intenta con otra URL', variant: 'destructive' });
     } finally {
       setNewCollectionCoverLoading(false);
     }
@@ -1056,7 +1061,7 @@ const Index = () => {
     setNewCollectionCoverPreview(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return null; });
   };
 
-  // Crear la colecciÃ³n con el nombre y la portada elegidos en el diÃ¡logo.
+  // Crear la coleccion con el nombre y la portada elegidos en el dialogo.
   const submitNewCollection = async () => {
     const name = newCollectionName.trim();
     if (!name || creatingCollection) return;
@@ -1067,7 +1072,7 @@ const Index = () => {
     resetNewCollectionDialog();
   };
 
-  // --- DiÃ¡logo "Nuevo tipo de comida" (con portada, igual que nueva colecciÃ³n) ---
+  // --- Dialogo "Nuevo tipo de comida" (con portada, igual que nueva coleccion) ---
   const resetNewDishTypeDialog = () => {
     setNewDishTypeName('');
     setNewDishTypeCoverFile(null);
@@ -1081,8 +1086,8 @@ const Index = () => {
   };
   const addNewDishTypeCoverFromUrl = async (rawUrl: string) => {
     const url = (rawUrl || '').trim();
-    if (!/^https?:\/\//i.test(url)) {
-      toast({ title: 'URL no vÃ¡lida', description: 'PegÃ¡ el enlace de una imagen (http...).', variant: 'destructive' });
+    if (!/^httpsi:\/\//i.test(url)) {
+      toast({ title: 'URL no valida', description: 'Pega el enlace de una imagen (http...).', variant: 'destructive' });
       return;
     }
     setNewDishTypeCoverLoading(true);
@@ -1093,7 +1098,7 @@ const Index = () => {
       setNewDishTypeCoverPreview(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return resolveImageUrl(res.image.url) || res.image.url; });
       toast({ title: 'Portada agregada desde la web' });
     } catch (error) {
-      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'IntentÃ¡ con otra URL', variant: 'destructive' });
+      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'Intenta con otra URL', variant: 'destructive' });
     } finally {
       setNewDishTypeCoverLoading(false);
     }
@@ -1113,7 +1118,7 @@ const Index = () => {
     resetNewDishTypeDialog();
   };
 
-  // --- DiÃ¡logo "Cambiar portada" de una colecciÃ³n existente ---
+  // --- Dialogo "Cambiar portada" de una coleccion existente ---
   const openChangeCoverDialog = (collection: RecipeCollection) => {
     setChangeCoverCollection(collection);
     setChangeCoverFile(null);
@@ -1136,8 +1141,8 @@ const Index = () => {
 
   const addChangeCoverFromUrl = async (rawUrl: string) => {
     const url = (rawUrl || '').trim();
-    if (!/^https?:\/\//i.test(url)) {
-      toast({ title: 'URL no vÃ¡lida', description: 'PegÃ¡ el enlace de una imagen (http...).', variant: 'destructive' });
+    if (!/^httpsi:\/\//i.test(url)) {
+      toast({ title: 'URL no valida', description: 'Pega el enlace de una imagen (http...).', variant: 'destructive' });
       return;
     }
     setChangeCoverLoading(true);
@@ -1148,7 +1153,7 @@ const Index = () => {
       setChangeCoverPreview(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return resolveImageUrl(res.image.url) || res.image.url; });
       toast({ title: 'Portada agregada desde la web' });
     } catch (error) {
-      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'IntentÃ¡ con otra URL', variant: 'destructive' });
+      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'Intenta con otra URL', variant: 'destructive' });
     } finally {
       setChangeCoverLoading(false);
     }
@@ -1160,7 +1165,7 @@ const Index = () => {
     setChangeCoverPreview(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return null; });
   };
 
-  // Guardar la nueva portada de la colecciÃ³n.
+  // Guardar la nueva portada de la coleccion.
   const submitChangeCover = async () => {
     if (!changeCoverCollection || changeCoverSaving) return;
     const id = changeCoverCollection.id;
@@ -1180,13 +1185,13 @@ const Index = () => {
       }
       closeChangeCoverDialog();
     } catch (error) {
-      toast({ title: 'No se pudo cambiar la portada', description: error instanceof Error ? error.message : 'IntentÃ¡ nuevamente', variant: 'destructive' });
+      toast({ title: 'No se pudo cambiar la portada', description: error instanceof Error ? error.message : 'Intenta nuevamente', variant: 'destructive' });
     } finally {
       setChangeCoverSaving(false);
     }
   };
 
-  // Cambiar la portada de una colecciÃ³n subiendo una imagen desde la PC.
+  // Cambiar la portada de una coleccion subiendo una imagen desde la PC.
   const handleChangeCollectionCover = async (id: string, file: File) => {
     try {
       const result = await api.upload.images([file]);
@@ -1194,17 +1199,17 @@ const Index = () => {
       if (!url) throw new Error('No se pudo subir la imagen');
       const updated = await api.collections.update(id, { coverImage: url });
       setCollections(prev => prev.map(col => (col.id === id ? { ...col, coverImage: updated.coverImage } : col)));
-      toast({ title: "Portada actualizada", description: `Se cambiÃ³ la portada de "${updated.name}".` });
+      toast({ title: "Portada actualizada", description: `Se cambi? la portada de "${updated.name}".` });
     } catch (error) {
       toast({
         title: "No se pudo cambiar la portada",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     }
   };
 
-  // Eliminar una colecciÃ³n (las recetas se mantienen).
+  // Eliminar una coleccion (las recetas se mantienen).
   const openEditCollectionDialog = (collection: RecipeCollection) => {
     setEditCollectionTarget(collection);
     setEditCollectionName(collection.name);
@@ -1229,7 +1234,7 @@ const Index = () => {
     } catch (error) {
       toast({
         title: "No se pudo editar la coleccion",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     } finally {
@@ -1351,7 +1356,7 @@ const Index = () => {
     } catch (error) {
       toast({
         title: "No se pudo eliminar la coleccion",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     } finally {
@@ -1377,7 +1382,7 @@ const Index = () => {
     } catch (error) {
       toast({
         title: "No se pudieron eliminar las colecciones",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     } finally {
@@ -1393,11 +1398,11 @@ const Index = () => {
       if (!url) throw new Error('No se pudo subir la imagen');
       await api.dishTypes.updateCover(name, url);
       await reloadDishTypes();
-      toast({ title: "Portada actualizada", description: `Se cambiÃ³ la portada de "${name}".` });
+      toast({ title: "Portada actualizada", description: `Se cambi? la portada de "${name}".` });
     } catch (error) {
       toast({
         title: "No se pudo cambiar la portada",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     }
@@ -1405,7 +1410,7 @@ const Index = () => {
 
   // Eliminar un tipo de comida (las recetas se mantienen, pierden la etiqueta).
   const handleDeleteDishType = async (name: string) => {
-    setDeleteDishTypeTarget(null); // cerrar el diÃ¡logo de inmediato
+    setDeleteDishTypeTarget(null); // cerrar el dialogo de inmediato
     if (filters.dishType === name || filters.dishTypes?.includes(name)) {
       handleFiltersChange({ ...filters, dishType: filters.dishType === name ? undefined : filters.dishType, dishTypes: (filters.dishTypes || []).filter(t => t !== name) });
     }
@@ -1416,13 +1421,13 @@ const Index = () => {
     } catch (error) {
       toast({
         title: "No se pudo eliminar el tipo de comida",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     }
   };
 
-  // --- CategorÃ­as: portada y eliminaciÃ³n ---
+  // --- Categorias: portada y eliminacion ---
   const handleChangeCategoryCover = async (name: string, file: File) => {
     try {
       const result = await api.upload.images([file]);
@@ -1430,27 +1435,27 @@ const Index = () => {
       if (!url) throw new Error('No se pudo subir la imagen');
       await api.categories.updateCover(name, url);
       await reloadCategories();
-      toast({ title: "Portada actualizada", description: `Se cambiÃ³ la portada de "${name}".` });
+      toast({ title: "Portada actualizada", description: `Se cambi? la portada de "${name}".` });
     } catch (error) {
-      toast({ title: "No se pudo cambiar la portada", description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente", variant: "destructive" });
+      toast({ title: "No se pudo cambiar la portada", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
   };
 
   const handleDeleteCategory = async (name: string) => {
-    setDeleteCategoryTarget(null); // cerrar el diÃ¡logo de inmediato
+    setDeleteCategoryTarget(null); // cerrar el dialogo de inmediato
     if (filters.recipeTypes?.includes(name)) {
       handleFiltersChange({ ...filters, recipeTypes: filters.recipeTypes.filter(t => t !== name) });
     }
     try {
       await api.categories.remove(name);
       await Promise.all([reloadCategories(), loadRecipes()]);
-      toast({ title: "CategorÃ­a eliminada", description: "Las recetas siguen disponibles en tu lista." });
+      toast({ title: "Categoria eliminada", description: "Las recetas siguen disponibles en tu lista." });
     } catch (error) {
-      toast({ title: "No se pudo eliminar la categorÃ­a", description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente", variant: "destructive" });
+      toast({ title: "No se pudo eliminar la categoria", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
   };
 
-  // --- Fuentes: portada y eliminaciÃ³n ---
+  // --- Fuentes: portada y eliminacion ---
   const handleChangeSourceCover = async (name: string, file: File) => {
     try {
       const result = await api.upload.images([file]);
@@ -1458,14 +1463,14 @@ const Index = () => {
       if (!url) throw new Error('No se pudo subir la imagen');
       await api.sources.updateCover(name, url);
       await reloadSources();
-      toast({ title: "Portada actualizada", description: `Se cambiÃ³ la portada de "${name}".` });
+      toast({ title: "Portada actualizada", description: `Se cambi? la portada de "${name}".` });
     } catch (error) {
-      toast({ title: "No se pudo cambiar la portada", description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente", variant: "destructive" });
+      toast({ title: "No se pudo cambiar la portada", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
   };
 
   const handleDeleteSource = async (name: string) => {
-    setDeleteSourceTarget(null); // cerrar el diÃ¡logo de inmediato
+    setDeleteSourceTarget(null); // cerrar el dialogo de inmediato
     if (filters.sources?.includes(name)) {
       const remaining = filters.sources.filter(s => s !== name);
       handleFiltersChange({ ...filters, sources: remaining.length ? remaining : undefined });
@@ -1475,11 +1480,11 @@ const Index = () => {
       await Promise.all([reloadSources(), loadRecipes()]);
       toast({ title: "Fuente eliminada", description: "Las recetas siguen disponibles en tu lista." });
     } catch (error) {
-      toast({ title: "No se pudo eliminar la fuente", description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente", variant: "destructive" });
+      toast({ title: "No se pudo eliminar la fuente", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
   };
 
-  // --- Etiquetas: portada y eliminaciÃ³n ---
+  // --- Etiquetas: portada y eliminacion ---
   const handleChangeTagCover = async (name: string, file: File) => {
     try {
       const result = await api.upload.images([file]);
@@ -1487,9 +1492,9 @@ const Index = () => {
       if (!url) throw new Error('No se pudo subir la imagen');
       await api.tags.updateCover(name, url);
       await reloadTags();
-      toast({ title: "Portada actualizada", description: `Se cambiÃ³ la portada de "${name}".` });
+      toast({ title: "Portada actualizada", description: `Se cambi? la portada de "${name}".` });
     } catch (error) {
-      toast({ title: "No se pudo cambiar la portada", description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente", variant: "destructive" });
+      toast({ title: "No se pudo cambiar la portada", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
   };
 
@@ -1503,11 +1508,11 @@ const Index = () => {
       await Promise.all([reloadTags(), loadRecipes()]);
       toast({ title: "Etiqueta eliminada", description: "Las recetas siguen disponibles en tu lista." });
     } catch (error) {
-      toast({ title: "No se pudo eliminar la etiqueta", description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente", variant: "destructive" });
+      toast({ title: "No se pudo eliminar la etiqueta", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
   };
 
-  // --- Autores: portada y eliminaciÃ³n ---
+  // --- Autores: portada y eliminacion ---
   const handleChangeAuthorCover = async (name: string, file: File) => {
     try {
       const result = await api.upload.images([file]);
@@ -1515,14 +1520,14 @@ const Index = () => {
       if (!url) throw new Error('No se pudo subir la imagen');
       await api.authors.updateCover(name, url);
       await reloadAuthors();
-      toast({ title: "Portada actualizada", description: `Se cambiÃ³ la portada de "${name}".` });
+      toast({ title: "Portada actualizada", description: `Se cambi? la portada de "${name}".` });
     } catch (error) {
-      toast({ title: "No se pudo cambiar la portada", description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente", variant: "destructive" });
+      toast({ title: "No se pudo cambiar la portada", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
   };
 
   const handleDeleteAuthor = async (name: string) => {
-    setDeleteAuthorTarget(null); // cerrar el diÃ¡logo de inmediato
+    setDeleteAuthorTarget(null); // cerrar el dialogo de inmediato
     if (filters.author === name) {
       handleFiltersChange({ ...filters, author: undefined });
     }
@@ -1531,7 +1536,7 @@ const Index = () => {
       await Promise.all([reloadAuthors(), loadRecipes()]);
       toast({ title: "Autor eliminado", description: "Las recetas siguen disponibles en tu lista." });
     } catch (error) {
-      toast({ title: "No se pudo eliminar el autor", description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente", variant: "destructive" });
+      toast({ title: "No se pudo eliminar el autor", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
   };
 
@@ -1550,19 +1555,19 @@ const Index = () => {
         await reloadCategories();
       }
       toast({
-        title: "CategorÃ­a creada",
-        description: `Se creÃ³ "${name}". Asignala a una receta para que aparezca en la lista.`,
+        title: "Categoria creada",
+        description: `Se cre? "${name}". Asignala a una receta para que aparezca en la lista.`,
       });
     } catch (error) {
       toast({
-        title: "No se pudo crear la categorÃ­a",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        title: "No se pudo crear la categoria",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     }
   };
 
-  // --- DiÃ¡logo "Nueva categorÃ­a" (con portada, igual que nuevo tipo de comida) ---
+  // --- Dialogo "Nueva categoria" (con portada, igual que nuevo tipo de comida) ---
   const resetNewCategoryDialog = () => {
     setNewCategoryName('');
     setNewCategoryCoverFile(null);
@@ -1576,8 +1581,8 @@ const Index = () => {
   };
   const addNewCategoryCoverFromUrl = async (rawUrl: string) => {
     const url = (rawUrl || '').trim();
-    if (!/^https?:\/\//i.test(url)) {
-      toast({ title: 'URL no vÃ¡lida', description: 'PegÃ¡ el enlace de una imagen (http...).', variant: 'destructive' });
+    if (!/^httpsi:\/\//i.test(url)) {
+      toast({ title: 'URL no valida', description: 'Pega el enlace de una imagen (http...).', variant: 'destructive' });
       return;
     }
     setNewCategoryCoverLoading(true);
@@ -1588,7 +1593,7 @@ const Index = () => {
       setNewCategoryCoverPreview(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return resolveImageUrl(res.image.url) || res.image.url; });
       toast({ title: 'Portada agregada desde la web' });
     } catch (error) {
-      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'IntentÃ¡ con otra URL', variant: 'destructive' });
+      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'Intenta con otra URL', variant: 'destructive' });
     } finally {
       setNewCategoryCoverLoading(false);
     }
@@ -1651,18 +1656,18 @@ const Index = () => {
       }
       toast({
         title: "Fuente creada",
-        description: `Se creÃ³ "${name}". Asignala a una receta para que aparezca en la lista.`,
+        description: `Se cre? "${name}". Asignala a una receta para que aparezca en la lista.`,
       });
     } catch (error) {
       toast({
         title: "No se pudo crear la fuente",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     }
   };
 
-  // --- DiÃ¡logo "Nueva fuente" (con portada, igual que nueva categorÃ­a) ---
+  // --- Dialogo "Nueva fuente" (con portada, igual que nueva categoria) ---
   const resetNewSourceDialog = () => {
     setNewSourceName('');
     setNewSourceCoverFile(null);
@@ -1676,8 +1681,8 @@ const Index = () => {
   };
   const addNewSourceCoverFromUrl = async (rawUrl: string) => {
     const url = (rawUrl || '').trim();
-    if (!/^https?:\/\//i.test(url)) {
-      toast({ title: 'URL no vÃ¡lida', description: 'PegÃ¡ el enlace de una imagen (http...).', variant: 'destructive' });
+    if (!/^httpsi:\/\//i.test(url)) {
+      toast({ title: 'URL no valida', description: 'Pega el enlace de una imagen (http...).', variant: 'destructive' });
       return;
     }
     setNewSourceCoverLoading(true);
@@ -1688,7 +1693,7 @@ const Index = () => {
       setNewSourceCoverPreview(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return resolveImageUrl(res.image.url) || res.image.url; });
       toast({ title: 'Portada agregada desde la web' });
     } catch (error) {
-      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'IntentÃ¡ con otra URL', variant: 'destructive' });
+      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'Intenta con otra URL', variant: 'destructive' });
     } finally {
       setNewSourceCoverLoading(false);
     }
@@ -1724,18 +1729,18 @@ const Index = () => {
       }
       toast({
         title: "Etiqueta creada",
-        description: `Se creÃ³ "${name}". Asignala a una receta para que aparezca en la lista.`,
+        description: `Se cre? "${name}". Asignala a una receta para que aparezca en la lista.`,
       });
     } catch (error) {
       toast({
         title: "No se pudo crear la etiqueta",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     }
   };
 
-  // --- DiÃ¡logo "Nueva etiqueta" (con portada, igual que nueva fuente) ---
+  // --- Dialogo "Nueva etiqueta" (con portada, igual que nueva fuente) ---
   const resetNewTagDialog = () => {
     setNewTagName('');
     setNewTagCoverFile(null);
@@ -1749,8 +1754,8 @@ const Index = () => {
   };
   const addNewTagCoverFromUrl = async (rawUrl: string) => {
     const url = (rawUrl || '').trim();
-    if (!/^https?:\/\//i.test(url)) {
-      toast({ title: 'URL no vÃ¡lida', description: 'PegÃ¡ el enlace de una imagen (http...).', variant: 'destructive' });
+    if (!/^httpsi:\/\//i.test(url)) {
+      toast({ title: 'URL no valida', description: 'Pega el enlace de una imagen (http...).', variant: 'destructive' });
       return;
     }
     setNewTagCoverLoading(true);
@@ -1761,7 +1766,7 @@ const Index = () => {
       setNewTagCoverPreview(prev => { if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev); return resolveImageUrl(res.image.url) || res.image.url; });
       toast({ title: 'Portada agregada desde la web' });
     } catch (error) {
-      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'IntentÃ¡ con otra URL', variant: 'destructive' });
+      toast({ title: 'No se pudo agregar la imagen', description: error instanceof Error ? error.message : 'Intenta con otra URL', variant: 'destructive' });
     } finally {
       setNewTagCoverLoading(false);
     }
@@ -1786,12 +1791,12 @@ const Index = () => {
       await createAuthor(name);
       toast({
         title: "Autor creado",
-        description: `Se creÃ³ "${name}". Asignalo a una receta para que aparezca en la lista.`,
+        description: `Se cre? "${name}". Asignalo a una receta para que aparezca en la lista.`,
       });
     } catch (error) {
       toast({
         title: "No se pudo crear el autor",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     }
@@ -1828,11 +1833,11 @@ const Index = () => {
 
   const handleToggleRecipeSelection = (
     recipe: Recipe,
-    modifiers?: { shift?: boolean; ctrl?: boolean }
+    modifiersi: { shift?: boolean; ctrl?: boolean }
   ) => {
     const id = recipe.id;
 
-    // SHIFT: seleccionar el rango consecutivo desde la Ãºltima receta clickeada.
+    // SHIFT: seleccionar el rango consecutivo desde la ultima receta clickeada.
     if (modifiers?.shift && lastSelectedRecipeId.current) {
       const ids = filteredRecipes.map(r => r.id);
       const from = ids.indexOf(lastSelectedRecipeId.current);
@@ -1892,7 +1897,7 @@ const Index = () => {
     }
   };
 
-  // Imprime las recetas directamente (sin diÃ¡logo).
+  // Imprime las recetas directamente (sin dialogo).
   const handleBulkPrint = async () => {
     if (!selectedActionRecipes.length) return;
 
@@ -1914,7 +1919,7 @@ const Index = () => {
     }
   };
 
-  // Abre el diÃ¡logo de tarjetas con los campos vacÃ­os.
+  // Abre el dialogo de tarjetas con los campos vacios.
   const handleBulkPrintCards = () => {
     if (!selectedActionRecipes.length) return;
     setPrintCardsTitle('');
@@ -1926,7 +1931,7 @@ const Index = () => {
     setPrintCardsDialogOpen(true);
   };
 
-  // Imprime las tarjetas con el tÃ­tulo y pie ingresados.
+  // Imprime las tarjetas con el titulo y pie ingresados.
   const doPrintCards = async () => {
     setPrintCardsDialogOpen(false);
     if (!selectedActionRecipes.length) return;
@@ -1945,7 +1950,7 @@ const Index = () => {
     }
   };
 
-  // Abre el diÃ¡logo de lista con los campos vacÃ­os.
+  // Abre el dialogo de lista con los campos vacios.
   const handleBulkPrintList = () => {
     if (!selectedActionRecipes.length) return;
     setPrintListTitle('');
@@ -2036,18 +2041,18 @@ const Index = () => {
   };
 
   const handleToggleFavorite = async (recipe: Recipe) => {
-    console.log('ðŸ”„ Starting handleToggleFavorite for recipe:', recipe.title, 'Current featured:', recipe.featured);
+    console.log('Starting handleToggleFavorite for recipe:', recipe.title, 'Current featured:', recipe.featured);
 
     try {
       // Optimistically update UI first
       const newFeaturedState = !recipe.featured;
-      console.log('âœ¨ Optimistically updating UI, newFeaturedState:', newFeaturedState);
+      console.log('Optimistically updating UI, newFeaturedState:', newFeaturedState);
 
       setRecipes(prev => {
         const updated = prev.map(r =>
           r.id === recipe.id ? { ...r, featured: newFeaturedState } : r
         );
-        console.log('ðŸ“Š Recipe state updated optimistically');
+        console.log('Recipe state updated optimistically');
         return updated;
       });
       setSelectedRecipe(prev =>
@@ -2061,7 +2066,7 @@ const Index = () => {
         temperature: instruction.temperature || "",
         speed: instruction.speed || ""
       }));
-      console.log('ðŸ§¹ Instructions cleaned:', cleanedInstructions.length, 'instructions');
+      console.log('Instructions cleaned:', cleanedInstructions.length, 'instructions');
 
       // Clean tags to handle both string and object formats
       const cleanedTags = recipe.tags.map(tag => {
@@ -2071,7 +2076,7 @@ const Index = () => {
         return tag; // Already an object
       });
 
-      console.log('ðŸš€ Calling API to update recipe...');
+      console.log('Calling API to update recipe...');
       const updatedRecipe = await api.recipes.update(recipe.id, {
         title: recipe.title,
         description: recipe.description,
@@ -2088,32 +2093,32 @@ const Index = () => {
         featured: newFeaturedState
       });
 
-      console.log('âœ… API call successful! Updated recipe featured state:', updatedRecipe.featured);
+      console.log('API call successful! Updated recipe featured state:', updatedRecipe.featured);
 
       // Update with the server response (in case of discrepancies)
       setRecipes(prev => {
         const final = prev.map(r =>
           r.id === recipe.id ? updatedRecipe : r
         );
-        console.log('ðŸ”„ Final state update with server response');
+        console.log('Final state update with server response');
         return final;
       });
       setSelectedRecipe(prev =>
         prev?.id === recipe.id ? updatedRecipe : prev
       );
 
-      console.log('ðŸŽ‰ Showing success toast');
+      console.log('Showing success toast');
       toast({
-        title: updatedRecipe.featured ? "Â¡AÃ±adida a favoritos!" : "Eliminada de favoritos",
-        description: `"${updatedRecipe.title}" ${updatedRecipe.featured ? 'se aÃ±adiÃ³ a' : 'se eliminÃ³ de'} tus favoritos`,
+        title: updatedRecipe.featured ? "Anadida a favoritos!" : "Eliminada de favoritos",
+        description: `"${updatedRecipe.title}" ${updatedRecipe.featured ? 'se anadio a' : 'se elimino de'} tus favoritos`,
       });
 
-      console.log('âœ… handleToggleFavorite completed successfully');
+      console.log('handleToggleFavorite completed successfully');
     } catch (error) {
-      console.error('âŒ Error in handleToggleFavorite:', error);
+      console.error('Error in handleToggleFavorite:', error);
 
       // Revert optimistic update on error
-      console.log('ðŸ”™ Reverting optimistic update due to error');
+      console.log('Reverting optimistic update due to error');
       setRecipes(prev => prev.map(r =>
         r.id === recipe.id ? recipe : r
       ));
@@ -2121,7 +2126,7 @@ const Index = () => {
         prev?.id === recipe.id ? recipe : prev
       );
 
-      console.log('ðŸš¨ Showing error toast');
+      console.log('Showing error toast');
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado de favorito",
@@ -2177,11 +2182,11 @@ const Index = () => {
       );
 
       toast({
-        title: updatedRecipe.cooked ? "Â¡Marcada como cocinada!" : "Marca de cocinada quitada",
-        description: `"${updatedRecipe.title}" ${updatedRecipe.cooked ? 'se marcÃ³ como cocinada' : 'ya no estÃ¡ marcada como cocinada'}`,
+        title: updatedRecipe.cooked ? "?Marcada como cocinada!" : "Marca de cocinada quitada",
+        description: `"${updatedRecipe.title}" ${updatedRecipe.cooked ? 'se marca como cocinada' : 'ya no est? marcada como cocinada'}`,
       });
     } catch (error) {
-      console.error('âŒ Error in handleToggleCooked:', error);
+      console.error('Error in handleToggleCooked:', error);
 
       // Revert optimistic update on error
       setRecipes(prev => prev.map(r =>
@@ -2204,9 +2209,9 @@ const Index = () => {
     localStorage.setItem('hero-dismissed', 'true');
   };
 
-  // Al hacer click en el logo: no hacer nada (app de una sola pÃ¡gina).
+  // Al hacer click en el logo: no hacer nada (app de una sola pagina).
   const handleLogoClick = () => {
-    // Intencionalmente vacÃ­o.
+    // Intencionalmente vacio.
   };
 
   const handleViewFeatured = () => {
@@ -2272,7 +2277,7 @@ const Index = () => {
   }
   const activeDishTypes = [...(filters.dishTypes || []), ...(filters.dishType ? [filters.dishType] : [])];
   if (activeDishTypes.length) activeFilterChips.push({ label: 'Tipo de comida', value: activeDishTypes.join(', '), onRemove: () => handleFiltersChange({ ...filters, dishTypes: [], dishType: undefined }) });
-  if (filters.recipeTypes?.length) activeFilterChips.push({ label: 'CategorÃ­a', value: filters.recipeTypes.join(', '), onRemove: () => handleFiltersChange({ ...filters, recipeTypes: [] }) });
+  if (filters.recipeTypes?.length) activeFilterChips.push({ label: 'Categoria', value: filters.recipeTypes.join(', '), onRemove: () => handleFiltersChange({ ...filters, recipeTypes: [] }) });
   if (filters.sources?.length) activeFilterChips.push({ label: 'Fuente', value: filters.sources.join(', '), onRemove: () => handleFiltersChange({ ...filters, sources: undefined }) });
   if (filters.tags?.length) activeFilterChips.push({ label: 'Etiquetas', value: filters.tags.join(', '), onRemove: () => handleFiltersChange({ ...filters, tags: [] }) });
   if (filters.ingredients?.length) activeFilterChips.push({ label: 'Ingredientes', value: filters.ingredients.join(', '), onRemove: () => handleFiltersChange({ ...filters, ingredients: [] }) });
@@ -2318,7 +2323,7 @@ const Index = () => {
         window.speechSynthesis.cancel();
         setPlayingRecipeId(null);
         toast({
-          title: "ðŸ”‡ Audio pausado",
+          title: "Audio pausado",
           description: `"${recipe.title}"`,
         });
         return;
@@ -2390,12 +2395,12 @@ const Index = () => {
           });
         });
 
-        const prompt = `Genera un script para explicar esta receta de cocina. El script debe ser natural, entusiasta y fÃ¡cil de seguir. NO te presentes ni menciones tu nombre, simplemente explica la receta directamente. Los datos de la receta son:
+        const prompt = `Genera un script para explicar esta receta de cocina. El script debe ser natural, entusiasta y facil de seguir. NO te presentes ni menciones tu nombre, simplemente explica la receta directamente. Los datos de la receta son:
 
-TÃ­tulo: ${recipe.title}
-DescripciÃ³n: ${recipe.description || 'Sin descripciÃ³n'}
-Tiempo de preparaciÃ³n: ${recipe.prepTime} minutos
-Tiempo de cocciÃ³n: ${recipe.cookTime || 'No especificado'} minutos
+Titulo: ${recipe.title}
+Descripcion: ${recipe.description || 'Sin descripcion'}
+Tiempo de preparacion: ${recipe.prepTime} minutos
+Tiempo de coccion: ${recipe.cookTime || 'No especificado'} minutos
 Porciones: ${recipe.servings}
 Dificultad: ${recipe.difficulty}
 
@@ -2405,7 +2410,7 @@ ${ingredientsText}
 Instrucciones:
 ${instructionsText}
 
-IMPORTANTE: Si hay secciones en los ingredientes o instrucciones (por ejemplo "Para la masa", "Para el relleno"), menciÃ³nalas claramente en el script para que el oyente entienda que esta receta tiene mÃºltiples partes. Por ejemplo: "Para la masa necesitaremos..." o "Ahora vamos con el relleno...".
+IMPORTANTE: Si hay secciones en los ingredientes o instrucciones (por ejemplo "Para la masa", "Para el relleno"), mencionalas claramente en el script para que el oyente entienda que esta receta tiene multiples partes. Por ejemplo: "Para la masa necesitaremos..." o "Ahora vamos con el relleno...".
 
 Genera un script natural y conversacional explicando la receta paso a paso. Comienza directamente con la receta sin presentarte. Que sea fluido y agradable de escuchar.`;
 
@@ -2457,7 +2462,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           console.error('Error generating TTS script:', error);
           toast({
             title: "Error",
-            description: "No se pudo generar el script automÃ¡ticamente",
+            description: "No se pudo generar el script automaticamente",
             variant: "destructive",
           });
           return;
@@ -2487,7 +2492,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       utterance.onstart = () => {
         setPlayingRecipeId(recipe.id);
         toast({
-          title: "ðŸŽ§ Reproduciendo receta",
+          title: "Reproduciendo receta",
           description: `"${recipe.title}"`,
         });
       };
@@ -2499,7 +2504,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       utterance.onerror = () => {
         setPlayingRecipeId(null);
         toast({
-          title: "Error de reproducciÃ³n",
+          title: "Error de reproduccion",
           description: "No se pudo reproducir el audio",
           variant: "destructive",
         });
@@ -2527,7 +2532,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       case 2:
         return 'grid grid-cols-1 md:grid-cols-2 gap-6';
       case 3:
-        // En iPad (mdâ€“lg) queda en 2 columnas; 3 columnas reciÃ©n en desktop (xl).
+        // En iPad (md-lg) queda en 2 columnas; 3 columnas recien en desktop (xl).
         return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6';
       case 4:
         return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6';
@@ -2555,11 +2560,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
     }
   };
 
-  // En las galerÃ­as (colecciones, categorÃ­as, etc.) solo aplican columnas + Lista,
-  // no las vistas especÃ­ficas de recetas (Detalles, Ingredientes).
+  // En las galerias (colecciones, categorias, etc.) solo aplican columnas + Lista,
+  // no las vistas especificas de recetas (Detalles, Ingredientes).
   const inGallery = showCollectionsGallery || showCategoriesGallery || showSourcesGallery || showDishTypesGallery || showTagsGallery || showAuthorsGallery;
 
-  // Colecciones a mostrar en la galerÃ­a: filtradas por el buscador (solo nombre) y ordenadas.
+  // Colecciones a mostrar en la galeria: filtradas por el buscador (solo nombre) y ordenadas.
   const galleryCollections = (() => {
     let list = collections;
     if (showCollectionsGallery && searchTerm.trim()) {
@@ -2575,14 +2580,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
     });
   })();
 
-  // SelecciÃ³n masiva de colecciones (imprimir/eliminar), anÃ¡loga a la de recetas.
+  // Seleccion masiva de colecciones (imprimir/eliminar), analoga a la de recetas.
   const collectionSelectionMode = showCollectionsGallery && activeBulkPanel !== null;
   const selectedActionCollections = collections.filter((c) => selectedCollectionBulkIds.has(c.id));
   const handleToggleCollectionSelection = (
     id: string,
-    modifiers?: { shift?: boolean; ctrl?: boolean }
+    modifiersi: { shift?: boolean; ctrl?: boolean }
   ) => {
-    // SHIFT: seleccionar el rango consecutivo desde la Ãºltima colecciÃ³n clickeada.
+    // SHIFT: seleccionar el rango consecutivo desde la ultima coleccion clickeada.
     if (modifiers?.shift && lastSelectedCollectionId.current) {
       const ids = galleryCollections.map((c) => c.id);
       const from = ids.indexOf(lastSelectedCollectionId.current);
@@ -2623,7 +2628,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
     setSelectedCollectionBulkIds(allSel ? new Set() : new Set(ids));
   };
   const collectionsForPrint = () => selectedActionCollections.map((c) => ({ name: c.name, count: c.recipeCount, cover: collectionCovers[c.id] }));
-  // Abrir el diÃ¡logo de opciones de impresiÃ³n (tÃ­tulo, encabezado, pie, nÃºmero de pÃ¡gina y columnas).
+  // Abrir el dialogo de opciones de impresion (titulo, encabezado, pie, numero de pagina y columnas).
   const openGalleryPrint = (kind: 'cards' | 'list', label: string, items: PrintCollectionItem[]) => {
     if (!items.length) return;
     setGalleryPrintTitle('');
@@ -2651,7 +2656,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
   const handleBulkPrintCollectionCards = () => openGalleryPrint('cards', 'colecciones', collectionsForPrint());
   const handleBulkPrintCollectionList = () => openGalleryPrint('list', 'colecciones', collectionsForPrint());
 
-  // --- GalerÃ­a de tipos de comida: bÃºsqueda, orden y selecciÃ³n masiva (igual que colecciones) ---
+  // --- Galeria de tipos de comida: busqueda, orden y seleccion masiva (igual que colecciones) ---
   const galleryDishTypes = (() => {
     let list = dishTypeList;
     if (showDishTypesGallery && searchTerm.trim()) {
@@ -2670,7 +2675,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
   const selectedActionDishTypes = dishTypeList.filter((d) => selectedDishTypeBulkNames.has(d.name));
   const handleToggleDishTypeSelection = (
     name: string,
-    modifiers?: { shift?: boolean; ctrl?: boolean }
+    modifiersi: { shift?: boolean; ctrl?: boolean }
   ) => {
     if (modifiers?.shift && lastSelectedDishTypeName.current) {
       const names = galleryDishTypes.map((d) => d.name);
@@ -2704,7 +2709,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
   const handleBulkPrintDishTypeCards = () => openGalleryPrint('cards', 'tipos de comida', dishTypesForPrint());
   const handleBulkPrintDishTypeList = () => openGalleryPrint('list', 'tipos de comida', dishTypesForPrint());
 
-  // --- GalerÃ­a de categorÃ­as: bÃºsqueda, orden y selecciÃ³n masiva (igual que tipos de comida) ---
+  // --- Galeria de categorias: busqueda, orden y seleccion masiva (igual que tipos de comida) ---
   const galleryCategories = (() => {
     let list = categoryList;
     if (showCategoriesGallery && searchTerm.trim()) {
@@ -2723,7 +2728,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
   const selectedActionCategories = categoryList.filter((c) => selectedCategoryBulkNames.has(c.name));
   const handleToggleCategorySelection = (
     name: string,
-    modifiers?: { shift?: boolean; ctrl?: boolean }
+    modifiersi: { shift?: boolean; ctrl?: boolean }
   ) => {
     if (modifiers?.shift && lastSelectedCategoryName.current) {
       const names = galleryCategories.map((c) => c.name);
@@ -2754,10 +2759,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
     setSelectedCategoryBulkNames(allSel ? new Set() : new Set(names));
   };
   const categoriesForPrint = () => selectedActionCategories.map((c) => ({ name: c.name, count: c.count, cover: c.cover }));
-  const handleBulkPrintCategoryCards = () => openGalleryPrint('cards', 'categorÃ­as', categoriesForPrint());
-  const handleBulkPrintCategoryList = () => openGalleryPrint('list', 'categorÃ­as', categoriesForPrint());
+  const handleBulkPrintCategoryCards = () => openGalleryPrint('cards', 'categorias', categoriesForPrint());
+  const handleBulkPrintCategoryList = () => openGalleryPrint('list', 'categorias', categoriesForPrint());
 
-  // --- GalerÃ­a de fuentes: bÃºsqueda, orden y selecciÃ³n masiva (igual que categorÃ­as) ---
+  // --- Galeria de fuentes: busqueda, orden y seleccion masiva (igual que categorias) ---
   const gallerySources = (() => {
     let list = sourceList;
     if (showSourcesGallery && searchTerm.trim()) {
@@ -2776,7 +2781,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
   const selectedActionSources = sourceList.filter((s) => selectedSourceBulkNames.has(s.name));
   const handleToggleSourceSelection = (
     name: string,
-    modifiers?: { shift?: boolean; ctrl?: boolean }
+    modifiersi: { shift?: boolean; ctrl?: boolean }
   ) => {
     if (modifiers?.shift && lastSelectedSourceName.current) {
       const names = gallerySources.map((s) => s.name);
@@ -2810,7 +2815,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
   const handleBulkPrintSourceCards = () => openGalleryPrint('cards', 'fuentes', sourcesForPrint());
   const handleBulkPrintSourceList = () => openGalleryPrint('list', 'fuentes', sourcesForPrint());
 
-  // --- GalerÃ­a de etiquetas: bÃºsqueda, orden y selecciÃ³n masiva (igual que fuentes) ---
+  // --- Galeria de etiquetas: busqueda, orden y seleccion masiva (igual que fuentes) ---
   const galleryTags = (() => {
     let list = tagList;
     if (showTagsGallery && searchTerm.trim()) {
@@ -2829,7 +2834,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
   const selectedActionTags = tagList.filter((t) => selectedTagBulkNames.has(t.name));
   const handleToggleTagSelection = (
     name: string,
-    modifiers?: { shift?: boolean; ctrl?: boolean }
+    modifiersi: { shift?: boolean; ctrl?: boolean }
   ) => {
     if (modifiers?.shift && lastSelectedTagName.current) {
       const names = galleryTags.map((t) => t.name);
@@ -2880,7 +2885,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
     } catch (error) {
       toast({
         title: "No se pudieron eliminar las etiquetas",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     } finally {
@@ -2906,14 +2911,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
     } catch (error) {
       toast({
         title: "No se pudieron eliminar las fuentes",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     } finally {
       setBulkDeleteSourcesOpen(false);
     }
   };
-  // Eliminar varias categorÃ­as seleccionadas (las recetas se mantienen).
+  // Eliminar varias categorias seleccionadas (las recetas se mantienen).
   const handleBulkDeleteCategories = async () => {
     const names = Array.from(selectedCategoryBulkNames);
     if (names.length === 0) return;
@@ -2924,14 +2929,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       await Promise.all(names.map((n) => api.categories.remove(n)));
       await Promise.all([reloadCategories(), loadRecipes()]);
       toast({
-        title: names.length > 1 ? `${names.length} categorÃ­as eliminadas` : "CategorÃ­a eliminada",
+        title: names.length > 1 ? `${names.length} categorias eliminadas` : "Categoria eliminada",
         description: "Las recetas siguen disponibles en tu lista.",
       });
       setSelectedCategoryBulkNames(new Set());
     } catch (error) {
       toast({
-        title: "No se pudieron eliminar las categorÃ­as",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        title: "No se pudieron eliminar las categorias",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     } finally {
@@ -2960,7 +2965,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
     } catch (error) {
       toast({
         title: "No se pudieron eliminar los tipos de comida",
-        description: error instanceof Error ? error.message : "IntentÃ¡ nuevamente",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
         variant: "destructive",
       });
     } finally {
@@ -2968,13 +2973,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
     }
   };
 
-  // Vista simplificada al abrir en ventana nueva (colecciÃ³n/categorÃ­a/fuente/tipo):
-  // header solo con logo + Cerrar y sin sidebar (el toolbar con tÃ­tulo y botones sÃ­ se muestra).
+  // Vista simplificada al abrir en ventana nueva (coleccion/categoria/fuente/tipo):
+  // header solo con logo + Cerrar y sin sidebar (el toolbar con titulo y botones si se muestra).
   const isItemWindow = ['collection', 'categoria', 'fuente', 'tipo', 'etiqueta'].some(
     (k) => new URLSearchParams(window.location.search).has(k)
   );
 
-  // Panel lateral reutilizable (aside en desktop + cajÃ³n en mobile/iPad).
+  // Panel lateral reutilizable (aside en desktop + cajon en mobile/iPad).
   const collectionsSidebarNode = (
     <CollectionsSidebar
       collections={collections}
@@ -3046,6 +3051,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         setShowSourcesGallery(false);
         setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
         const isActive = filters.sources?.length === 1 && filters.sources[0] === name;
+        if (!isActive) saveRecentSource(name);
         handleFiltersChange({ ...filters, sources: isActive ? undefined : [name], collectionId: undefined, recipeTypes: [], dishType: undefined, dishTypes: [] });
       }}
       onShowSources={() => { setShowHero(false); setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowSourcesGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
@@ -3099,14 +3105,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           style={{ top: 'var(--tastebox-header-height, 113px)' }}
         >
           <div className="text-left xl:w-[300px] xl:shrink-0">
-            {/* En tablet (iPad portrait): tÃ­tulo a la izquierda y "Mostrando" a la derecha, en una lÃ­nea.
-                En desktop (lg+) el tÃ­tulo queda a la izquierda y los botones a la derecha. */}
+            {/* En tablet (iPad portrait): titulo a la izquierda y "Mostrando" a la derecha, en una linea.
+                En desktop (lg+) el titulo queda a la izquierda y los botones a la derecha. */}
             <div className="flex items-start gap-2">
             <button
               type="button"
               onClick={handleMenuButton}
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              title="Mostrar/ocultar secciones (colecciones, categorÃ­as, favoritas, etc.)"
+              title="Mostrar/ocultar secciones (colecciones, categorias, favoritas, etc.)"
               aria-label="Mostrar u ocultar secciones"
             >
               <Menu className="h-5 w-5" />
@@ -3116,7 +3122,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               {showCollectionsGallery
                 ? 'Mis Colecciones'
                 : showCategoriesGallery
-                  ? 'CategorÃ­as'
+                  ? 'Categorias'
                   : showSourcesGallery
                     ? 'Fuentes'
                     : showDishTypesGallery
@@ -3133,7 +3139,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               {showCollectionsGallery
                 ? `${collections.length} coleccion${collections.length !== 1 ? 'es' : ''}`
                 : showCategoriesGallery
-                  ? `${categoryList.length} categorÃ­a${categoryList.length !== 1 ? 's' : ''}`
+                  ? `${categoryList.length} categoria${categoryList.length !== 1 ? 's' : ''}`
                   : showSourcesGallery
                     ? `${sourceList.length} fuente${sourceList.length !== 1 ? 's' : ''}`
                     : showDishTypesGallery
@@ -3175,7 +3181,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             )}
           </div>
           <div className={`grid w-full gap-x-4 gap-y-1 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'grid-cols-[1fr_auto_auto]' : 'grid-cols-[1fr_auto_auto_auto]'}`}>
-            {/* Search input (multi-palabra: escribÃ­ y Enter agrega una palabra clave) */}
+            {/* Search input (multi-palabra: escrib? y Enter agrega una palabra clave) */}
             <div className={`flex flex-col gap-1 ${showCollectionsGallery || showDishTypesGallery ? 'col-span-1' : 'col-span-1'} ml-0 md:ml-1 xl:ml-2`}>
               <div className={`toolbar-search-field relative rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'md:w-full xl:w-[330px]' : 'md:w-full xl:w-[330px]'}`}>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -3202,8 +3208,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     type="button"
                     onClick={() => setSearchTerm('')}
                     className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    aria-label="Borrar bÃºsqueda"
-                    title="Borrar bÃºsqueda"
+                    aria-label="Borrar busqueda"
+                    title="Borrar busqueda"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -3700,7 +3706,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 </div>
               </div>
 
-              {/* Fila 1: ColecciÃ³n + Tipo de comida + CategorÃ­as (renglÃ³n 1) / Fuente + Etiquetas + Ingredientes (renglÃ³n 2) */}
+              {/* Fila 1: Coleccion + Tipo de comida + Categorias (renglon 1) / Fuente + Etiquetas + Ingredientes (renglon 2) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 gap-y-0 [&_button]:text-[13px] [&_input]:text-[13px] [&_.justify-between]:h-9 [&_input]:h-9">
                 <div>
                   <div className="-mb-1.5 flex items-center justify-between">
@@ -3952,7 +3958,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
         )}
 
-        {/* Panel de impresiÃ³n de COLECCIONES */}
+        {/* Panel de impresion de COLECCIONES */}
         {showCollectionsGallery && activeBulkPanel === 'print' && (
             <div
               className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
@@ -3980,7 +3986,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   </p>
                 </div>
                 <div className="flex flex-col gap-4">
-                  {/* Fila 1: selecciÃ³n */}
+                  {/* Fila 1: seleccion */}
                   <div className="flex flex-wrap justify-center gap-2">
                     <Button
                       type="button"
@@ -4040,7 +4046,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
         )}
 
-        {/* Panel de eliminaciÃ³n de COLECCIONES */}
+        {/* Panel de eliminacion de COLECCIONES */}
         {showCollectionsGallery && activeBulkPanel === 'delete' && (
             <div
               className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
@@ -4111,7 +4117,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
         )}
 
-        {/* Panel de impresiÃ³n de TIPOS DE RECETA */}
+        {/* Panel de impresion de TIPOS DE RECETA */}
         {showDishTypesGallery && activeBulkPanel === 'print' && (
             <div
               className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
@@ -4139,7 +4145,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   </p>
                 </div>
                 <div className="flex flex-col gap-4">
-                  {/* Fila 1: selecciÃ³n */}
+                  {/* Fila 1: seleccion */}
                   <div className="flex flex-wrap justify-center gap-2">
                     <Button
                       type="button"
@@ -4199,7 +4205,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
         )}
 
-        {/* Panel de eliminaciÃ³n de TIPOS DE RECETA */}
+        {/* Panel de eliminacion de TIPOS DE RECETA */}
         {showDishTypesGallery && activeBulkPanel === 'delete' && (
             <div
               className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
@@ -4270,7 +4276,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
         )}
 
-        {/* Panel de impresiÃ³n de CATEGORÃAS */}
+        {/* Panel de impresion de CATEGORIAS */}
         {showCategoriesGallery && activeBulkPanel === 'print' && (
             <div
               className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
@@ -4289,11 +4295,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 <div className="absolute left-0 top-1/2 hidden -translate-y-1/2 lg:block">
                   <h3 className="flex items-center gap-2 font-medium text-foreground">
                     <Printer className="h-4 w-4" />
-                    Imprimir categorÃ­as
+                    Imprimir categorias
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {selectedCategoryBulkNames.size
-                      ? `${selectedCategoryBulkNames.size} categorÃ­a${selectedCategoryBulkNames.size > 1 ? "s seleccionadas" : " seleccionada"}`
+                      ? `${selectedCategoryBulkNames.size} categoria${selectedCategoryBulkNames.size > 1 ? "s seleccionadas" : " seleccionada"}`
                       : "Selecciona las categorias"}
                   </p>
                 </div>
@@ -4356,7 +4362,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
         )}
 
-        {/* Panel de eliminaciÃ³n de CATEGORÃAS */}
+        {/* Panel de eliminacion de CATEGORIAS */}
         {showCategoriesGallery && activeBulkPanel === 'delete' && (
             <div
               className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
@@ -4375,11 +4381,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 <div className="absolute left-0 top-1/2 hidden -translate-y-1/2 lg:block">
                   <h3 className="flex items-center gap-2 font-medium text-foreground">
                     <Trash2 className="h-4 w-4" />
-                    Eliminar categorÃ­as
+                    Eliminar categorias
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {selectedCategoryBulkNames.size
-                      ? `${selectedCategoryBulkNames.size} categorÃ­a${selectedCategoryBulkNames.size > 1 ? "s seleccionadas" : " seleccionada"}`
+                      ? `${selectedCategoryBulkNames.size} categoria${selectedCategoryBulkNames.size > 1 ? "s seleccionadas" : " seleccionada"}`
                       : "Selecciona las categorias"}
                   </p>
                 </div>
@@ -4427,7 +4433,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
         )}
 
-        {/* Panel de impresiÃ³n de FUENTES */}
+        {/* Panel de impresion de FUENTES */}
         {showSourcesGallery && activeBulkPanel === 'print' && (
             <div
               className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
@@ -4513,7 +4519,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
         )}
 
-        {/* Panel de eliminaciÃ³n de FUENTES */}
+        {/* Panel de eliminacion de FUENTES */}
         {showSourcesGallery && activeBulkPanel === 'delete' && (
             <div
               className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
@@ -4584,7 +4590,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
         )}
 
-        {/* Panel de impresiÃ³n de ETIQUETAS */}
+        {/* Panel de impresion de ETIQUETAS */}
         {showTagsGallery && activeBulkPanel === 'print' && (
             <div
               className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
@@ -4670,7 +4676,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
         )}
 
-        {/* Panel de eliminaciÃ³n de ETIQUETAS */}
+        {/* Panel de eliminacion de ETIQUETAS */}
         {showTagsGallery && activeBulkPanel === 'delete' && (
             <div
               className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
@@ -4768,7 +4774,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   </p>
                 </div>
                 <div className="flex flex-col gap-4">
-                  {/* Fila 1: selecciÃ³n */}
+                  {/* Fila 1: seleccion */}
                   <div className="flex flex-wrap justify-center gap-2">
                     <Button
                       type="button"
@@ -4777,7 +4783,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       className="w-auto text-xs sm:w-44 xl:w-48"
                       onClick={handleToggleAllVisibleRecipes}
                       disabled={filteredRecipes.length === 0 || bulkAction !== null}
-                      title="HacÃ© clic en las recetas deseadas. Si querÃ©s seleccionar varias, marcÃ¡ la primera, pulsÃ¡ SHIFT y marcÃ¡ la Ãºltima."
+                      title="Hace clic en las recetas deseadas. Si queres seleccionar varias, marca la primera, pulsi SHIFT y marca la ultima."
                     >
                       <Check className="mr-2 h-4 w-4 shrink-0" />
                       {(() => {
@@ -4797,7 +4803,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       className="w-auto text-xs sm:w-44 xl:w-48"
                       onClick={handleSelectAllRecipes}
                       disabled={allFilteredRecipes.length === 0 || bulkAction !== null}
-                      title="HacÃ© clic en las recetas deseadas. Si querÃ©s seleccionar varias, marcÃ¡ la primera, pulsÃ¡ SHIFT y marcÃ¡ la Ãºltima."
+                      title="Hace clic en las recetas deseadas. Si queres seleccionar varias, marca la primera, pulsi SHIFT y marca la ultima."
                     >
                       <ListChecks className="mr-2 h-4 w-4 shrink-0" />
                       {(() => {
@@ -4824,7 +4830,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       <span className="hidden sm:inline">Quitar seleccion</span>
                     </Button>
                   </div>
-                  {/* Fila 2: acciones segÃºn el panel (imprimir o eliminar), alineadas a la derecha */}
+                  {/* Fila 2: acciones segun el panel (imprimir o eliminar), alineadas a la derecha */}
                   <div className="flex flex-wrap justify-center gap-2">
                     {activeBulkPanel === 'print' && (<>
                     <Button
@@ -5037,7 +5043,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       </div>
                     </button>
 
-                    {/* MenÃº de tres puntitos */}
+                    {/* Men? de tres puntitos */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -5084,7 +5090,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             )
           ) : (
             <div className="py-12 text-center">
-              <div className="mb-4 text-6xl">ðŸ“š</div>
+              <Tag className="mx-auto mb-4 h-14 w-14 text-muted-foreground" />
               <h3 className="mb-2 text-xl font-semibold text-foreground">Todavia no tenes colecciones</h3>
               <p className="text-muted-foreground">Guarda recetas en una coleccion para verlas aca.</p>
             </div>
@@ -5099,7 +5105,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     <button
                       type="button"
                       onClick={(e) => handleToggleCategorySelection(category.name, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey })}
-                      aria-label={selectedCategoryBulkNames.has(category.name) ? 'Quitar seleccion' : 'Seleccionar categorÃ­a'}
+                      aria-label={selectedCategoryBulkNames.has(category.name) ? 'Quitar seleccion' : 'Seleccionar categoria'}
                       className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${selectedCategoryBulkNames.has(category.name) ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 text-transparent'}`}
                     >
                       <Check className="h-3.5 w-3.5" />
@@ -5127,7 +5133,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   </button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Opciones de la categorÃ­a">
+                      <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Opciones de la categoria">
                         <MoreVertical className="h-4 w-4" />
                       </button>
                     </DropdownMenuTrigger>
@@ -5199,7 +5205,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         type="button"
                         onClick={(e) => e.stopPropagation()}
                         className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-md bg-white/50 text-gray-600 shadow-sm transition-colors hover:bg-white/70"
-                        aria-label="Opciones de la categorÃ­a"
+                        aria-label="Opciones de la categoria"
                       >
                         <MoreVertical className="h-4 w-4" />
                       </button>
@@ -5229,9 +5235,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             )
           ) : (
             <div className="py-12 text-center">
-              <div className="mb-4 text-6xl">ðŸ·ï¸</div>
-              <h3 className="mb-2 text-xl font-semibold text-foreground">TodavÃ­a no hay categorÃ­as</h3>
-              <p className="text-muted-foreground">AsignÃ¡ un tipo a tus recetas para verlas agrupadas acÃ¡.</p>
+              <Tag className="mx-auto mb-4 h-14 w-14 text-muted-foreground" />
+              <h3 className="mb-2 text-xl font-semibold text-foreground">Todavia no hay categorias</h3>
+              <p className="text-muted-foreground">Asigna un tipo a tus recetas para verlas agrupadas aca.</p>
             </div>
           )
         ) : showSourcesGallery ? (
@@ -5255,6 +5261,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     onClick={(e) => {
                       if (sourceSelectionMode) { handleToggleSourceSelection(source.name, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey }); return; }
                       setShowSourcesGallery(false);
+                      saveRecentSource(source.name);
                       handleFiltersChange({ ...filters, sources: [source.name] });
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
@@ -5314,6 +5321,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     onClick={(e) => {
                       if (sourceSelectionMode) { handleToggleSourceSelection(source.name, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey }); return; }
                       setShowSourcesGallery(false);
+                      saveRecentSource(source.name);
                       handleFiltersChange({ ...filters, sources: [source.name] });
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
@@ -5372,9 +5380,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             )
           ) : (
             <div className="py-12 text-center">
-              <div className="mb-4 text-6xl">ðŸ”—</div>
-              <h3 className="mb-2 text-xl font-semibold text-foreground">TodavÃ­a no hay fuentes</h3>
-              <p className="text-muted-foreground">Las recetas importadas con su URL de origen aparecerÃ¡n acÃ¡.</p>
+              <Tag className="mx-auto mb-4 h-14 w-14 text-muted-foreground" />
+              <h3 className="mb-2 text-xl font-semibold text-foreground">Todavia no hay fuentes</h3>
+              <p className="text-muted-foreground">Las recetas importadas con su URL de origen apareceran aca.</p>
             </div>
           )
         ) : showTagsGallery ? (
@@ -5515,9 +5523,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             )
           ) : (
             <div className="py-12 text-center">
-              <div className="mb-4 text-6xl">ðŸ·ï¸</div>
-              <h3 className="mb-2 text-xl font-semibold text-foreground">TodavÃ­a no hay etiquetas</h3>
-              <p className="text-muted-foreground">AgregÃ¡ etiquetas a tus recetas para verlas agrupadas acÃ¡.</p>
+              <Tag className="mx-auto mb-4 h-14 w-14 text-muted-foreground" />
+              <h3 className="mb-2 text-xl font-semibold text-foreground">Todavia no hay etiquetas</h3>
+              <p className="text-muted-foreground">Agreg? etiquetas a tus recetas para verlas agrupadas aca.</p>
             </div>
           )
         ) : showDishTypesGallery ? (
@@ -5623,7 +5631,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     </div>
                   </button>
 
-                  {/* MenÃº de tres puntitos */}
+                  {/* Men? de tres puntitos */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
@@ -5668,9 +5676,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             )
           ) : (
             <div className="py-12 text-center">
-              <div className="mb-4 text-6xl">ðŸ½ï¸</div>
-              <h3 className="mb-2 text-xl font-semibold text-foreground">TodavÃ­a no hay tipos de comida</h3>
-              <p className="text-muted-foreground">AsignÃ¡ un tipo de comida a tus recetas para verlos acÃ¡.</p>
+              <Tag className="mx-auto mb-4 h-14 w-14 text-muted-foreground" />
+              <h3 className="mb-2 text-xl font-semibold text-foreground">Todavia no hay tipos de comida</h3>
+              <p className="text-muted-foreground">Asigna un tipo de comida a tus recetas para verlos aca.</p>
             </div>
           )
         ) : showAuthorsGallery ? (
@@ -5734,9 +5742,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
           ) : (
             <div className="py-12 text-center">
-              <div className="mb-4 text-6xl">âœï¸</div>
-              <h3 className="mb-2 text-xl font-semibold text-foreground">TodavÃ­a no hay autores</h3>
-              <p className="text-muted-foreground">AsignÃ¡ un autor a tus recetas para verlos acÃ¡.</p>
+              <Tag className="mx-auto mb-4 h-14 w-14 text-muted-foreground" />
+              <h3 className="mb-2 text-xl font-semibold text-foreground">Todavia no hay autores</h3>
+              <p className="text-muted-foreground">Asigna un autor a tus recetas para verlos aca.</p>
             </div>
           )
         ) : isLoadingRecipes ? (
@@ -5803,7 +5811,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         ? <img src={ingImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
                     </span>
-                    {/* Medio: tÃ­tulo, fuente, iconos, tipo y categorÃ­as */}
+                    {/* Medio: titulo, fuente, iconos, tipo y categorias */}
                     <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <span className="block text-lg font-medium leading-tight text-foreground">{recipe.title}</span>
                       {ingSource && (
@@ -5812,7 +5820,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       {/* Tiempos y porciones */}
                       <span className="flex items-center gap-3 text-sm text-muted-foreground">
                         {!!recipe.prepTime && recipe.prepTime > 0 && (
-                          <span className="flex items-center gap-1 whitespace-nowrap" title="Tiempo de preparaciÃ³n">
+                          <span className="flex items-center gap-1 whitespace-nowrap" title="Tiempo de preparacion">
                             <ChefHat className="h-4 w-4" />{recipe.prepTime} min
                           </span>
                         )}
@@ -5827,7 +5835,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           </span>
                         )}
                       </span>
-                      {/* Iconos de caracterÃ­sticas */}
+                      {/* Iconos de caracteristicas */}
                       {(recipe.thermomix || recipe.airFryer || recipe.cooked || recipe.featured || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian) && (
                         <span className="flex flex-wrap items-center gap-2">
                           {recipe.thermomix && (
@@ -5859,17 +5867,17 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           )}
                         </span>
                       )}
-                      {/* Tipo de comida y categorÃ­as */}
+                      {/* Tipo de comida y categorias */}
                       <span className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                         {recipe.dishType?.trim() && (
                           <span><span className="font-semibold text-foreground">Tipo de comida:</span> {recipe.dishType}</span>
                         )}
                         {ingCategories.length > 0 && (
-                          <span><span className="font-semibold text-foreground">CategorÃ­a:</span> {ingCategories.join(', ')}</span>
+                          <span><span className="font-semibold text-foreground">Categoria:</span> {ingCategories.join(', ')}</span>
                         )}
                       </span>
                     </span>
-                    {/* Derecha: ingredientes con fuente mÃ¡s pequeÃ±a */}
+                    {/* Derecha: ingredientes con fuente mas pequena */}
                     <span className="hidden shrink-0 sm:block sm:w-60 md:w-72">
                       {recipe.ingredients && recipe.ingredients.length > 0 ? (
                         <ul className="space-y-1 text-[11px] leading-snug text-muted-foreground">
@@ -5924,7 +5932,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       {/* Fila 1: tiempos y porciones */}
                       <span className="flex items-center gap-3 text-base text-muted-foreground">
                         {!!recipe.prepTime && recipe.prepTime > 0 && (
-                          <span className="flex items-center gap-1 whitespace-nowrap" title="Tiempo de preparaciÃ³n">
+                          <span className="flex items-center gap-1 whitespace-nowrap" title="Tiempo de preparacion">
                             <ChefHat className="h-5 w-5" />{recipe.prepTime} min
                           </span>
                         )}
@@ -5939,7 +5947,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           </span>
                         )}
                       </span>
-                      {/* Fila 2: iconos de caracterÃ­sticas (solo los activos), en orden:
+                      {/* Fila 2: iconos de caracteristicas (solo los activos), en orden:
                           thermomix, air fryer, sin gluten, keto, low carb, proteica, vegetariana, cocinada, favorita */}
                       {(recipe.thermomix || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.cooked || recipe.featured) && (
                         <span className="flex items-center gap-2">
@@ -6008,6 +6016,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   collectionNames={gridColumns === 1 ? collections.filter(c => c.recipeIds.includes(recipe.id)).map(c => c.name) : undefined}
                   dishTypeOptions={gridColumns === 1 ? dishTypeList.map(d => d.name) : undefined}
                   categoryOptions={gridColumns === 1 ? categoryList.map(c => c.name) : undefined}
+                  sourceOptions={gridColumns === 1 ? sourceList.map(s => s.name) : undefined}
                   allCollections={gridColumns === 1 ? collections.map(c => ({ id: c.id, name: c.name })) : undefined}
                   onInlineSave={gridColumns === 1 ? handleInlineSaveFields : undefined}
                   onToggleFeature={handleToggleFeature}
@@ -6130,7 +6139,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         onApplied={() => { loadRecipes(); setSelectedRecipeIds(new Set()); setActiveBulkPanel(null); }}
       />
 
-      {/* Panel lateral como cajÃ³n en mobile/iPad (en desktop se muestra fijo a la izquierda) */}
+      {/* Panel lateral como cajon en mobile/iPad (en desktop se muestra fijo a la izquierda) */}
       <Sheet open={showMobileSidebar} onOpenChange={setShowMobileSidebar}>
         <SheetContent side="left" className="w-72 overflow-y-auto p-0 sm:w-80">
           <SheetHeader className="border-b px-4 py-3">
@@ -6200,11 +6209,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Trash2 className="h-5 w-5 text-destructive" />
-              Â¿Eliminar recetas?
+              ?Eliminar recetasi
             </AlertDialogTitle>
             <AlertDialogDescription>
               Vas a eliminar {selectedRecipeIds.size} receta{selectedRecipeIds.size > 1 ? "s" : ""}.
-              Esta acciÃ³n no se puede deshacer.
+              Esta accion no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6239,7 +6248,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       </footer>
 
 
-      {/* ConfirmaciÃ³n para eliminar una colecciÃ³n */}
+      {/* Confirmacion para eliminar una coleccion */}
       <AlertDialog open={!!editCollectionTarget} onOpenChange={(open) => { if (!open) { setEditCollectionTarget(null); setEditCollectionName(''); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -6335,7 +6344,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ConfirmaciÃ³n para eliminar varias colecciones */}
+      {/* Confirmacion para eliminar varias colecciones */}
       <AlertDialog open={bulkDeleteCollectionsOpen} onOpenChange={setBulkDeleteCollectionsOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -6356,13 +6365,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ConfirmaciÃ³n para eliminar varias fuentes */}
+      {/* Confirmacion para eliminar varias fuentes */}
       <AlertDialog open={bulkDeleteSourcesOpen} onOpenChange={setBulkDeleteSourcesOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar fuentes</AlertDialogTitle>
             <AlertDialogDescription>
-              Â¿Seguro que querÃ©s eliminar {selectedSourceBulkNames.size} fuente{selectedSourceBulkNames.size > 1 ? 's' : ''}? Las recetas no se eliminarÃ¡n, solo perderÃ¡n esta fuente.
+              Seguro que queres eliminar {selectedSourceBulkNames.size} fuente{selectedSourceBulkNames.size > 1 ? 's' : ''}? Las recetas no se eliminaran, solo perderan esta fuente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6377,13 +6386,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ConfirmaciÃ³n para eliminar varias etiquetas */}
+      {/* Confirmacion para eliminar varias etiquetas */}
       <AlertDialog open={bulkDeleteTagsOpen} onOpenChange={setBulkDeleteTagsOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar etiquetas</AlertDialogTitle>
             <AlertDialogDescription>
-              Â¿Seguro que querÃ©s eliminar {selectedTagBulkNames.size} etiqueta{selectedTagBulkNames.size > 1 ? 's' : ''}? Las recetas no se eliminarÃ¡n, solo perderÃ¡n esta etiqueta.
+              Seguro que queres eliminar {selectedTagBulkNames.size} etiqueta{selectedTagBulkNames.size > 1 ? 's' : ''}? Las recetas no se eliminaran, solo perderan esta etiqueta.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6398,13 +6407,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ConfirmaciÃ³n para eliminar varias categorÃ­as */}
+      {/* Confirmacion para eliminar varias categorias */}
       <AlertDialog open={bulkDeleteCategoriesOpen} onOpenChange={setBulkDeleteCategoriesOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar categorÃ­as</AlertDialogTitle>
+            <AlertDialogTitle>Eliminar categorias</AlertDialogTitle>
             <AlertDialogDescription>
-              Â¿Seguro que querÃ©s eliminar {selectedCategoryBulkNames.size} categorÃ­a{selectedCategoryBulkNames.size > 1 ? 's' : ''}? Las recetas no se eliminarÃ¡n, solo perderÃ¡n esta categorÃ­a.
+              Seguro que queres eliminar {selectedCategoryBulkNames.size} categoria{selectedCategoryBulkNames.size > 1 ? 's' : ''}? Las recetas no se eliminaran, solo perderan esta categoria.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6419,13 +6428,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ConfirmaciÃ³n para eliminar varios tipos de comida */}
+      {/* Confirmacion para eliminar varios tipos de comida */}
       <AlertDialog open={bulkDeleteDishTypesOpen} onOpenChange={setBulkDeleteDishTypesOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar tipos de comida</AlertDialogTitle>
             <AlertDialogDescription>
-              Â¿Seguro que querÃ©s eliminar {selectedDishTypeBulkNames.size} tipo{selectedDishTypeBulkNames.size > 1 ? 's' : ''} de comida? Las recetas no se eliminarÃ¡n, solo perderÃ¡n este tipo de comida.
+              Seguro que queres eliminar {selectedDishTypeBulkNames.size} tipo{selectedDishTypeBulkNames.size > 1 ? 's' : ''} de comida? Las recetas no se eliminaran, solo perderan este tipo de comida.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6457,7 +6466,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         }}
       />
 
-      {/* Input oculto para subir la portada de una categorÃ­a */}
+      {/* Input oculto para subir la portada de una categoria */}
       <input
         ref={categoryCoverInputRef}
         type="file"
@@ -6517,13 +6526,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         }}
       />
 
-      {/* ConfirmaciÃ³n para eliminar un tipo de comida */}
+      {/* Confirmacion para eliminar un tipo de comida */}
       <AlertDialog open={!!deleteDishTypeTarget} onOpenChange={(open) => { if (!open) setDeleteDishTypeTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar tipo de comida</AlertDialogTitle>
             <AlertDialogDescription>
-              Â¿Seguro que querÃ©s eliminar "{deleteDishTypeTarget}"? Las recetas no se eliminarÃ¡n, solo perderÃ¡n este tipo de comida.
+              Seguro que queres eliminar "{deleteDishTypeTarget}"? Las recetas no se eliminaran, solo perderan este tipo de comida.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6541,13 +6550,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ConfirmaciÃ³n para eliminar una categorÃ­a */}
+      {/* Confirmacion para eliminar una categoria */}
       <AlertDialog open={!!deleteCategoryTarget} onOpenChange={(open) => { if (!open) setDeleteCategoryTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar categorÃ­a</AlertDialogTitle>
+            <AlertDialogTitle>Eliminar categoria</AlertDialogTitle>
             <AlertDialogDescription>
-              Â¿Seguro que querÃ©s eliminar "{deleteCategoryTarget}"? Las recetas no se eliminarÃ¡n, solo perderÃ¡n esta categorÃ­a.
+              Seguro que queres eliminar "{deleteCategoryTarget}"? Las recetas no se eliminaran, solo perderan esta categoria.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6562,13 +6571,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ConfirmaciÃ³n para eliminar una fuente */}
+      {/* Confirmacion para eliminar una fuente */}
       <AlertDialog open={!!deleteSourceTarget} onOpenChange={(open) => { if (!open) setDeleteSourceTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar fuente</AlertDialogTitle>
             <AlertDialogDescription>
-              Â¿Seguro que querÃ©s eliminar "{deleteSourceTarget}"? Las recetas no se eliminarÃ¡n, solo perderÃ¡n esta fuente.
+              Seguro que queres eliminar "{deleteSourceTarget}"? Las recetas no se eliminaran, solo perderan esta fuente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6583,13 +6592,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ConfirmaciÃ³n para eliminar una etiqueta */}
+      {/* Confirmacion para eliminar una etiqueta */}
       <AlertDialog open={!!deleteTagTarget} onOpenChange={(open) => { if (!open) setDeleteTagTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar etiqueta</AlertDialogTitle>
             <AlertDialogDescription>
-              Â¿Seguro que querÃ©s eliminar "{deleteTagTarget}"? Las recetas no se eliminarÃ¡n, solo perderÃ¡n esta etiqueta.
+              Seguro que queres eliminar "{deleteTagTarget}"? Las recetas no se eliminaran, solo perderan esta etiqueta.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6604,13 +6613,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ConfirmaciÃ³n para eliminar un autor */}
+      {/* Confirmacion para eliminar un autor */}
       <AlertDialog open={!!deleteAuthorTarget} onOpenChange={(open) => { if (!open) setDeleteAuthorTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar autor</AlertDialogTitle>
             <AlertDialogDescription>
-              Â¿Seguro que querÃ©s eliminar "{deleteAuthorTarget}"? Las recetas no se eliminarÃ¡n, solo perderÃ¡n este autor.
+              Seguro que queres eliminar "{deleteAuthorTarget}"? Las recetas no se eliminaran, solo perderan este autor.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -6625,7 +6634,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* DiÃ¡logo para crear una nueva colecciÃ³n */}
+      {/* Dialogo para crear una nueva coleccion */}
       <AlertDialog open={showNewCollectionDialog} onOpenChange={(open) => { if (!open) { setShowNewCollectionDialog(false); resetNewCollectionDialog(); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -6666,13 +6675,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* DiÃ¡logo para crear una nueva fuente (con portada) */}
+      {/* Dialogo para crear una nueva fuente (con portada) */}
       <AlertDialog open={showNewSourceDialog} onOpenChange={(open) => { if (!open) { setShowNewSourceDialog(false); resetNewSourceDialog(); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Nueva fuente</AlertDialogTitle>
             <AlertDialogDescription>
-              IngresÃ¡ un nombre y, opcionalmente, elegÃ­ una portada para la nueva fuente.
+              Ingresi un nombre y, opcionalmente, elegi una portada para la nueva fuente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4">
@@ -6707,13 +6716,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* DiÃ¡logo para crear una nueva etiqueta (con portada) */}
+      {/* Dialogo para crear una nueva etiqueta (con portada) */}
       <AlertDialog open={showNewTagDialog} onOpenChange={(open) => { if (!open) { setShowNewTagDialog(false); resetNewTagDialog(); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Nueva etiqueta</AlertDialogTitle>
             <AlertDialogDescription>
-              IngresÃ¡ un nombre y, opcionalmente, elegÃ­ una portada para la nueva etiqueta.
+              Ingresi un nombre y, opcionalmente, elegi una portada para la nueva etiqueta.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4">
@@ -6748,13 +6757,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* DiÃ¡logo para crear una nueva categorÃ­a (con portada) */}
+      {/* Dialogo para crear una nueva categoria (con portada) */}
       <AlertDialog open={showNewCategoryDialog} onOpenChange={(open) => { if (!open) { setShowNewCategoryDialog(false); resetNewCategoryDialog(); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Nueva categorÃ­a</AlertDialogTitle>
+            <AlertDialogTitle>Nueva categoria</AlertDialogTitle>
             <AlertDialogDescription>
-              IngresÃ¡ un nombre y, opcionalmente, elegÃ­ una portada para la nueva categorÃ­a.
+              Ingresi un nombre y, opcionalmente, elegi una portada para la nueva categoria.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4">
@@ -6762,7 +6771,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && newCategoryName.trim()) { e.preventDefault(); void submitNewCategory(); } }}
-              placeholder="Nombre de la categorÃ­a"
+              placeholder="Nombre de la categoria"
               autoFocus
             />
             <div>
@@ -6789,7 +6798,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* DiÃ¡logo para crear un nuevo tipo de comida (con portada) */}
+      {/* Dialogo para crear un nuevo tipo de comida (con portada) */}
       <AlertDialog open={showNewDishTypeDialog} onOpenChange={(open) => { if (!open) { setShowNewDishTypeDialog(false); resetNewDishTypeDialog(); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -6830,13 +6839,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* DiÃ¡logo de opciones al imprimir tarjetas/lista de colecciones o tipos de comida */}
+      {/* Dialogo de opciones al imprimir tarjetas/lista de colecciones o tipos de comida */}
       <AlertDialog open={!!galleryPrint} onOpenChange={(open) => { if (!open) setGalleryPrint(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{galleryPrint?.kind === 'cards' ? 'Imprimir tarjetas' : 'Imprimir lista'}</AlertDialogTitle>
             <AlertDialogDescription>
-              Opcional: agregÃ¡ un tÃ­tulo, encabezado y pie de pÃ¡gina para la hoja a imprimir.
+              Opcional: agreg? un titulo, encabezado y pie de pagina para la hoja a imprimir.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3">
@@ -6860,12 +6869,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
             )}
             <div>
-              <Label htmlFor="gallery-print-title" className="mb-1.5 block text-sm font-medium">TÃ­tulo del documento</Label>
+              <Label htmlFor="gallery-print-title" className="mb-1.5 block text-sm font-medium">Titulo del documento</Label>
               <Input
                 id="gallery-print-title"
                 value={galleryPrintTitle}
                 onChange={(e) => setGalleryPrintTitle(e.target.value)}
-                placeholder="TÃ­tulo del documento (opcional)"
+                placeholder="Titulo del documento (opcional)"
               />
             </div>
             <div>
@@ -6878,12 +6887,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               />
             </div>
             <div>
-              <Label htmlFor="gallery-print-footer" className="mb-1.5 block text-sm font-medium">Pie de pÃ¡gina</Label>
+              <Label htmlFor="gallery-print-footer" className="mb-1.5 block text-sm font-medium">Pie de pagina</Label>
               <Input
                 id="gallery-print-footer"
                 value={galleryPrintFooter}
                 onChange={(e) => setGalleryPrintFooter(e.target.value)}
-                placeholder="Pie de pÃ¡gina (opcional)"
+                placeholder="Pie de pagina (opcional)"
               />
               <Button
                 type="button"
@@ -6893,7 +6902,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 onClick={() => setGalleryPrintPageNumber(v => !v)}
               >
                 {galleryPrintPageNumber && <Check className="mr-2 h-4 w-4" />}
-                Insertar nÃºmero de pÃ¡gina
+                Insertar numero de pagina
               </Button>
             </div>
           </div>
@@ -6907,13 +6916,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* DiÃ¡logo para cambiar la portada de una colecciÃ³n */}
+      {/* Dialogo para cambiar la portada de una coleccion */}
       <AlertDialog open={!!changeCoverCollection} onOpenChange={(open) => { if (!open) closeChangeCoverDialog(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cambiar portada de la coleccion</AlertDialogTitle>
             <AlertDialogDescription>
-              ElegÃ­ una portada para "{changeCoverCollection?.name}" desde tu PC, desde la web o arrastrÃ¡ndola.
+              Elegi una portada para "{changeCoverCollection?.name}" desde tu PC, desde la web o arrastrandola.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <CoverPicker
@@ -6936,13 +6945,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* DiÃ¡logo para imprimir lista: tÃ­tulo, encabezado y pie de pÃ¡gina */}
+      {/* Dialogo para imprimir lista: titulo, encabezado y pie de pagina */}
       <AlertDialog open={printListDialogOpen} onOpenChange={(open) => { if (!open) setPrintListDialogOpen(false); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Imprimir lista</AlertDialogTitle>
             <AlertDialogDescription>
-              Opcional: agregÃ¡ un tÃ­tulo, encabezado y pie de pÃ¡gina para la hoja a imprimir.
+              Opcional: agreg? un titulo, encabezado y pie de pagina para la hoja a imprimir.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3">
@@ -6970,16 +6979,16 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
             </div>
             <div>
-              <Label htmlFor="print-list-title" className="mb-1.5 block text-sm font-medium">TÃ­tulo</Label>
-              <Input id="print-list-title" value={printListTitle} onChange={(e) => setPrintListTitle(e.target.value)} placeholder="TÃ­tulo (opcional)" autoFocus />
+              <Label htmlFor="print-list-title" className="mb-1.5 block text-sm font-medium">Titulo</Label>
+              <Input id="print-list-title" value={printListTitle} onChange={(e) => setPrintListTitle(e.target.value)} placeholder="Titulo (opcional)" autoFocus />
             </div>
             <div>
               <Label htmlFor="print-list-header" className="mb-1.5 block text-sm font-medium">Encabezado</Label>
               <Input id="print-list-header" value={printListHeader} onChange={(e) => setPrintListHeader(e.target.value)} placeholder="Encabezado (opcional)" />
             </div>
             <div>
-              <Label htmlFor="print-list-footer" className="mb-1.5 block text-sm font-medium">Pie de pÃ¡gina</Label>
-              <Input id="print-list-footer" value={printListFooter} onChange={(e) => setPrintListFooter(e.target.value)} placeholder="Pie de pÃ¡gina (opcional)" />
+              <Label htmlFor="print-list-footer" className="mb-1.5 block text-sm font-medium">Pie de pagina</Label>
+              <Input id="print-list-footer" value={printListFooter} onChange={(e) => setPrintListFooter(e.target.value)} placeholder="Pie de pagina (opcional)" />
               <Button
                 type="button"
                 variant={printListPageNumber ? "default" : "outline"}
@@ -6988,7 +6997,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 onClick={() => setPrintListPageNumber(v => !v)}
               >
                 {printListPageNumber && <Check className="mr-2 h-4 w-4" />}
-                Insertar nÃºmero de pÃ¡gina
+                Insertar numero de pagina
               </Button>
             </div>
           </div>
@@ -7007,7 +7016,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <AlertDialogHeader>
             <AlertDialogTitle>Imprimir tarjetas</AlertDialogTitle>
             <AlertDialogDescription>
-              Opcional: agregÃ¡ un tÃ­tulo y un pie de pÃ¡gina para la hoja a imprimir.
+              Opcional: agreg? un titulo y un pie de pagina para la hoja a imprimir.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3">
@@ -7037,7 +7046,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   { key: 'source', label: 'Fuente' },
                   { key: 'difficulty', label: 'Dificultad' },
                   { key: 'dishType', label: 'Tipo de comida' },
-                  { key: 'category', label: 'CategorÃ­a' },
+                  { key: 'category', label: 'Categoria' },
                   { key: 'times', label: 'Tiempos y porciones' },
                   { key: 'icons', label: 'Iconos' },
                 ] as const).map(({ key, label }) => (
@@ -7053,14 +7062,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 ))}
               </div>
             </div>
-            {/* 3 - TÃ­tulo del documento */}
+            {/* 3 - Titulo del documento */}
             <div>
-              <Label htmlFor="print-cards-title" className="mb-1.5 block text-sm font-medium">TÃ­tulo del documento</Label>
+              <Label htmlFor="print-cards-title" className="mb-1.5 block text-sm font-medium">Titulo del documento</Label>
               <Input
                 id="print-cards-title"
                 value={printCardsTitle}
                 onChange={(e) => setPrintCardsTitle(e.target.value)}
-                placeholder="TÃ­tulo del documento (opcional)"
+                placeholder="Titulo del documento (opcional)"
               />
             </div>
             {/* 4 - Encabezado */}
@@ -7073,14 +7082,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 placeholder="Encabezado (opcional)"
               />
             </div>
-            {/* 5 - Pie de pÃ¡gina */}
+            {/* 5 - Pie de pagina */}
             <div>
-              <Label htmlFor="print-cards-footer" className="mb-1.5 block text-sm font-medium">Pie de pÃ¡gina</Label>
+              <Label htmlFor="print-cards-footer" className="mb-1.5 block text-sm font-medium">Pie de pagina</Label>
               <Input
                 id="print-cards-footer"
                 value={printCardsFooter}
                 onChange={(e) => setPrintCardsFooter(e.target.value)}
-                placeholder="Pie de pÃ¡gina (opcional)"
+                placeholder="Pie de pagina (opcional)"
               />
               <Button
                 type="button"
@@ -7090,7 +7099,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 onClick={() => setPrintCardsPageNumber(v => !v)}
               >
                 {printCardsPageNumber && <Check className="mr-2 h-4 w-4" />}
-                Insertar nÃºmero de pÃ¡gina
+                Insertar numero de pagina
               </Button>
             </div>
           </div>
@@ -7104,7 +7113,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Botones de navegaciÃ³n arriba/abajo */}
+      {/* Botones de navegacion arriba/abajo */}
       <div className="fixed bottom-8 right-6 z-50 flex flex-col gap-2">
         {showScrollTop && (
           <button
@@ -7121,8 +7130,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           type="button"
           onClick={() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })}
           className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_3px_10px_rgba(0,0,0,0.28)] transition-all hover:bg-primary/90 hover:scale-105 hover:shadow-[0_5px_14px_rgba(0,0,0,0.32)]"
-          aria-label="Ir a la Ãºltima receta"
-          title="Ir a la Ãºltima receta"
+          aria-label="Ir a la ultima receta"
+          title="Ir a la ultima receta"
         >
           <ArrowDown className="h-3.5 w-3.5" />
         </button>
@@ -7133,4 +7142,5 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 };
 
 export default Index;
+
 

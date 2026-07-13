@@ -418,7 +418,7 @@ ${lines.map(line => sectionHeading.test(line)
 
 function normalizeSuggestion(value: string): string {
   return cleanHtmlFromText(value)
-    .replace(/^\s*(?:\d+[.)]|[-*•·▪◦]|â€¢|\.)\s*/, '')
+    .replace(/^\s*(?:\d+[.)]|[-*????]|\.)\s*/, '')
     .trim();
 }
 

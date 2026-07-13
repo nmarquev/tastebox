@@ -322,7 +322,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent
-        className={`max-h-[90vh] overflow-y-auto ${step === 2 ? 'max-w-4xl' : 'max-w-2xl'}`}
+        className={`max-h-[94vh] overflow-y-auto ${step === 2 ? 'max-w-4xl' : 'max-w-2xl'}`}
         closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
@@ -405,12 +405,12 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
             </div>
           </div>
         ) : step === 2 ? (
-          <div className="space-y-4">
-            <p className="text-base font-semibold text-foreground">
+          <div className="space-y-2.5">
+            <p className="text-sm font-semibold text-foreground">
               Paso 2: Ingresar los campos en común de las recetas a importar (opcionales):
             </p>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
                   <div>
                     <Label>Fuente</Label>
                     <MultiSelectCombobox
@@ -506,11 +506,11 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                 </div>
 
                 {/* Características (switches) igual que en editar receta */}
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {featureToggles.map(({ field, label, icon }) => {
                     const active = Boolean(common[field]);
                     return (
-                      <label key={field} className="flex cursor-pointer items-center justify-between rounded-md border bg-background px-3 py-2">
+                      <label key={field} className="flex min-h-11 cursor-pointer items-center justify-between rounded-md border bg-background px-3 py-1.5">
                         <span className="flex items-center gap-2 text-sm">
                           <span className="text-muted-foreground">{icon}</span>
                           {label}
@@ -521,19 +521,15 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                   })}
                 </div>
 
-            {/* Botonera: (Confirmar datos / Limpiar datos / Cancelar) y debajo (Anterior / Siguiente) */}
-            <div className="space-y-2">
-              <div className="flex flex-wrap justify-end gap-2">
+            {/* Botonera */}
+            <div className="flex flex-wrap justify-end gap-2">
                 <Button type="button" size="sm" className="w-40" onClick={handleConfirmData}>
                   {confirmed ? <><Check className="mr-2 h-4 w-4" />Datos confirmados</> : 'Confirmar datos'}
                 </Button>
                 <Button type="button" size="sm" className="w-40" onClick={() => setCommon(EMPTY_COMMON)}>Limpiar datos</Button>
                 <Button type="button" size="sm" className="w-28" onClick={handleClose}>Cancelar</Button>
-              </div>
-              <div className="flex flex-wrap justify-end gap-2">
                 <Button type="button" size="sm" className="w-28" onClick={() => setStep(1)}>Anterior</Button>
                 <Button type="button" size="sm" className="w-28" onClick={() => setStep(3)}>Siguiente</Button>
-              </div>
             </div>
           </div>
         ) : step === 3 ? (

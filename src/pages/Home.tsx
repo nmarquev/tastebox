@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { api, RecipeCollection } from "@/services/api";
 import { Recipe } from "@/types/recipe";
 import { resolveImageUrl } from "@/utils/api";
-import { parseCategories } from "@/constants/categories";
-import { getRecentCategories } from "@/utils/recentCategories";
 import { getRecentRecipeIds } from "@/utils/recentRecipes";
+import { getRecentSources } from "@/utils/recentSources";
+import { getRecipeSource } from "@/utils/siteUtils";
 import { THEME_LOGOS } from "@/utils/themeLogos";
 import recetasTodas from "../../imagenes/banners/1-todas las recetas.jpg";
 import recetasFavoritas from "../../imagenes/banners/2-recetas favoritas.jpg";
@@ -61,20 +61,20 @@ const Home = () => {
   const [homeSearchTerms, setHomeSearchTerms] = useState<string[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [collections, setCollections] = useState<RecipeCollection[]>([]);
-  const [categoryCovers, setCategoryCovers] = useState<Record<string, string | null>>({});
+  const [sourceCovers, setSourceCovers] = useState<Record<string, string | null>>({});
   const [dishTypeCovers, setDishTypeCovers] = useState<Record<string, string | null>>({});
-  const [recentCategories, setRecentCategories] = useState<string[]>([]);
+  const [recentSources, setRecentSources] = useState<string[]>([]);
   const [recentRecipeIds, setRecentRecipeIds] = useState<string[]>([]);
   const [activeBanner, setActiveBanner] = useState(0);
 
   useEffect(() => {
-    setRecentCategories(getRecentCategories());
+    setRecentSources(getRecentSources());
     setRecentRecipeIds(getRecentRecipeIds());
 
     if (!user) {
       setRecipes([]);
       setCollections([]);
-      setCategoryCovers({});
+      setSourceCovers({});
       setDishTypeCovers({});
       return;
     }
@@ -82,13 +82,13 @@ const Home = () => {
     Promise.all([
       api.recipes.getAll().catch(() => [] as Recipe[]),
       api.collections.getAll().catch(() => [] as RecipeCollection[]),
-      api.categories.getAll().catch(() => [] as Array<{ name: string; coverImage: string | null }>),
+      api.sources.getAll().catch(() => [] as Array<{ name: string; coverImage: string | null }>),
       api.dishTypes.getAll().catch(() => [] as Array<{ name: string; coverImage: string | null }>),
-    ]).then(([loadedRecipes, loadedCollections, loadedCategories, loadedDishTypes]) => {
+    ]).then(([loadedRecipes, loadedCollections, loadedSources, loadedDishTypes]) => {
       setRecipes(loadedRecipes);
       setCollections(loadedCollections);
-      setCategoryCovers(
-        Object.fromEntries(loadedCategories.map((category) => [category.name, category.coverImage]))
+      setSourceCovers(
+        Object.fromEntries(loadedSources.map((source) => [source.name, source.coverImage]))
       );
       setDishTypeCovers(
         Object.fromEntries(loadedDishTypes.map((dishType) => [dishType.name, dishType.coverImage]))
@@ -104,21 +104,21 @@ const Home = () => {
     return () => window.clearInterval(bannerTimer);
   }, []);
 
-  const recentCategoryCards = useMemo(() => {
-    return recentCategories.slice(0, 8).map((name) => {
-      const coverFromCategory = categoryCovers[name];
-      const recipeCover = recipes.find((recipe) =>
-        parseCategories(recipe.recipeType).includes(name) && recipe.images?.[0]?.url
-      )?.images?.[0]?.url;
-      const count = recipes.filter((recipe) => parseCategories(recipe.recipeType).includes(name)).length;
+  const recentSourceCards = useMemo(() => {
+    return recentSources.slice(0, 8).map((name) => {
+      const coverFromSource = sourceCovers[name];
+      const recipesFromSource = recipes.filter((recipe) =>
+        getRecipeSource(recipe).toLocaleLowerCase("es") === name.toLocaleLowerCase("es")
+      );
+      const recipeCover = recipesFromSource.find((recipe) => recipe.images?.[0]?.url)?.images?.[0]?.url;
 
       return {
         name,
-        count,
-        cover: coverFromCategory || recipeCover || null,
+        count: recipesFromSource.length,
+        cover: coverFromSource || recipeCover || null,
       };
     });
-  }, [categoryCovers, recentCategories, recipes]);
+  }, [recentSources, recipes, sourceCovers]);
 
   const recentVisitedRecipes = useMemo(() => {
     return recentRecipeIds
@@ -139,7 +139,8 @@ const Home = () => {
           cover: collection.coverImage || recipeCover || null,
         };
       })
-      .sort((a, b) => b.recipeCount - a.recipeCount || a.name.localeCompare(b.name, "es"));
+      .sort((a, b) => b.recipeCount - a.recipeCount || a.name.localeCompare(b.name, "es"))
+      .slice(0, 10);
   }, [collections, recipes]);
 
   const dishTypeCards = useMemo(() => {
@@ -434,24 +435,24 @@ const Home = () => {
         </section>
 
         <section className="mt-10">
-          <h2 className="home-section-title mb-5 text-foreground">{"Lo m\u00e1s buscado"}</h2>
-          {recentCategoryCards.length > 0 ? (
+          <h2 className="home-section-title mb-5 text-foreground">Sitios preferidos</h2>
+          {recentSourceCards.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {recentCategoryCards.map((category) => (
+              {recentSourceCards.map((source) => (
                 <Link
-                  key={category.name}
-                  to={`/buscar?categoria=${encodeURIComponent(category.name)}`}
+                  key={source.name}
+                  to={`/buscar?fuente=${encodeURIComponent(source.name)}`}
                   className="group relative flex h-28 overflow-hidden rounded-lg bg-[#f3f0e8] p-4 text-left shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div className="relative z-10 flex max-w-[62%] flex-col justify-center">
-                    <span className="text-base font-semibold leading-tight text-foreground">{category.name}</span>
+                    <span className="text-base font-semibold leading-tight text-foreground">{source.name}</span>
                     <span className="mt-1 text-xs text-muted-foreground">
-                      {category.count} receta{category.count !== 1 ? "s" : ""}
+                      {source.count} receta{source.count !== 1 ? "s" : ""}
                     </span>
                   </div>
-                  {category.cover && (
+                  {source.cover && (
                     <img
-                      src={resolveImageUrl(category.cover)}
+                      src={resolveImageUrl(source.cover)}
                       alt=""
                       aria-hidden="true"
                       className="absolute bottom-0 right-0 h-full w-1/2 object-cover transition-transform group-hover:scale-105"
@@ -461,7 +462,7 @@ const Home = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{"Todav\u00eda no exploraste categor\u00edas."}</p>
+            <p className="text-sm text-muted-foreground">Todavia no exploraste fuentes.</p>
           )}
           <h3 className="home-section-title mb-5 mt-10 text-foreground">Recetas visitadas recientemente</h3>
           {recentVisitedRecipes.length > 0 ? (
@@ -526,21 +527,24 @@ const Home = () => {
                 <Link
                   key={dishType.name}
                   to={`/buscar?tipo=${encodeURIComponent(dishType.name)}`}
-                  className="group relative flex h-32 overflow-hidden rounded-lg border border-pink-100 bg-white p-4 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
+                  className="group relative flex h-24 overflow-hidden rounded-lg border border-pink-100 bg-[#f8f4f0] text-left shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
                 >
                   {dishType.cover ? (
                     <img
                       src={resolveImageUrl(dishType.cover)}
                       alt=""
                       aria-hidden="true"
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="absolute inset-0 h-full w-full object-cover opacity-70 saturate-[0.9] transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
-                    <span className="absolute inset-0 bg-[#f3f0e8]" aria-hidden="true" />
+                    <span className="absolute inset-0 bg-[radial-gradient(circle_at_85%_20%,rgba(226,102,102,0.24),transparent_34%),linear-gradient(135deg,#fff7f4,#edf7f4)]" aria-hidden="true" />
                   )}
-                  <span className="absolute inset-0 bg-black/25 transition-colors group-hover:bg-black/15" aria-hidden="true" />
-                  <span className="relative z-10 mt-auto rounded-md bg-white/90 px-3 py-1.5 text-foreground shadow-sm">
-                    {dishType.name}
+                  <span className="absolute inset-0 bg-white/15 transition-colors group-hover:bg-white/5" aria-hidden="true" />
+                  <span className="relative z-10 mt-auto flex w-full items-end justify-between gap-2 bg-white/88 px-3 py-2 backdrop-blur-sm">
+                    <span className="min-w-0 truncate text-sm font-semibold text-foreground">{dishType.name}</span>
+                    <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                      {dishType.count}
+                    </span>
                   </span>
                 </Link>
               ))}

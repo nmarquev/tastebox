@@ -48,7 +48,7 @@ export interface Recipe {
   sourceUrl?: string;
   source?: string;
   author?: string;
-  importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
+  importedFrom?: string;
   recipeType?: string;
   dishType?: string;
   createdAt: Date;
@@ -88,7 +88,7 @@ export interface RecipeImportResponse {
   sourceUrl?: string; // URL de origen (p.ej. Instagram reconstruida con el usuario)
   source?: string; // Fuente: de quién es la receta (texto libre)
   author?: string;
-  importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
+  importedFrom?: string;
   country?: string; // País de la receta (ej. extraído de Cookidoo)
   language?: string; // Idioma de la receta (Español/Inglés)
   tags: string[];
