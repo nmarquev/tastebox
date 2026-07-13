@@ -242,3 +242,45 @@ Para ejecutar el seed durante la publicacion:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/deploy-local.ps1 -Seed
 ```
+
+## Deploy automatico mediante webhook de GitHub
+
+Este mecanismo permite publicar haciendo solamente `git push origin main`. GitHub llama a un receptor privado del sitio y el servidor ejecuta `deploy.sh` despues de validar la firma del pedido.
+
+### 1. Instalacion unica en el servidor
+
+Desde la terminal de CloudPanel, con el usuario `tastebox`:
+
+```bash
+cd /home/tastebox/htdocs/tastebox.beweb.com.ar
+git pull origin main
+bash scripts/install-webhook.sh
+```
+
+El instalador crea un secreto en `~/.config/tastebox/webhook.env`, con permisos `600`, e inicia el receptor `tastebox-webhook` mediante PM2. Guardar el secreto que muestra al finalizar.
+
+### 2. Configurar Nginx
+
+Agregar al bloque `server` del sitio el contenido de `deploy-webhook.nginx.conf.example` y recargar Nginx. El receptor escucha solamente en `127.0.0.1:9010`; el unico acceso publico es la ruta exacta `/deploy/github`.
+
+### 3. Configurar GitHub
+
+En el repositorio, abrir **Settings > Webhooks > Add webhook** y completar:
+
+- Payload URL: `https://tastebox.beweb.com.ar/deploy/github`
+- Content type: `application/json`
+- Secret: el valor generado por el instalador
+- SSL verification: habilitada
+- Evento: `Just the push event`
+
+GitHub enviara primero un evento `ping`, que debe responder `200`. Los pushes a otras ramas y los eventos distintos de `push` son ignorados.
+
+### 4. Verificacion
+
+```bash
+pm2 status tastebox-webhook
+pm2 logs tastebox-webhook
+tail -f backend/logs/deploy-webhook.log
+```
+
+El deploy usa `flock`, por lo que nunca se ejecutan dos publicaciones al mismo tiempo. Una vez comprobado el webhook, cambiar `.github/workflows/deploy.yml` para dejar solamente `workflow_dispatch` y evitar un segundo deploy por SSH.
