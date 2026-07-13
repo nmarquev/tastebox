@@ -1,0 +1,7 @@
+interface:
+  display_name: "Publicar Tastebox"
+  short_description: "Publica Tastebox en el servidor de produccion"
+  default_prompt: "Usa $publicar para publicar Tastebox en el servidor de produccion."
+
+policy:
+  allow_implicit_invocation: true
