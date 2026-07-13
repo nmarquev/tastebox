@@ -77,9 +77,7 @@ else
 fi
 
 echo -e "${YELLOW}Verificando que el backend responda...${NC}"
-if [ -z "${BACKEND_PORT:-}" ]; then
-    BACKEND_PORT="$(node -e "require('./backend/node_modules/dotenv').config({ path: 'backend/.env' }); process.stdout.write(process.env.PORT || '5000')")"
-fi
+BACKEND_PORT="${DEPLOY_HEALTH_PORT:-$(node -e "require('./backend/node_modules/dotenv').config({ path: 'backend/.env', override: true }); process.stdout.write(process.env.PORT || '5000')")}"
 BACKEND_READY=0
 for attempt in {1..15}; do
     if curl --fail --silent --show-error "http://127.0.0.1:${BACKEND_PORT}/api/health" > /dev/null; then
