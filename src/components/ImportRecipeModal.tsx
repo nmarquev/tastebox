@@ -14,7 +14,7 @@ import { ThermomixSetting } from '@/components/ThermomixSetting';
 import { StepDescription, hasInlineThermomix } from '@/components/StepDescription';
 import { EditRecipeModal } from '@/components/EditRecipeModal';
 import { useDraggableDialog } from '@/hooks/useDraggableDialog';
-import { IMPORT_ERROR_TOAST_DURATION_MS } from '@/constants/toastDurations';
+import { SINGLE_IMPORT_ERROR_TOAST_DURATION_MS } from '@/constants/toastDurations';
 
 interface ImportRecipeModalProps {
   isOpen: boolean;
@@ -52,7 +52,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
         title: "URL requerida",
         description: "Por favor ingresa una URL válida",
         variant: "destructive",
-        duration: IMPORT_ERROR_TOAST_DURATION_MS,
+        duration: SINGLE_IMPORT_ERROR_TOAST_DURATION_MS,
       });
       return;
     }
@@ -149,7 +149,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
             title: "Información incompleta",
             description: response.warning,
             variant: "destructive",
-            duration: IMPORT_ERROR_TOAST_DURATION_MS,
+            duration: SINGLE_IMPORT_ERROR_TOAST_DURATION_MS,
           });
         }
       }
@@ -166,7 +166,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           : "Error al importar",
         description: message,
         variant: "destructive",
-        duration: IMPORT_ERROR_TOAST_DURATION_MS,
+        duration: SINGLE_IMPORT_ERROR_TOAST_DURATION_MS,
       });
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
@@ -196,7 +196,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           title: "Portapapeles vacío",
           description: "No hay una URL para pegar",
           variant: "destructive",
-          duration: IMPORT_ERROR_TOAST_DURATION_MS,
+          duration: SINGLE_IMPORT_ERROR_TOAST_DURATION_MS,
         });
         return;
       }
@@ -208,7 +208,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
         title: "No se pudo pegar",
         description: "Permití el acceso al portapapeles o pegá la URL manualmente",
         variant: "destructive",
-        duration: IMPORT_ERROR_TOAST_DURATION_MS,
+        duration: SINGLE_IMPORT_ERROR_TOAST_DURATION_MS,
       });
     }
   };
@@ -309,7 +309,14 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
               </form>
 
               <div className="text-sm text-muted-foreground">
-                <p>Pega la URL de una receta y nuestro sistema la analizará automáticamente para extraer:</p>
+                <p>Pega la URL de una receta:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>de una página web</li>
+                  <li>de una publicación de Instagram</li>
+                  <li>de una publicación de TikTok</li>
+                  <li>de un video de YouTube</li>
+                </ul>
+                <p className="mt-4">Nuestro sistema la analizará automáticamente para extraer:</p>
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>Nombre y descripción de la receta</li>
                   <li>Lista de ingredientes con cantidades</li>
