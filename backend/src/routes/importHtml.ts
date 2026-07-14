@@ -11,6 +11,7 @@ import { sanitizeSuggestionText } from '../utils/suggestions';
 import { mentionsGlutenFree } from '../utils/dietaryFeatures';
 import {
   isSocialRecipeUrl,
+  isYouTubeRecipeUrl,
   removeSocialInstructionPlaceholders,
   removeSocialPlaceholders,
   SOCIAL_INGREDIENTS_UNAVAILABLE,
@@ -59,10 +60,15 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     console.log('🤖 Extracting recipe data from HTML...');
     const recipeData = await llmService.extractRecipeFromHtml(html, url, renderedText);
 
-    if (isSocialRecipeUrl(url)) {
+    const isSocialRecipe = isSocialRecipeUrl(url);
+    const isYouTubeRecipe = isYouTubeRecipeUrl(url);
+    if (isSocialRecipe || isYouTubeRecipe) {
       recipeData.ingredients = removeSocialPlaceholders(recipeData.ingredients);
       recipeData.instructions = removeSocialInstructionPlaceholders(recipeData.instructions);
-      if (recipeData.ingredients.length === 0 && recipeData.instructions.length === 0) {
+      if (
+        (isSocialRecipe && recipeData.ingredients.length === 0 && recipeData.instructions.length === 0)
+        || (isYouTubeRecipe && recipeData.ingredients.length === 0)
+      ) {
         return res.status(422).json({
           success: false,
           code: 'SOCIAL_RECIPE_INGREDIENTS_UNAVAILABLE',

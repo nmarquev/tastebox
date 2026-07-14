@@ -13,6 +13,7 @@ import { mentionsGlutenFree } from '../utils/dietaryFeatures';
 import type { RecipeImage } from '../types/recipe';
 import {
   isSocialRecipeUrl,
+  isYouTubeRecipeUrl,
   removeSocialInstructionPlaceholders,
   removeSocialPlaceholders,
   SOCIAL_INGREDIENTS_UNAVAILABLE,
@@ -75,14 +76,19 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     console.log(`Found ${recipeData.images.length} images`);
 
     const isSocialRecipe = isSocialRecipeUrl(url);
-    if (isSocialRecipe) {
+    const isYouTubeRecipe = isYouTubeRecipeUrl(url);
+    const isStrictVideoRecipe = isSocialRecipe || isYouTubeRecipe;
+    if (isStrictVideoRecipe) {
       recipeData.ingredients = removeSocialPlaceholders(recipeData.ingredients);
       recipeData.instructions = removeSocialInstructionPlaceholders(recipeData.instructions);
     }
     const hasIngredients = (recipeData.ingredients?.length ?? 0) > 0;
     const hasInstructions = (recipeData.instructions?.length ?? 0) > 0;
 
-    if (isSocialRecipe && !hasIngredients && !hasInstructions) {
+    if (
+      (isSocialRecipe && !hasIngredients && !hasInstructions)
+      || (isYouTubeRecipe && !hasIngredients)
+    ) {
       return res.status(422).json({
         success: false,
         code: 'SOCIAL_RECIPE_INGREDIENTS_UNAVAILABLE',
@@ -101,6 +107,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       warning = 'Se importaron los ingredientes, pero los pasos de preparación no están disponibles en la publicación ni en sus primeros 5 comentarios.';
     } else if (isSocialRecipe && !hasIngredients && hasInstructions) {
       warning = 'Se importaron los pasos de preparación, pero los ingredientes no están disponibles en la publicación ni en sus primeros 5 comentarios.';
+    } else if (isYouTubeRecipe && hasIngredients && !hasInstructions) {
+      warning = 'Se importaron los ingredientes, pero los pasos de preparación no están disponibles en la descripción ni en los comentarios públicos del video.';
     }
 
     // Step 2: Download and process images

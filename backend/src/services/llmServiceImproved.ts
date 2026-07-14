@@ -4,6 +4,7 @@ import { RecipeImportResponse } from '../types/recipe';
 import axios from 'axios';
 import { createOpenAIClient } from '../config/openai';
 import { getModel, getVisionModel } from '../config/aiSettings';
+import { SOCIAL_INGREDIENTS_UNAVAILABLE } from '../utils/socialRecipeContent';
 
 // Parseo robusto del JSON devuelto por el LLM. Algunos modelos (DeepSeek, etc.) ignoran
 // response_format:json_object y devuelven el JSON envuelto en fences markdown (```json ... ```)
@@ -873,6 +874,7 @@ export class LLMServiceImproved {
   private isVideoUrl(url: string): boolean {
     const videoPatterns = [
       /youtube\.com\/watch/i,
+      /youtube\.com\/shorts\//i,
       /youtu\.be\//i,
       /instagram\.com\/p\//i,
       /instagram\.com\/reel\//i,
@@ -954,10 +956,10 @@ export class LLMServiceImproved {
     } catch (error) {
       console.error('❌ Extracción de video falló:', error);
 
-      // En Instagram/TikTok no fabricar ingredientes ni pasos cuando la plataforma
+      // En Instagram/TikTok/YouTube no fabricar ingredientes ni pasos cuando la plataforma
       // no permite leer el contenido público necesario.
-      if (/instagram\.com|tiktok\.com/i.test(url)) {
-        throw new Error('No están disponibles los ingredientes en la publicación ni en sus comentarios públicos');
+      if (/instagram\.com|tiktok\.com|youtube\.com|youtu\.be/i.test(url)) {
+        throw new Error(SOCIAL_INGREDIENTS_UNAVAILABLE);
       }
 
       // Create a fallback recipe based on other video URLs.
@@ -997,66 +999,197 @@ export class LLMServiceImproved {
   }
 
   private async extractYouTubeContent(url: string): Promise<string> {
-    console.log('📺 Obteniendo página de YouTube para transcripción/descripción...');
+    console.log('📺 Obteniendo descripción y comentarios públicos de YouTube...');
 
     try {
-      // Fetch the YouTube page to get video metadata, description, etc.
       const html = await this.fetchWebContent(url);
+      const playerData = this.extractYouTubeEmbeddedJson(html, [
+        'var ytInitialPlayerResponse =',
+        'ytInitialPlayerResponse =',
+        '"ytInitialPlayerResponse":',
+      ]) as { videoDetails?: { title?: string; shortDescription?: string } } | undefined;
+      const initialData = this.extractYouTubeEmbeddedJson(html, [
+        'var ytInitialData =',
+        'window["ytInitialData"] =',
+        'ytInitialData =',
+        '"ytInitialData":',
+      ]);
 
-      // Extract key information from YouTube page
-      // This includes title, description, and any available transcript information
-      const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
-      const descriptionMatch = html.match(/"shortDescription":"([^"]+)"/);
-      const transcriptMatch = html.match(/"captions":\s*{[^}]*"playerCaptionsTracklistRenderer"/);
-
-      let content = '';
-
-      if (titleMatch) {
-        content += `Title: ${titleMatch[1]}\n\n`;
+      const title = playerData?.videoDetails?.title
+        || cleanHtmlFromText(html.match(/<title>([^<]+)<\/title>/i)?.[1] || '');
+      let description = playerData?.videoDetails?.shortDescription || '';
+      if (!description) {
+        const encodedDescription = html.match(/"shortDescription":("(?:\\.|[^"\\])*")/)?.[1];
+        if (encodedDescription) {
+          try { description = JSON.parse(encodedDescription); } catch { /* campo opcional */ }
+        }
       }
 
-      if (descriptionMatch) {
-        // Decode JSON string
-        const description = descriptionMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-        content += `Description:\n${description}\n\n`;
-      }
-
-      if (transcriptMatch) {
-        content += 'Note: Video has captions/transcript available\n';
+      const comments = await this.extractYouTubeComments(html, initialData, url);
+      let content = title ? `Title: ${title}\n\n` : '';
+      if (description.trim()) content += `Description:\n${description.trim()}\n\n`;
+      if (comments.length) {
+        content += `Public comments:\n${comments.map(comment => `- ${comment}`).join('\n')}\n\n`;
       }
 
       // Extract video ID and add thumbnail image
-      const videoIdMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+      const videoIdMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([^&\n?#/]+)/);
       if (videoIdMatch) {
         const videoId = videoIdMatch[1];
-        // YouTube provides different quality thumbnails
         const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
         content += `\nVideo Thumbnail: ${thumbnailUrl}\n`;
         console.log('🖼️ Miniatura de YouTube extraída:', thumbnailUrl);
       }
 
-      // Also include relevant metadata from the page
-      const scriptMatches = html.match(/<script[^>]*>var ytInitialData = ({.*?});<\/script>/s);
-      if (scriptMatches) {
-        try {
-          const data = JSON.parse(scriptMatches[1]);
-          // Extract any recipe-related information from structured data
-          const videoData = JSON.stringify(data).substring(0, 5000); // Limit size
-          content += `\nVideo metadata:\n${videoData}`;
-        } catch (parseError) {
-          console.log('No se pudo parsear datos estructurados de YouTube');
-        }
-      }
-
-      if (!content.trim()) {
-        content = html; // Fallback to full HTML if we couldn't extract specific parts
-      }
+      console.log(`💬 ${comments.length} comentarios públicos de YouTube obtenidos`);
 
       return content;
 
     } catch (error) {
       console.error('Error al extraer contenido de YouTube:', error);
       throw error;
+    }
+  }
+
+  private extractYouTubeEmbeddedJson(html: string, markers: string[]): unknown {
+    for (const marker of markers) {
+      const markerIndex = html.indexOf(marker);
+      if (markerIndex < 0) continue;
+      const start = html.indexOf('{', markerIndex + marker.length);
+      if (start < 0) continue;
+
+      let depth = 0;
+      let inString = false;
+      let escaped = false;
+      for (let index = start; index < html.length; index += 1) {
+        const char = html[index];
+        if (inString) {
+          if (escaped) escaped = false;
+          else if (char === '\\') escaped = true;
+          else if (char === '"') inString = false;
+          continue;
+        }
+        if (char === '"') inString = true;
+        else if (char === '{') depth += 1;
+        else if (char === '}' && --depth === 0) {
+          try { return JSON.parse(html.slice(start, index + 1)); } catch { break; }
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private collectYouTubeCommentTexts(value: unknown): string[] {
+    const comments = new Set<string>();
+    const textFromRuns = (text: unknown): string => {
+      if (!text || typeof text !== 'object') return '';
+      const record = text as Record<string, unknown>;
+      if (typeof record.simpleText === 'string') return record.simpleText;
+      if (!Array.isArray(record.runs)) return '';
+      return record.runs
+        .map(run => typeof run === 'object' && run && typeof (run as { text?: unknown }).text === 'string'
+          ? (run as { text: string }).text
+          : '')
+        .join('');
+    };
+    const add = (text: unknown) => {
+      if (typeof text !== 'string') return;
+      const cleaned = cleanHtmlFromText(decodeNumericHtmlEntities(text));
+      if (cleaned.length >= 2 && cleaned.length <= 5000) comments.add(cleaned);
+    };
+    const visit = (node: unknown) => {
+      if (Array.isArray(node)) {
+        node.forEach(visit);
+        return;
+      }
+      if (!node || typeof node !== 'object') return;
+      const record = node as Record<string, any>;
+      if (record.commentRenderer) add(textFromRuns(record.commentRenderer.contentText));
+      if (record.commentEntityPayload) add(record.commentEntityPayload?.properties?.content?.content);
+      Object.values(record).forEach(visit);
+    };
+    visit(value);
+    return Array.from(comments).slice(0, 20);
+  }
+
+  private findYouTubeCommentsContinuation(value: unknown): string | undefined {
+    const findToken = (node: unknown): string | undefined => {
+      if (Array.isArray(node)) {
+        for (const item of node) {
+          const token = findToken(item);
+          if (token) return token;
+        }
+        return undefined;
+      }
+      if (!node || typeof node !== 'object') return undefined;
+      const record = node as Record<string, any>;
+      const token = record.continuationCommand?.token;
+      if (typeof token === 'string') return token;
+      for (const child of Object.values(record)) {
+        const nestedToken = findToken(child);
+        if (nestedToken) return nestedToken;
+      }
+      return undefined;
+    };
+    const visit = (node: unknown): string | undefined => {
+      if (Array.isArray(node)) {
+        for (const item of node) {
+          const token = visit(item);
+          if (token) return token;
+        }
+        return undefined;
+      }
+      if (!node || typeof node !== 'object') return undefined;
+      const record = node as Record<string, any>;
+      if (String(record.sectionIdentifier || '').toLowerCase().includes('comment')) {
+        return findToken(record);
+      }
+      for (const child of Object.values(record)) {
+        const token = visit(child);
+        if (token) return token;
+      }
+      return undefined;
+    };
+    return visit(value);
+  }
+
+  private async extractYouTubeComments(html: string, initialData: unknown, sourceUrl: string): Promise<string[]> {
+    const embeddedComments = this.collectYouTubeCommentTexts(initialData);
+    if (embeddedComments.length) return embeddedComments;
+
+    const continuation = this.findYouTubeCommentsContinuation(initialData);
+    const apiKey = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/)?.[1];
+    const clientVersion = html.match(/"INNERTUBE_CLIENT_VERSION":"([^"]+)"/)?.[1];
+    if (!continuation || !apiKey || !clientVersion) return [];
+
+    try {
+      const response = await axios.post(
+        `https://www.youtube.com/youtubei/v1/next?key=${encodeURIComponent(apiKey)}`,
+        {
+          context: {
+            client: {
+              clientName: 'WEB',
+              clientVersion,
+              hl: 'es',
+              gl: 'AR',
+            },
+          },
+          continuation,
+        },
+        {
+          timeout: 15000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Origin': 'https://www.youtube.com',
+            'Referer': sourceUrl,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+          },
+        }
+      );
+      return this.collectYouTubeCommentTexts(response.data);
+    } catch (error) {
+      console.log('⚠️ No se pudieron obtener los comentarios públicos de YouTube:', error instanceof Error ? error.message : error);
+      return [];
     }
   }
 
@@ -1394,8 +1527,8 @@ BUSCA información sobre:
 - Dificultad (si se menciona)
 
 IMPORTANTE para videos:
-- En videos de TikTok/Instagram, los ingredientes y/o los pasos suelen estar en la DESCRIPCIÓN (caption) o en los COMENTARIOS del video: si están ahí, usalos como fuente PRINCIPAL (no los inventes).
-- Para TikTok/Instagram no infieras ingredientes ni pasos: si no aparecen explícitamente, devuelve los arrays vacíos y marca la disponibilidad en false.
+- En videos de TikTok/Instagram/YouTube, los ingredientes y/o los pasos pueden estar en la DESCRIPCIÓN o en los COMENTARIOS públicos: si están ahí, usalos como fuente PRINCIPAL.
+- Para TikTok/Instagram/YouTube no infieras ingredientes ni pasos: si no aparecen explícitamente, devuelve los arrays vacíos y marca la disponibilidad en false.
 - En otras plataformas, para ingredientes sin cantidades específicas, usa "al gusto".
 - Conserva las sugerencias explícitas en "suggestions"; no las conviertas en instrucciones
 - Sólo para otras plataformas, si no hay información completa, proporciona una receta básica funcional.
@@ -1431,9 +1564,9 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
       // Apply ultra-resilient validation
       console.log('🛡️ Applying ultra-resilient validation...');
       const validatedData = llmResponseSchema.parse(parsedResponse);
-      const strictSocialImport = /instagram\.com|tiktok\.com/i.test(sourceUrl);
-      const sourceHasIngredients = !strictSocialImport || parsedResponse.sourceHasIngredients === true;
-      const sourceHasInstructions = !strictSocialImport || parsedResponse.sourceHasInstructions === true;
+      const strictVideoImport = /instagram\.com|tiktok\.com|youtube\.com|youtu\.be/i.test(sourceUrl);
+      const sourceHasIngredients = !strictVideoImport || parsedResponse.sourceHasIngredients === true;
+      const sourceHasInstructions = !strictVideoImport || parsedResponse.sourceHasInstructions === true;
 
       console.log('✅ Validation successful!');
       console.log('📊 Final data:', {
@@ -1486,7 +1619,7 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
     // Limit content size for API limits
     const truncatedContent = content.length > 8000 ? content.substring(0, 8000) + '\n[Content truncated...]' : content;
 
-    const socialRules = /instagram\.com|tiktok\.com/i.test(sourceUrl)
+    const strictVideoRules = /instagram\.com|tiktok\.com/i.test(sourceUrl)
       ? `
 REGLAS OBLIGATORIAS PARA INSTAGRAM/TIKTOK:
 - Revisa únicamente el caption y los primeros 5 comentarios públicos incluidos, respetando su orden original.
@@ -1494,10 +1627,18 @@ REGLAS OBLIGATORIAS PARA INSTAGRAM/TIKTOK:
 - "sourceHasIngredients" debe ser true sólo si el contenido incluye ingredientes reales; si no, usa false y devuelve "ingredients": [].
 - "sourceHasInstructions" debe ser true sólo si el contenido incluye pasos reales; si no, usa false y devuelve "instructions": [].
 `
-      : '';
+      : /youtube\.com|youtu\.be/i.test(sourceUrl)
+        ? `
+REGLAS OBLIGATORIAS PARA YOUTUBE:
+- Revisa únicamente la descripción y los comentarios públicos incluidos.
+- No uses el título para inventar, completar ni inferir ingredientes o pasos.
+- "sourceHasIngredients" debe ser true sólo si la descripción o los comentarios incluyen ingredientes reales; si no, usa false y devuelve "ingredients": [].
+- "sourceHasInstructions" debe ser true sólo si la descripción o los comentarios incluyen pasos reales; si no, usa false y devuelve "instructions": [].
+`
+        : '';
 
     return `Extrae una receta de este contenido de video de cocina.
-${socialRules}
+${strictVideoRules}
 
 IMPORTANTE para imágenes:
 - Si encuentras "Video Thumbnail:" seguido de una URL, inclúyela en el array de imágenes
@@ -1509,7 +1650,7 @@ IMPORTANTE para sugerencias:
 - No los incluyas como pasos de preparación.
 - Devuelve cada sugerencia en un elemento independiente del array "suggestions".
 
-Para plataformas distintas de Instagram y TikTok, si el contenido es limitado, crea una receta básica basándote en:
+Para plataformas distintas de Instagram, TikTok y YouTube, si el contenido es limitado, crea una receta básica basándote en:
 - El tipo de plato mencionado
 - Ingredientes comunes para ese tipo de comida
 - Pasos básicos de preparación típicos
@@ -2313,9 +2454,9 @@ ${truncatedHtml}`;
     sourceUrl: string,
     renderedText?: string
   ): Promise<RecipeImportResponse> {
-    // Mantener la misma regla para la extensión: en Instagram/TikTok se usa el
-    // extractor social, que limita la lectura a los primeros cinco comentarios.
-    if (/instagram\.com|tiktok\.com/i.test(sourceUrl)) {
+    // Mantener la misma regla estricta para la extensión. Estas plataformas se
+    // procesan desde su URL para consultar la descripción y comentarios públicos.
+    if (/instagram\.com|tiktok\.com|youtube\.com|youtu\.be/i.test(sourceUrl)) {
       return this.extractRecipeFromUrl(sourceUrl);
     }
 

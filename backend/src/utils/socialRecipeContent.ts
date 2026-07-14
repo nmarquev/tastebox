@@ -13,6 +13,15 @@ export function isSocialRecipeUrl(url: string): boolean {
   }
 }
 
+export function isYouTubeRecipeUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    return /(^|\.)(?:youtube\.com|youtu\.be)$/i.test(hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function removeSocialPlaceholders<Ingredient extends { name?: string }>(
   ingredients: Ingredient[] | undefined
 ): Ingredient[] {
