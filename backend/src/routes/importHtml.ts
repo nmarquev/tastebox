@@ -9,6 +9,12 @@ import { getRecipeTags } from '../utils/recipeTags';
 import { normalizeInstructionDescription, normalizeRecipeTitle } from '../utils/recipeText';
 import { sanitizeSuggestionText } from '../utils/suggestions';
 import { mentionsGlutenFree } from '../utils/dietaryFeatures';
+import {
+  isSocialRecipeUrl,
+  removeSocialInstructionPlaceholders,
+  removeSocialPlaceholders,
+  SOCIAL_INGREDIENTS_UNAVAILABLE,
+} from '../utils/socialRecipeContent';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -52,6 +58,18 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     // Step 1: Extract recipe data from HTML using LLM
     console.log('🤖 Extracting recipe data from HTML...');
     const recipeData = await llmService.extractRecipeFromHtml(html, url, renderedText);
+
+    if (isSocialRecipeUrl(url)) {
+      recipeData.ingredients = removeSocialPlaceholders(recipeData.ingredients);
+      recipeData.instructions = removeSocialInstructionPlaceholders(recipeData.instructions);
+      if (recipeData.ingredients.length === 0 && recipeData.instructions.length === 0) {
+        return res.status(422).json({
+          success: false,
+          code: 'SOCIAL_RECIPE_INGREDIENTS_UNAVAILABLE',
+          error: SOCIAL_INGREDIENTS_UNAVAILABLE,
+        });
+      }
+    }
 
     console.log(`✅ Extracted recipe: "${recipeData.title}"`);
     console.log(`🖼️ Found ${recipeData.images.length} images`);

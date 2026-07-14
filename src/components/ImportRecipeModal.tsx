@@ -143,10 +143,10 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           ) : undefined,
         });
 
-        // Aviso de paywall (Foodit/Cookidoo sin credenciales): la preparación no se importó.
+        // Aviso de contenido parcial: paywall o datos sociales no disponibles.
         if (response.warning) {
           toast({
-            title: "Faltó la preparación",
+            title: "Información incompleta",
             description: response.warning,
             variant: "destructive",
             duration: IMPORT_ERROR_TOAST_DURATION_MS,
@@ -159,9 +159,12 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
         return;
       }
       console.error('Import error:', error);
+      const message = error instanceof Error ? error.message : "No se pudo importar la receta";
       toast({
-        title: "Error al importar",
-        description: error instanceof Error ? error.message : "No se pudo importar la receta",
+        title: message.includes('No están disponibles los ingredientes')
+          ? "Ingredientes no disponibles"
+          : "Error al importar",
+        description: message,
         variant: "destructive",
         duration: IMPORT_ERROR_TOAST_DURATION_MS,
       });

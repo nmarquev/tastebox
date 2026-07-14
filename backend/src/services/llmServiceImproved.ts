@@ -105,6 +105,58 @@ export function extractInstagramCaption(html: string): string {
     .join('\n');
 }
 
+// Instagram incluye algunos comentarios públicos dentro de los JSON usados para
+// hidratar la página. No se intenta acceder a contenido privado ni autenticado.
+export function extractInstagramComments(html: string): string[] {
+  if (!html) return [];
+
+  const comments = new Set<string>();
+  const addComment = (value: unknown) => {
+    if (typeof value !== 'string') return;
+    const text = cleanHtmlFromText(decodeNumericHtmlEntities(value)).trim();
+    if (text.length >= 2 && text.length <= 4000) comments.add(text);
+  };
+
+  const visit = (value: unknown, path = '') => {
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => visit(item, `${path}.${index}`));
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+
+    const record = value as Record<string, unknown>;
+    const type = String(record.__typename || record.typename || '').toLowerCase();
+    const keys = Object.keys(record);
+    const isComment = /comment/i.test(path)
+      || type.includes('comment')
+      || keys.some(key => /^(?:comment_text|comment_like_count|parent_comment_id)$/i.test(key));
+
+    if (isComment) {
+      addComment(record.text);
+      addComment(record.comment_text);
+    }
+    Object.entries(record).forEach(([key, child]) => visit(child, `${path}.${key}`));
+  };
+
+  const jsonScripts = html.matchAll(
+    /<script[^>]+(?:type=["']application\/json["']|id=["']__NEXT_DATA__["'])[^>]*>([\s\S]*?)<\/script>/gi
+  );
+  for (const match of jsonScripts) {
+    try {
+      visit(JSON.parse(decodeNumericHtmlEntities(match[1]).trim()));
+    } catch {
+      // Algunos scripts no son JSON válido; se ignoran sin interrumpir la importación.
+    }
+  }
+
+  const sharedData = html.match(/window\._sharedData\s*=\s*({[\s\S]*?});\s*<\/script>/i)?.[1];
+  if (sharedData) {
+    try { visit(JSON.parse(sharedData)); } catch { /* contenido opcional */ }
+  }
+
+  return Array.from(comments).slice(0, 5);
+}
+
 export function extractSuggestionsFromText(text: string): string[] {
   if (!text) return [];
 
@@ -840,6 +892,7 @@ export class LLMServiceImproved {
       let content: string = '';
       let instagramUsername: string | undefined;
       let instagramCanonicalUrl: string | undefined;
+      let instagramCommentsFound = false;
       let tiktokCanonicalUrl: string | undefined;
       let tiktokCommentsFound = false;
 
@@ -852,6 +905,7 @@ export class LLMServiceImproved {
         content = ig.content;
         instagramUsername = ig.username;
         instagramCanonicalUrl = ig.canonicalUrl;
+        instagramCommentsFound = ig.commentsFound;
       } else if (url.includes('tiktok.com')) {
         console.log('🎵 Video de TikTok detectado');
         const tk = await this.extractTikTokContent(url);
@@ -891,13 +945,22 @@ export class LLMServiceImproved {
         recipeData.sourceUrl = tiktokCanonicalUrl;
       }
 
-      console.log('✅ Extracción de receta de video completada', tiktokCommentsFound ? '(TikTok con comentarios)' : '');
+      console.log(
+        '✅ Extracción de receta de video completada',
+        tiktokCommentsFound || instagramCommentsFound ? '(con comentarios públicos)' : ''
+      );
       return recipeData;
 
     } catch (error) {
       console.error('❌ Extracción de video falló:', error);
 
-      // Create a fallback recipe based on the URL
+      // En Instagram/TikTok no fabricar ingredientes ni pasos cuando la plataforma
+      // no permite leer el contenido público necesario.
+      if (/instagram\.com|tiktok\.com/i.test(url)) {
+        throw new Error('No están disponibles los ingredientes en la publicación ni en sus comentarios públicos');
+      }
+
+      // Create a fallback recipe based on other video URLs.
       const fallbackRecipe = this.createFallbackVideoRecipe(url, error instanceof Error ? error.message : 'Error desconocido');
       return fallbackRecipe;
     }
@@ -1001,6 +1064,7 @@ export class LLMServiceImproved {
     content: string;
     username?: string;
     canonicalUrl?: string;
+    commentsFound: boolean;
   }> {
     console.log('📷 Obteniendo página de Instagram para caption/contenido...');
 
@@ -1039,6 +1103,10 @@ export class LLMServiceImproved {
       const username = this.extractInstagramUsername(html)
         || this.extractInstagramUsername(canonicalUrl || '');
       if (username) console.log('👤 Usuario de Instagram detectado:', '@' + username);
+      const comments = extractInstagramComments(html);
+      if (comments.length) {
+        console.log(`💬 ${comments.length} comentarios públicos de Instagram obtenidos`);
+      }
 
       // Extract Instagram post metadata
       const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
@@ -1047,6 +1115,9 @@ export class LLMServiceImproved {
       const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/i);
 
       let content = caption ? `Instagram caption:\n${caption}\n\n` : '';
+      if (comments.length) {
+        content += `Comentarios públicos de la publicación (pueden contener ingredientes y/o preparación):\n${comments.map(comment => `- ${comment}`).join('\n')}\n\n`;
+      }
 
       if (titleMatch && titleMatch[1]) {
         content += `Title: ${titleMatch[1]}\n\n`;
@@ -1152,7 +1223,7 @@ export class LLMServiceImproved {
       }
 
       console.log('📱 Contenido de Instagram extracted:', content.length, 'characters');
-      return { content, username, canonicalUrl };
+      return { content, username, canonicalUrl, commentsFound: comments.length > 0 };
 
     } catch (error) {
       console.error('Error al extraer contenido de Instagram:', error);
@@ -1161,6 +1232,7 @@ export class LLMServiceImproved {
         content: `Instagram Video URL: ${url}\nNote: Could not extract detailed content. Creating basic recipe from URL information.`,
         username: undefined,
         canonicalUrl: undefined,
+        commentsFound: false,
       };
     }
   }
@@ -1219,7 +1291,7 @@ export class LLMServiceImproved {
       let commentsText = '';
       if (awemeId) {
         try {
-          const apiUrl = `https://www.tiktok.com/api/comment/list/?aweme_id=${awemeId}&count=50&cursor=0&aid=1988&app_language=es&region=AR`;
+          const apiUrl = `https://www.tiktok.com/api/comment/list/?aweme_id=${awemeId}&count=5&cursor=0&aid=1988&app_language=es&region=AR`;
           const cResp = await axios.get(apiUrl, {
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -1233,13 +1305,11 @@ export class LLMServiceImproved {
           });
           const comments = cResp.data?.comments;
           if (Array.isArray(comments) && comments.length) {
-            // Priorizar los más likeados (los comentarios "útiles"/fijados suelen tener más).
             const texts = comments
-              .map((c: any) => ({ text: String(c?.text || '').trim(), likes: Number(c?.digg_count || 0) }))
-              .filter((c: any) => c.text)
-              .sort((a: any, b: any) => b.likes - a.likes)
-              .slice(0, 15)
-              .map((c: any) => `- ${c.text}`);
+              .slice(0, 5)
+              .map((c: any) => String(c?.text || '').trim())
+              .filter(Boolean)
+              .map((text: string) => `- ${text}`);
             if (texts.length) {
               commentsText = texts.join('\n');
               console.log(`💬 ${texts.length} comentarios de TikTok obtenidos`);
@@ -1303,7 +1373,7 @@ export class LLMServiceImproved {
         throw new Error('No content provided for video extraction');
       }
 
-      const videoPrompt = this.buildVideoExtractionPrompt(content);
+      const videoPrompt = this.buildVideoExtractionPrompt(content, sourceUrl);
 
       const completion = await this.openai.chat.completions.create({
         model: getModel(),
@@ -1325,11 +1395,10 @@ BUSCA información sobre:
 
 IMPORTANTE para videos:
 - En videos de TikTok/Instagram, los ingredientes y/o los pasos suelen estar en la DESCRIPCIÓN (caption) o en los COMENTARIOS del video: si están ahí, usalos como fuente PRINCIPAL (no los inventes).
-- Si solo tienes el título/descripción, infiere los ingredientes básicos
-- Para ingredientes sin cantidades específicas, usa "al gusto"
-- Crea pasos básicos de preparación basados en el tipo de receta
+- Para TikTok/Instagram no infieras ingredientes ni pasos: si no aparecen explícitamente, devuelve los arrays vacíos y marca la disponibilidad en false.
+- En otras plataformas, para ingredientes sin cantidades específicas, usa "al gusto".
 - Conserva las sugerencias explícitas en "suggestions"; no las conviertas en instrucciones
-- Si no hay información completa, proporciona una receta básica funcional
+- Sólo para otras plataformas, si no hay información completa, proporciona una receta básica funcional.
 
 La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
           },
@@ -1362,6 +1431,9 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
       // Apply ultra-resilient validation
       console.log('🛡️ Applying ultra-resilient validation...');
       const validatedData = llmResponseSchema.parse(parsedResponse);
+      const strictSocialImport = /instagram\.com|tiktok\.com/i.test(sourceUrl);
+      const sourceHasIngredients = !strictSocialImport || parsedResponse.sourceHasIngredients === true;
+      const sourceHasInstructions = !strictSocialImport || parsedResponse.sourceHasInstructions === true;
 
       console.log('✅ Validation successful!');
       console.log('📊 Final data:', {
@@ -1383,7 +1455,7 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
           .map(suggestionKey)
           .filter(Boolean)
       );
-      const instructions = (validatedData.instructions || [])
+      const instructions = (sourceHasInstructions ? validatedData.instructions || [] : [])
         .filter(inst => inst.description && typeof inst.step === 'number')
         .filter(inst => !suggestionKeys.has(suggestionKey(inst.description)))
         .map((inst, index) => ({ ...inst, step: index + 1 }));
@@ -1398,7 +1470,8 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
         difficulty: validatedData.difficulty,
         recipeType: validatedData.recipeType,
         images: (validatedData.images || []).filter(img => img.url && typeof img.order === 'number') as any[],
-        ingredients: (validatedData.ingredients || []).filter(ing => ing.name && ing.amount) as any[],
+        ingredients: (sourceHasIngredients ? validatedData.ingredients || [] : [])
+          .filter(ing => ing.name && ing.amount) as any[],
         instructions: instructions as any[],
         tags: validatedData.tags || []
       };
@@ -1409,11 +1482,22 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
     }
   }
 
-  private buildVideoExtractionPrompt(content: string): string {
+  private buildVideoExtractionPrompt(content: string, sourceUrl: string): string {
     // Limit content size for API limits
     const truncatedContent = content.length > 8000 ? content.substring(0, 8000) + '\n[Content truncated...]' : content;
 
+    const socialRules = /instagram\.com|tiktok\.com/i.test(sourceUrl)
+      ? `
+REGLAS OBLIGATORIAS PARA INSTAGRAM/TIKTOK:
+- Revisa únicamente el caption y los primeros 5 comentarios públicos incluidos, respetando su orden original.
+- No inventes, completes ni infieras ingredientes o pasos que no aparezcan explícitamente.
+- "sourceHasIngredients" debe ser true sólo si el contenido incluye ingredientes reales; si no, usa false y devuelve "ingredients": [].
+- "sourceHasInstructions" debe ser true sólo si el contenido incluye pasos reales; si no, usa false y devuelve "instructions": [].
+`
+      : '';
+
     return `Extrae una receta de este contenido de video de cocina.
+${socialRules}
 
 IMPORTANTE para imágenes:
 - Si encuentras "Video Thumbnail:" seguido de una URL, inclúyela en el array de imágenes
@@ -1425,7 +1509,7 @@ IMPORTANTE para sugerencias:
 - No los incluyas como pasos de preparación.
 - Devuelve cada sugerencia en un elemento independiente del array "suggestions".
 
-Si el contenido es limitado (solo título/descripción), crea una receta básica pero completa basándote en:
+Para plataformas distintas de Instagram y TikTok, si el contenido es limitado, crea una receta básica basándote en:
 - El tipo de plato mencionado
 - Ingredientes comunes para ese tipo de comida
 - Pasos básicos de preparación típicos
@@ -1434,6 +1518,8 @@ Formato JSON requerido:
 {
   "title": "Título exacto o inferido del plato",
   "description": "Descripción breve del plato",
+  "sourceHasIngredients": true,
+  "sourceHasInstructions": true,
   "suggestions": ["Primer tip o sugerencia", "Segunda recomendación"],
   "images": [
     {
@@ -2227,6 +2313,12 @@ ${truncatedHtml}`;
     sourceUrl: string,
     renderedText?: string
   ): Promise<RecipeImportResponse> {
+    // Mantener la misma regla para la extensión: en Instagram/TikTok se usa el
+    // extractor social, que limita la lectura a los primeros cinco comentarios.
+    if (/instagram\.com|tiktok\.com/i.test(sourceUrl)) {
+      return this.extractRecipeFromUrl(sourceUrl);
+    }
+
     const renderedHtml = renderedTextToHtml(renderedText);
     const combinedHtml = renderedHtml ? `${html}\n${renderedHtml}` : html;
     return this.extractRecipeWithLLM(combinedHtml, sourceUrl);

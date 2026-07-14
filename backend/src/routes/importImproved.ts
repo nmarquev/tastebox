@@ -11,6 +11,12 @@ import { detectImportSource, getAuthorFromSourceUrl } from '../utils/importSourc
 import { sanitizeSuggestionText } from '../utils/suggestions';
 import { mentionsGlutenFree } from '../utils/dietaryFeatures';
 import type { RecipeImage } from '../types/recipe';
+import {
+  isSocialRecipeUrl,
+  removeSocialInstructionPlaceholders,
+  removeSocialPlaceholders,
+  SOCIAL_INGREDIENTS_UNAVAILABLE,
+} from '../utils/socialRecipeContent';
 
 const router = express.Router();
 
@@ -68,6 +74,22 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     console.log(`Extracted recipe: ${recipeData.title}`);
     console.log(`Found ${recipeData.images.length} images`);
 
+    const isSocialRecipe = isSocialRecipeUrl(url);
+    if (isSocialRecipe) {
+      recipeData.ingredients = removeSocialPlaceholders(recipeData.ingredients);
+      recipeData.instructions = removeSocialInstructionPlaceholders(recipeData.instructions);
+    }
+    const hasIngredients = (recipeData.ingredients?.length ?? 0) > 0;
+    const hasInstructions = (recipeData.instructions?.length ?? 0) > 0;
+
+    if (isSocialRecipe && !hasIngredients && !hasInstructions) {
+      return res.status(422).json({
+        success: false,
+        code: 'SOCIAL_RECIPE_INGREDIENTS_UNAVAILABLE',
+        error: SOCIAL_INGREDIENTS_UNAVAILABLE
+      });
+    }
+
     // Aviso al usuario: receta de Foodit sin credenciales y sin pasos → la preparación
     // quedó detrás del paywall. Le explicamos cómo traerla completa.
     let warning: string | undefined;
@@ -75,8 +97,10 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       warning = 'Esta receta de Foodit (La Nación) tiene la preparación detrás del paywall, por eso no se importaron los pasos. Para traerlos completos, configurá tus credenciales de Foodit en Ajustes o importala con la extensión de Chrome de TasteBox.';
     } else if (isCookidoo && !cookidooCreds && (recipeData.instructions?.length ?? 0) < 2) {
       warning = 'Esta receta de Cookidoo tiene la preparación detrás del paywall, por eso no se importaron los pasos. Configurá tus credenciales de Cookidoo en Ajustes para traerlos completos.';
-    } else if (/tiktok\.com/i.test(hostname) && ((recipeData.instructions?.length ?? 0) < 2 || (recipeData.ingredients?.length ?? 0) < 2)) {
-      warning = 'En TikTok los ingredientes/pasos suelen estar en los comentarios, y a veces TikTok no permite leerlos automáticamente. Si la receta quedó incompleta, abrí el TikTok, desplegá los comentarios y usá la extensión de Chrome de TasteBox, o pegá el texto manualmente.';
+    } else if (isSocialRecipe && hasIngredients && !hasInstructions) {
+      warning = 'Se importaron los ingredientes, pero los pasos de preparación no están disponibles en la publicación ni en sus primeros 5 comentarios.';
+    } else if (isSocialRecipe && !hasIngredients && hasInstructions) {
+      warning = 'Se importaron los pasos de preparación, pero los ingredientes no están disponibles en la publicación ni en sus primeros 5 comentarios.';
     }
 
     // Step 2: Download and process images
@@ -171,6 +195,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       errorMessage = error.message;
       if (error.message.includes('No valid recipe found')) {
         statusCode = 404;
+      } else if (error.message.includes('No están disponibles los ingredientes')) {
+        statusCode = 422;
       } else if (error.message.includes('Error al fetch')) {
         statusCode = 400;
       }
