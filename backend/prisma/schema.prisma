@@ -54,10 +54,13 @@ model Recipe {
   thermomix    Boolean  @default(false) // Receta Thermomix (Cookidoo o con configuraciones TMX)
   airFryer     Boolean  @default(false) // Receta preparada en freidora de aire
   glutenFree   Boolean  @default(false) // Receta sin gluten
+  sugarFree    Boolean  @default(false) // Receta sin azucar
   keto         Boolean  @default(false) // Receta keto / cetogénica
   lowCarb      Boolean  @default(false) // Receta baja en carbohidratos
   vegetarian   Boolean  @default(false) // Receta vegetariana
   proteica     Boolean  @default(false) // Receta proteica
+  sweet        Boolean  @default(false) // Receta dulce
+  savory       Boolean  @default(false) // Receta salada
   locution     String? // TTS script text for audio playback
 
   // Nutritional information (per serving)

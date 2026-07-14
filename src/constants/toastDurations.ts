@@ -1,0 +1,2 @@
+export const ERROR_TOAST_DURATION_MS = 5_000;
+export const IMPORT_ERROR_TOAST_DURATION_MS = 60_000;

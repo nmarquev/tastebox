@@ -2,6 +2,8 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
   Beef,
+  CandyOff,
+  ChefHat,
   ChevronDown,
   Download,
   Flame,
@@ -28,20 +30,21 @@ const menuItems = [
 ];
 
 const recipeTypeItems = [
-  { label: "Todas las recetas", to: "/app", icon: <Search className="h-4 w-4" /> },
+  { label: "Todas las Recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> },
   { label: "Favoritas", to: "/app?filtro=favoritas", icon: <Heart className="h-4 w-4" /> },
   { label: "Cocinadas", to: "/app?filtro=cocinadas", icon: <CheckCircle2 className="h-4 w-4" /> },
   {
     label: "Thermomix",
     to: "/app?filtro=thermomix",
-    icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />,
+    icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain" />,
   },
   {
     label: "Air Fryer",
     to: "/app?filtro=air-fryer",
     icon: <img src="/air-fryer.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />,
   },
-  { label: "Sin gluten", to: "/app?filtro=sin-gluten", icon: <WheatOff className="h-4 w-4" /> },
+  { label: "Sin Gluten", to: "/app?filtro=sin-gluten", icon: <WheatOff className="h-4 w-4" /> },
+  { label: "Sin Azucar", to: "/app?filtro=sin-azucar", icon: <CandyOff className="h-4 w-4" /> },
   { label: "Keto", to: "/app?filtro=keto", icon: <Flame className="h-4 w-4" /> },
   {
     label: "Low Carb",
@@ -106,7 +109,9 @@ export const MainNav = () => {
           {recipeTypeItems.map((item) => (
             <DropdownMenuItem key={item.label} asChild>
               <Link to={item.to} className="flex items-center gap-2">
-                {item.icon}
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                  {item.icon}
+                </span>
                 {item.label}
               </Link>
             </DropdownMenuItem>

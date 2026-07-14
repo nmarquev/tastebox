@@ -112,10 +112,13 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       thermomix: recipeData.thermomix ?? false,
       airFryer: recipeData.airFryer ?? false,
       glutenFree: recipeData.glutenFree === true || mentionsGlutenFree(recipeData),
+      sugarFree: recipeData.sugarFree ?? false,
       keto: recipeData.keto ?? false,
       lowCarb: recipeData.lowCarb ?? false,
       vegetarian: recipeData.vegetarian ?? false,
       proteica: recipeData.proteica ?? false,
+      sweet: recipeData.sweet ?? false,
+      savory: recipeData.savory ?? false,
       // Nutrición exacta (Cookidoo). Si no hay, queda undefined y se calcula luego.
       calories: recipeData.nutrition?.calories,
       protein: recipeData.nutrition?.protein,

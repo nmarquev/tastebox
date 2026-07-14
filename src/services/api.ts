@@ -86,6 +86,24 @@ const authFetch = async (url: string, options: RequestInit = {}): Promise<Respon
 export const api = {
   // Auth endpoints
   auth: {
+    getGoogleLoginUrl: (returnTo: string) => {
+      return `${API_BASE_URL}/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
+    },
+
+    completeGoogleLogin: async () => {
+      const response = await fetch(`${API_BASE_URL}/auth/google/session`, {
+        credentials: 'include',
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.token || !data.user) {
+        throw new Error(data.error || 'No se pudo completar el inicio de sesion con Google');
+      }
+
+      localStorage.setItem('auth_token', data.token);
+      return data;
+    },
+
     login: async (email: string, password: string) => {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',

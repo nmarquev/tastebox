@@ -31,10 +31,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Beef, Grid3X3, Grid2X2, Grid, Columns, Filter, FilterX, ChevronDown, Trash2, Play, Pause, Search, ChefHat, Heart, Bookmark, WheatOff, Leaf, ArrowUpDown, ArrowUp, ArrowDown, Check, ListChecks, Printer, Loader2, X, ExternalLink, UtensilsCrossed, MoreVertical, ImageIcon, User, List, Square, Clock, Plus, Tag, Edit, Menu, Download, Sparkles, PlusCircle } from "lucide-react";
+import { Beef, CakeSlice, CandyOff, Grid3X3, Grid2X2, Grid, Columns, Filter, FilterX, ChevronDown, Trash2, Play, Pause, Search, ChefHat, Heart, Bookmark, WheatOff, Leaf, ArrowUpDown, ArrowUp, ArrowDown, Check, ListChecks, Printer, Loader2, X, ExternalLink, Utensils, UtensilsCrossed, MoreVertical, ImageIcon, User, List, Square, Clock, Plus, Tag, Edit, Menu, Download, Sparkles, PlusCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
+import { PreparationTimeIcon } from "@/components/icons/PreparationTimeIcon";
 import { api, RecipeCollection } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -190,6 +191,7 @@ const Index = () => {
 
   // TTS states
   const [playingRecipeId, setPlayingRecipeId] = useState<string | null>(null);
+  const [pausedRecipeId, setPausedRecipeId] = useState<string | null>(null);
   const [generatingScript, setGeneratingScript] = useState<string | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoadingRecipes, setIsLoadingRecipes] = useState(true);
@@ -213,6 +215,7 @@ const Index = () => {
       thermomixOnly: initialAppView === 'thermomix' || initialRecipeTypeFilter === 'thermomix' ? true : undefined,
       airFryerOnly: initialRecipeTypeFilter === 'air-fryer' ? true : undefined,
       glutenFreeOnly: initialRecipeTypeFilter === 'sin-gluten' ? true : undefined,
+      sugarFreeOnly: initialRecipeTypeFilter === 'sin-azucar' ? true : undefined,
       ketoOnly: initialRecipeTypeFilter === 'keto' ? true : undefined,
       lowCarbOnly: initialRecipeTypeFilter === 'low-carb' ? true : undefined,
       proteicaOnly: initialRecipeTypeFilter === 'proteicas' ? true : undefined,
@@ -254,6 +257,7 @@ const Index = () => {
       thermomixOnly: view === 'thermomix' || typeFilter === 'thermomix' ? true : undefined,
       airFryerOnly: typeFilter === 'air-fryer' ? true : undefined,
       glutenFreeOnly: typeFilter === 'sin-gluten' ? true : undefined,
+      sugarFreeOnly: typeFilter === 'sin-azucar' ? true : undefined,
       ketoOnly: typeFilter === 'keto' ? true : undefined,
       lowCarbOnly: typeFilter === 'low-carb' ? true : undefined,
       proteicaOnly: typeFilter === 'proteicas' ? true : undefined,
@@ -635,6 +639,7 @@ const Index = () => {
 
     // Sin gluten / Keto / Low Carb filters
     const matchesGlutenFree = !filters.glutenFreeOnly || recipe.glutenFree === true;
+    const matchesSugarFree = !filters.sugarFreeOnly || recipe.sugarFree === true;
     const matchesKeto = !filters.ketoOnly || recipe.keto === true;
     const matchesLowCarb = !filters.lowCarbOnly || recipe.lowCarb === true;
     const matchesProteica = !filters.proteicaOnly || recipe.proteica === true;
@@ -651,7 +656,7 @@ const Index = () => {
     const matchesDishType = selectedDishTypes.length === 0 || recipeDishTypes.some(dt => selectedDishTypes.includes(dt));
     const matchesAuthor = !filters.author || (recipe.author || '').trim() === filters.author;
 
-    return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesCollection && matchesSource && matchesDishType && matchesAuthor;
+    return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesSugarFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesCollection && matchesSource && matchesDishType && matchesAuthor;
   }).sort((a, b) => {
     const directionFactor = sortDirection === 'asc' ? 1 : -1;
     const compareText = (left: string, right: string) =>
@@ -818,6 +823,7 @@ const Index = () => {
       window.speechSynthesis.cancel();
     }
     setPlayingRecipeId(null);
+    setPausedRecipeId(null);
     setGeneratingScript(null);
     setSelectedRecipe(null);
   };
@@ -2259,6 +2265,7 @@ const Index = () => {
     || filters.thermomixOnly === true
     || filters.airFryerOnly === true
     || filters.glutenFreeOnly === true
+    || filters.sugarFreeOnly === true
     || filters.ketoOnly === true
     || filters.lowCarbOnly === true
     || filters.proteicaOnly === true
@@ -2287,6 +2294,7 @@ const Index = () => {
   if (filters.thermomixOnly) activeFilterChips.push({ value: 'Thermomix', onRemove: () => handleFiltersChange({ ...filters, thermomixOnly: undefined }) });
   if (filters.airFryerOnly) activeFilterChips.push({ value: 'Air Fryer', onRemove: () => handleFiltersChange({ ...filters, airFryerOnly: undefined }) });
   if (filters.glutenFreeOnly) activeFilterChips.push({ value: 'Sin Gluten', onRemove: () => handleFiltersChange({ ...filters, glutenFreeOnly: undefined }) });
+  if (filters.sugarFreeOnly) activeFilterChips.push({ value: 'Sin Azucar', onRemove: () => handleFiltersChange({ ...filters, sugarFreeOnly: undefined }) });
   if (filters.ketoOnly) activeFilterChips.push({ value: 'Keto', onRemove: () => handleFiltersChange({ ...filters, ketoOnly: undefined }) });
   if (filters.lowCarbOnly) activeFilterChips.push({ value: 'Low Carb', onRemove: () => handleFiltersChange({ ...filters, lowCarbOnly: undefined }) });
   if (filters.proteicaOnly) activeFilterChips.push({ value: 'Proteicas', onRemove: () => handleFiltersChange({ ...filters, proteicaOnly: undefined }) });
@@ -2304,6 +2312,7 @@ const Index = () => {
       thermomixOnly: undefined,
       airFryerOnly: undefined,
       glutenFreeOnly: undefined,
+      sugarFreeOnly: undefined,
       ketoOnly: undefined,
       lowCarbOnly: undefined,
       proteicaOnly: undefined,
@@ -2320,10 +2329,22 @@ const Index = () => {
     try {
       // If already playing this recipe, pause it
       if (playingRecipeId === recipe.id) {
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.pause();
         setPlayingRecipeId(null);
+        setPausedRecipeId(recipe.id);
         toast({
           title: "Audio pausado",
+          description: `"${recipe.title}"`,
+        });
+        return;
+      }
+
+      if (pausedRecipeId === recipe.id && window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+        setPlayingRecipeId(recipe.id);
+        setPausedRecipeId(null);
+        toast({
+          title: "Audio reanudado",
           description: `"${recipe.title}"`,
         });
         return;
@@ -2333,8 +2354,14 @@ const Index = () => {
       if (playingRecipeId) {
         window.speechSynthesis.cancel();
         setPlayingRecipeId(null);
+        setPausedRecipeId(null);
         // Small delay to ensure cancel is processed
         await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      if (pausedRecipeId) {
+        window.speechSynthesis.cancel();
+        setPausedRecipeId(null);
       }
 
       if (!('speechSynthesis' in window)) {
@@ -2491,6 +2518,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
       utterance.onstart = () => {
         setPlayingRecipeId(recipe.id);
+        setPausedRecipeId(null);
         toast({
           title: "Reproduciendo receta",
           description: `"${recipe.title}"`,
@@ -2499,10 +2527,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
       utterance.onend = () => {
         setPlayingRecipeId(null);
+        setPausedRecipeId(null);
       };
 
-      utterance.onerror = () => {
+      utterance.onerror = (event) => {
         setPlayingRecipeId(null);
+        setPausedRecipeId(null);
+        if (event.error === 'canceled' || event.error === 'interrupted') return;
+        console.error('Speech synthesis error:', event.error);
         toast({
           title: "Error de reproduccion",
           description: "No se pudo reproducir el audio",
@@ -5821,7 +5853,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       <span className="flex items-center gap-3 text-sm text-muted-foreground">
                         {!!recipe.prepTime && recipe.prepTime > 0 && (
                           <span className="flex items-center gap-1 whitespace-nowrap" title="Tiempo de preparacion">
-                            <ChefHat className="h-4 w-4" />{recipe.prepTime} min
+                            <PreparationTimeIcon className="h-4 w-4" />{recipe.prepTime} min
                           </span>
                         )}
                         {!!recipe.cookTime && recipe.cookTime > 0 && (
@@ -5836,7 +5868,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         )}
                       </span>
                       {/* Iconos de caracteristicas */}
-                      {(recipe.thermomix || recipe.airFryer || recipe.cooked || recipe.featured || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian) && (
+                      {(recipe.thermomix || recipe.airFryer || recipe.cooked || recipe.featured || recipe.glutenFree || recipe.sugarFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.sweet || recipe.savory) && (
                         <span className="flex flex-wrap items-center gap-2">
                           {recipe.thermomix && (
                             <img src="/thermomix-logo.png" alt="" title="Thermomix" className="h-5 w-5 object-contain mix-blend-multiply" />
@@ -5853,6 +5885,15 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           {recipe.glutenFree && (
                             <WheatOff className="h-4 w-4 text-muted-foreground" />
                           )}
+                          {recipe.sugarFree && (
+                            <span
+                              title="Sin Azucar"
+                              aria-label="Sin Azucar"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
+                            >
+                              <CandyOff className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                            </span>
+                          )}
                           {recipe.keto && (
                             <AvocadoIcon className="h-5 w-5 text-muted-foreground" />
                           )}
@@ -5864,6 +5905,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           )}
                           {recipe.vegetarian && (
                             <Leaf className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          {recipe.sweet && (
+                            <CakeSlice className="h-4 w-4 text-muted-foreground" aria-label="Receta dulce" />
+                          )}
+                          {recipe.savory && (
+                            <Utensils className="h-4 w-4 text-muted-foreground" aria-label="Receta salada" />
                           )}
                         </span>
                       )}
@@ -5933,7 +5980,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       <span className="flex items-center gap-3 text-base text-muted-foreground">
                         {!!recipe.prepTime && recipe.prepTime > 0 && (
                           <span className="flex items-center gap-1 whitespace-nowrap" title="Tiempo de preparacion">
-                            <ChefHat className="h-5 w-5" />{recipe.prepTime} min
+                            <PreparationTimeIcon className="h-5 w-5" />{recipe.prepTime} min
                           </span>
                         )}
                         {!!recipe.cookTime && recipe.cookTime > 0 && (
@@ -5949,7 +5996,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       </span>
                       {/* Fila 2: iconos de caracteristicas (solo los activos), en orden:
                           thermomix, air fryer, sin gluten, keto, low carb, proteica, vegetariana, cocinada, favorita */}
-                      {(recipe.thermomix || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.cooked || recipe.featured) && (
+                      {(recipe.thermomix || recipe.airFryer || recipe.glutenFree || recipe.sugarFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.sweet || recipe.savory || recipe.cooked || recipe.featured) && (
                         <span className="flex items-center gap-2">
                           {recipe.thermomix && (
                             <img src="/thermomix-logo.png" alt="" title="Thermomix" className="h-6 w-6 object-contain mix-blend-multiply" />
@@ -5959,6 +6006,15 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           )}
                           {recipe.glutenFree && (
                             <WheatOff className="h-5 w-5 text-muted-foreground" />
+                          )}
+                          {recipe.sugarFree && (
+                            <span
+                              title="Sin Azucar"
+                              aria-label="Sin Azucar"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-muted/70"
+                            >
+                              <CandyOff className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                            </span>
                           )}
                           {recipe.keto && (
                             <AvocadoIcon className="h-6 w-6 text-muted-foreground" />
@@ -5971,6 +6027,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           )}
                           {recipe.vegetarian && (
                             <Leaf className="h-5 w-5 text-muted-foreground" />
+                          )}
+                          {recipe.sweet && (
+                            <CakeSlice className="h-5 w-5 text-muted-foreground" aria-label="Receta dulce" />
+                          )}
+                          {recipe.savory && (
+                            <Utensils className="h-5 w-5 text-muted-foreground" aria-label="Receta salada" />
                           )}
                           {recipe.cooked && (
                             <span title="Cocinada" className="flex items-center">
@@ -6093,6 +6155,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         isInCollection={selectedRecipe ? collectionRecipeIds.has(selectedRecipe.id) : false}
         onToggleFavorite={handleToggleFavorite}
         onToggleCooked={handleToggleCooked}
+        onToggleFeature={handleToggleFeature}
         hasPreviousRecipe={selectedRecipeIndex > 0}
         hasNextRecipe={
           selectedRecipeIndex >= 0

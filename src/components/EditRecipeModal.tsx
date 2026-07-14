@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNutritionCalculator } from '@/hooks/useNutritionCalculator';
 import { api, RecipeCollection } from '@/services/api';
 import { Recipe } from '@/types/recipe';
-import { Beef, Loader2, Plus, X, Upload, Edit, Calculator, Globe, Check, ClipboardList, ClipboardPaste, Heart, WheatOff, Leaf } from 'lucide-react';
+import { Beef, CakeSlice, CandyOff, Loader2, Plus, X, Upload, Edit, Calculator, Globe, Check, ClipboardList, ClipboardPaste, Heart, WheatOff, Leaf, Utensils, ChevronUp, ChevronDown, AudioLines, Trash2 } from 'lucide-react';
 import { resolveImageUrl } from '@/utils/api';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
@@ -53,10 +53,13 @@ interface RecipeFormData {
   country: string;
   language: string;
   glutenFree: boolean;
+  sugarFree: boolean;
   keto: boolean;
   lowCarb: boolean;
   vegetarian: boolean;
   proteica: boolean;
+  sweet: boolean;
+  savory: boolean;
   thermomix: boolean;
   airFryer: boolean;
   featured: boolean;
@@ -119,6 +122,8 @@ export const EditRecipeModal = ({
   onImportAnother,
 }: EditRecipeModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [showScrollControls, setShowScrollControls] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const [newTag, setNewTag] = useState('');
   const [existingImages, setExistingImages] = useState(recipe?.images || []);
@@ -148,6 +153,13 @@ export const EditRecipeModal = ({
   // contra los valores actuales para saber si el usuario realmente modificó algún campo.
   // (Más confiable que isDirty, que puede dar falsos positivos al inicializar.)
   const initialFormSnapshot = useRef<string | null>(null);
+  const formScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollFormToTop = () => formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  const scrollFormToBottom = () => formScrollRef.current?.scrollTo({
+    top: formScrollRef.current.scrollHeight,
+    behavior: 'smooth',
+  });
 
   // ¿Se modificó algo? Campos del formulario, imágenes (agregadas/quitadas) o la colección.
   const collectionsChanged =
@@ -166,10 +178,53 @@ export const EditRecipeModal = ({
     name: 'ingredients'
   });
 
+  const handleAppendIngredient = () => {
+    const ingredients = getValues('ingredients') || [];
+    const lastIngredient = ingredients[ingredients.length - 1];
+    const inheritedSection = mode === 'create' ? (lastIngredient?.section || '').trim() : '';
+
+    appendIngredient({ name: '', amount: '', unit: '', section: inheritedSection });
+  };
+
   const { fields: instructionFields, append: appendInstruction, remove: removeInstruction, replace: replaceInstructions } = useFieldArray({
     control,
     name: 'instructions'
   });
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowScrollControls(false);
+      return;
+    }
+
+    const scrollElement = formScrollRef.current;
+    if (!scrollElement) return;
+
+    const updateScrollControls = () => {
+      const controls = scrollElement.querySelector<HTMLElement>('[data-scroll-controls]');
+      const controlsHeight = controls?.offsetHeight || 0;
+      setShowScrollControls(scrollElement.scrollHeight - controlsHeight > scrollElement.clientHeight + 1);
+    };
+    const frameId = window.requestAnimationFrame(updateScrollControls);
+    const resizeObserver = new ResizeObserver(updateScrollControls);
+    const mutationObserver = new MutationObserver(updateScrollControls);
+
+    resizeObserver.observe(scrollElement);
+    mutationObserver.observe(scrollElement, {
+      attributes: true,
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+    window.addEventListener('resize', updateScrollControls);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      window.removeEventListener('resize', updateScrollControls);
+    };
+  }, [isOpen, activeTab, ingredientFields.length, instructionFields.length]);
 
   // Estado para subir imagen desde la web (URL) y para resaltar el recuadro al arrastrar.
   const [isDraggingImage, setIsDraggingImage] = useState(false);
@@ -231,10 +286,13 @@ export const EditRecipeModal = ({
         country: recipe.country || '',
         language: recipe.language || '',
         glutenFree: recipe.glutenFree || false,
+        sugarFree: recipe.sugarFree || false,
         keto: recipe.keto || false,
         lowCarb: recipe.lowCarb || false,
         vegetarian: recipe.vegetarian || false,
         proteica: recipe.proteica || false,
+        sweet: recipe.sweet || false,
+        savory: recipe.savory || false,
         thermomix: recipe.thermomix || false,
         airFryer: recipe.airFryer || false,
         featured: recipe.featured || false,
@@ -470,6 +528,67 @@ export const EditRecipeModal = ({
     }
   };
 
+  const handleGenerateRecipeAudio = async () => {
+    const data = getValues();
+    if (!data.title?.trim()) {
+      toast({ title: 'Falta el titulo', description: 'Ingresa el titulo antes de generar el audio.', variant: 'destructive' });
+      return;
+    }
+
+    const ingredientsText = (data.ingredients || [])
+      .filter(ingredient => ingredient.name?.trim())
+      .map(ingredient => {
+        const section = ingredient.section?.trim() ? `[${ingredient.section.trim()}] ` : '';
+        return `- ${section}${ingredient.amount || ''} ${ingredient.unit || ''} ${ingredient.name}`.replace(/\s+/g, ' ').trim();
+      })
+      .join('\n');
+    const instructionsText = (data.instructions || [])
+      .filter(instruction => instruction.description?.trim())
+      .map((instruction, index) => {
+        const section = instruction.section?.trim() ? `[${instruction.section.trim()}] ` : '';
+        return `${index + 1}. ${section}${instruction.description}`;
+      })
+      .join('\n');
+
+    const prompt = `Genera un guion natural y conversacional para escuchar esta receta de cocina. Empieza directamente con la receta, sin presentarte. Explica los ingredientes y la preparacion paso a paso, respetando las secciones cuando existan.
+
+Titulo: ${data.title}
+Descripcion: ${data.description || 'Sin descripcion'}
+Tiempo de preparacion: ${data.prepTime || 'No especificado'} minutos
+Tiempo de coccion: ${data.cookTime || 'No especificado'} minutos
+Porciones: ${data.servings || 'No especificado'}
+Dificultad: ${data.difficulty || 'No especificada'}
+
+Ingredientes:
+${ingredientsText || 'No especificados'}
+
+Preparacion:
+${instructionsText || 'No especificada'}
+
+El resultado debe ser fluido, claro y agradable de escuchar.`;
+
+    setIsGeneratingAudio(true);
+    try {
+      const response = await api.llm.generateScript(prompt);
+      if (!response.success || !response.script?.trim()) throw new Error(response.error || 'No se genero el audio');
+      setValue('locution', response.script.trim(), { shouldDirty: true });
+      toast({ title: 'Audio de receta generado', description: 'Revisa la locucion antes de actualizar la receta.' });
+    } catch (error) {
+      toast({
+        title: 'No se pudo generar el audio',
+        description: error instanceof Error ? error.message : 'Intenta nuevamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  };
+
+  const handleDeleteRecipeAudio = () => {
+    setValue('locution', '', { shouldDirty: true });
+    toast({ title: 'Audio de receta borrado', description: 'Actualiza la receta para guardar el cambio.' });
+  };
+
   // Recuerda el último campo de texto enfocado para "Pegar texto".
   const lastFieldRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const trackFocusField = (e: React.FocusEvent) => {
@@ -642,10 +761,13 @@ export const EditRecipeModal = ({
         country: data.country,
         language: data.language,
         glutenFree: data.glutenFree,
+        sugarFree: data.sugarFree,
         keto: data.keto,
         lowCarb: data.lowCarb,
         vegetarian: data.vegetarian,
         proteica: data.proteica,
+        sweet: data.sweet,
+        savory: data.savory,
         thermomix: data.thermomix,
         airFryer: data.airFryer,
         featured: data.featured,
@@ -765,14 +887,24 @@ export const EditRecipeModal = ({
         closeButtonClassName="right-4 top-4 h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
       >
         {/* Fixed Header (se puede arrastrar para mover el modal) */}
-        <DialogHeader className="px-6 pt-6 pb-4 border-b" {...dragHandleProps}>
-          <DialogTitle className="flex items-center gap-2">
-            <Edit className="h-5 w-5" />
-            Editar Receta
-            {queue && (
-              <Badge variant="secondary" className="ml-2">
-                Receta {queue.position + 1} de {queue.total}
-              </Badge>
+        <DialogHeader className="border-b px-6 pb-4 pt-6" {...dragHandleProps}>
+          <DialogTitle className="flex w-full items-center justify-between gap-4 pr-10">
+            <span className="flex shrink-0 items-center gap-2">
+              <Edit className="h-5 w-5" />
+              {mode === 'create' ? 'Nueva Receta' : 'Editar Receta'}
+              {queue && (
+                <Badge variant="secondary" className="ml-2">
+                  Receta {queue.position + 1} de {queue.total}
+                </Badge>
+              )}
+            </span>
+            {mode !== 'create' && (
+              <span
+                className="min-w-0 max-w-[50%] truncate text-right text-base font-semibold text-muted-foreground"
+                title={watch('title') || recipe.title || 'Sin titulo'}
+              >
+                {watch('title') || recipe.title || 'Sin titulo'}
+              </span>
             )}
           </DialogTitle>
         </DialogHeader>
@@ -790,8 +922,50 @@ export const EditRecipeModal = ({
               </TabsList>
             </div>
 
+            {activeTab === 'ingredients' && (
+              <div className="mx-6 mt-4 flex flex-shrink-0 items-center justify-between gap-3 border-b bg-background px-0 pb-3">
+                <Label>Ingredientes</Label>
+                <div className="flex gap-2">
+                  <Button type="button" onClick={handlePasteIngredients} size="sm" variant="outline">
+                    <ClipboardList className="mr-1 h-4 w-4" />
+                    Pegar lista
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleAppendIngredient}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    Agregar
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'instructions' && (
+              <div className="mx-6 mt-4 flex flex-shrink-0 items-center justify-between gap-3 border-b bg-background px-0 pb-3">
+                <Label>Preparacion</Label>
+                <div className="flex gap-2">
+                  <Button type="button" onClick={handlePasteInstructions} size="sm" variant="outline">
+                    <ClipboardList className="mr-1 h-4 w-4" />
+                    Pegar lista
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => appendInstruction({ description: '', function: '', time: '', temperature: '', speed: '', section: '' })}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    Agregar Paso
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Scrollable content area with fixed height */}
-            <div className="flex-1 overflow-y-auto px-6 pb-4 min-h-0">
+            <div ref={formScrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
               <TabsContent value="info" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
               {/* a: Título */}
               <div>
@@ -951,12 +1125,12 @@ export const EditRecipeModal = ({
 
                 {/* g.1: Calorías / Proteína / Carbohidratos / Grasa */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="calories">Calorias</Label>
+                    <div>
+                      <Label htmlFor="calories">Calorias</Label>
                     <Input id="calories" type="number" step="0.1" {...register('calories')} placeholder="kcal" />
                   </div>
-                  <div>
-                    <Label htmlFor="protein">Proteina</Label>
+                    <div>
+                      <Label htmlFor="protein">Proteina</Label>
                     <Input id="protein" type="number" step="0.1" {...register('protein')} placeholder="g" />
                   </div>
                   <div>
@@ -1075,7 +1249,7 @@ export const EditRecipeModal = ({
               <TabsContent value="classification" className="space-y-4 mt-4 bg-muted/20 px-6 pt-6 pb-1 rounded-lg m-0">
                 {/* 1: Tipo de comida / Colección */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label>Tipo de comida</Label>
                       {(watch('dishType') || '').trim() && (
@@ -1095,7 +1269,7 @@ export const EditRecipeModal = ({
                       createLabel="Agregar"
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label>Coleccion</Label>
                       {selectedCollectionIds.length > 0 && (
@@ -1133,7 +1307,7 @@ export const EditRecipeModal = ({
                 </div>
 
                 {/* 2: Categoría */}
-                <div>
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label>Categoria</Label>
                     {(watch('recipeType') || '').trim() && (
@@ -1155,7 +1329,7 @@ export const EditRecipeModal = ({
                 </div>
 
                 {/* 3: Etiquetas */}
-                <div>
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label>Etiquetas</Label>
                     {tags.length > 0 && (
@@ -1188,17 +1362,20 @@ export const EditRecipeModal = ({
                 </div>
 
                 {/* c-f: Características (switches sí/no con ícono) — 4 por renglón, 2 renglones */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                   {([
                     { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
                     { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-4 w-4" /> },
                     { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
                     { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
                     { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
+                    { field: 'sugarFree', label: 'Sin Azucar', icon: <CandyOff className="h-4 w-4" /> },
                     { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-4 w-4" /> },
                     { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
                     { field: 'proteica', label: 'Proteica', icon: <Beef className="h-4 w-4" /> },
                     { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
+                    { field: 'sweet', label: 'Receta dulce', icon: <CakeSlice className="h-4 w-4" /> },
+                    { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
                   ] as const).map(({ field, label, icon }) => {
                     const active = Boolean(watch(field as any));
                     return (
@@ -1217,24 +1394,6 @@ export const EditRecipeModal = ({
               <TabsContent value="ingredients" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
               {/* Ingredients */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Ingredientes</Label>
-                  <div className="flex gap-2">
-                    <Button type="button" onClick={handlePasteIngredients} size="sm" variant="outline">
-                      <ClipboardList className="h-4 w-4 mr-1" />
-                      Pegar lista
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => appendIngredient({ name: '', amount: '', unit: '', section: '' })}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Agregar
-                    </Button>
-                  </div>
-                </div>
                 <div className="space-y-2">
                   {ingredientFields.map((field, index) => (
                     <div key={field.id} className="space-y-2 border rounded-lg p-3">
@@ -1263,8 +1422,11 @@ export const EditRecipeModal = ({
                             onClick={() => removeIngredient(index)}
                             size="sm"
                             variant="destructive"
+                            className="-translate-y-1 !h-[22px] !w-[22px] !p-0"
+                            title="Eliminar ingrediente"
+                            aria-label="Eliminar ingrediente"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="!h-[11px] !w-[11px]" />
                           </Button>
                         )}
                       </div>
@@ -1323,24 +1485,6 @@ export const EditRecipeModal = ({
               <TabsContent value="instructions" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
               {/* Instructions */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Preparacion</Label>
-                  <div className="flex gap-2">
-                    <Button type="button" onClick={handlePasteInstructions} size="sm" variant="outline">
-                      <ClipboardList className="h-4 w-4 mr-1" />
-                      Pegar lista
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => appendInstruction({ description: '', function: '', time: '', temperature: '', speed: '', section: '' })}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Agregar Paso
-                    </Button>
-                  </div>
-                </div>
                 <div className="space-y-4">
                   {instructionFields.map((field, index) => (
                     <div key={field.id} className="border rounded-lg p-4">
@@ -1352,8 +1496,11 @@ export const EditRecipeModal = ({
                             onClick={() => removeInstruction(index)}
                             size="sm"
                             variant="destructive"
+                            className="-translate-y-1 !h-[22px] !w-[22px] !p-0"
+                            title="Eliminar paso"
+                            aria-label="Eliminar paso"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="!h-[11px] !w-[11px]" />
                           </Button>
                         )}
                       </div>
@@ -1408,42 +1555,46 @@ export const EditRecipeModal = ({
                           </div>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mb-2">
-                        <div>
-                          <Label className="text-xs">Funcion Thermomix</Label>
-                          <Input
-                            {...register(`instructions.${index}.function`)}
-                            placeholder="ej: Amasar, Batir, Picar"
-                            size="sm"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Tiempo</Label>
-                          <Input
-                            {...register(`instructions.${index}.time`)}
-                            placeholder="ej: 5 min"
-                            size="sm"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs">Temperatura</Label>
-                          <Input
-                            {...register(`instructions.${index}.temperature`)}
-                            placeholder="ej: 100 grados"
-                            size="sm"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Velocidad</Label>
-                          <Input
-                            {...register(`instructions.${index}.speed`)}
-                            placeholder="ej: vel 5"
-                            size="sm"
-                          />
-                        </div>
-                      </div>
+                      {watch('thermomix') && (
+                        <>
+                          <div className="mb-2 grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Funcion Thermomix</Label>
+                              <Input
+                                {...register(`instructions.${index}.function`)}
+                                placeholder="ej: Amasar, Batir, Picar"
+                                size="sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Tiempo</Label>
+                              <Input
+                                {...register(`instructions.${index}.time`)}
+                                placeholder="ej: 5 min"
+                                size="sm"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Temperatura</Label>
+                              <Input
+                                {...register(`instructions.${index}.temperature`)}
+                                placeholder="ej: 100 grados"
+                                size="sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Velocidad</Label>
+                              <Input
+                                {...register(`instructions.${index}.speed`)}
+                                placeholder="ej: vel 5"
+                                size="sm"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1475,8 +1626,54 @@ export const EditRecipeModal = ({
                 <p className="text-xs text-muted-foreground mt-1">
                   Texto que se reproducira cuando se use la funcion de voz. Si esta vacio, se generara automaticamente.
                 </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateRecipeAudio}
+                    disabled={isGeneratingAudio}
+                  >
+                    {isGeneratingAudio
+                      ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      : <AudioLines className="mr-2 h-4 w-4" />}
+                    Generar audio receta
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDeleteRecipeAudio}
+                    disabled={isGeneratingAudio || !(watch('locution') || '').trim()}
+                    className="!text-[#70716e] hover:!text-[#70716e] [&_svg]:!text-[#70716e]"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Borrar audio receta
+                  </Button>
+                </div>
               </div>
             </TabsContent>
+
+            {showScrollControls && (
+            <div data-scroll-controls className="pointer-events-none sticky bottom-3 z-30 ml-auto mr-1 flex w-fit translate-x-6 flex-col items-center gap-1.5">
+              <button
+                type="button"
+                onClick={scrollFormToTop}
+                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-md transition-all hover:scale-105 hover:bg-primary"
+                title="Ir al principio"
+                aria-label="Ir al principio"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={scrollFormToBottom}
+                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-md transition-all hover:scale-105 hover:bg-primary"
+                title="Ir al final"
+                aria-label="Ir al final"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
+            )}
             </div>
             {/* End of scrollable content */}
           </Tabs>

@@ -35,10 +35,13 @@ const createRecipeSchema = z.object({
   thermomix: z.boolean().optional(),
   airFryer: z.boolean().optional(),
   glutenFree: z.boolean().optional(),
+  sugarFree: z.boolean().optional(),
   keto: z.boolean().optional(),
   lowCarb: z.boolean().optional(),
   vegetarian: z.boolean().optional(),
   proteica: z.boolean().optional(),
+  sweet: z.boolean().optional(),
+  savory: z.boolean().optional(),
 
   // Nutritional information (optional)
   calories: z.number().optional().nullable(),
@@ -99,10 +102,13 @@ const updateRecipeSchema = z.object({
   thermomix: z.boolean().optional(),
   airFryer: z.boolean().optional(),
   glutenFree: z.boolean().optional(),
+  sugarFree: z.boolean().optional(),
   keto: z.boolean().optional(),
   lowCarb: z.boolean().optional(),
   vegetarian: z.boolean().optional(),
   proteica: z.boolean().optional(),
+  sweet: z.boolean().optional(),
+  savory: z.boolean().optional(),
 
   // Nutritional information (optional)
   calories: z.number().optional().nullable(),
@@ -355,10 +361,13 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         thermomix: data.thermomix,
         airFryer: data.airFryer,
         glutenFree,
+        sugarFree: data.sugarFree,
         keto: data.keto,
         lowCarb: data.lowCarb,
         vegetarian: data.vegetarian,
         proteica: data.proteica,
+        sweet: data.sweet,
+        savory: data.savory,
         locution: data.locution,
 
         // Nutritional information
@@ -468,10 +477,13 @@ router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
       thermomix: z.boolean().optional(),
       airFryer: z.boolean().optional(),
       glutenFree: z.boolean().optional(),
+      sugarFree: z.boolean().optional(),
       keto: z.boolean().optional(),
       lowCarb: z.boolean().optional(),
       vegetarian: z.boolean().optional(),
       proteica: z.boolean().optional(),
+      sweet: z.boolean().optional(),
+      savory: z.boolean().optional(),
     }),
   });
 
@@ -495,7 +507,7 @@ router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
     if (fields.createdAt !== undefined) data.createdAt = new Date(fields.createdAt);
     if (fields.dishType !== undefined) data.dishType = fields.dishType?.trim() || null;
     if (fields.recipeType !== undefined) data.recipeType = fields.recipeType?.trim() || null;
-    (['featured', 'cooked', 'thermomix', 'airFryer', 'glutenFree', 'keto', 'lowCarb', 'vegetarian', 'proteica'] as const)
+    (['featured', 'cooked', 'thermomix', 'airFryer', 'glutenFree', 'sugarFree', 'keto', 'lowCarb', 'vegetarian', 'proteica', 'sweet', 'savory'] as const)
       .forEach(f => { if (fields[f] !== undefined) data[f] = fields[f]; });
 
     const hasScalar = Object.keys(data).length > 0;
@@ -614,10 +626,13 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
         thermomix: data.thermomix,
         airFryer: data.airFryer,
         glutenFree,
+        sugarFree: data.sugarFree,
         keto: data.keto,
         lowCarb: data.lowCarb,
         vegetarian: data.vegetarian,
         proteica: data.proteica,
+        sweet: data.sweet,
+        savory: data.savory,
         locution: data.locution,
 
         // Nutritional information

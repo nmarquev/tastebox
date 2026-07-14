@@ -1,0 +1,1 @@
+ALTER TABLE "recipes" ADD COLUMN "sugarFree" BOOLEAN NOT NULL DEFAULT false;

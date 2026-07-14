@@ -16,6 +16,7 @@ import { RecipeReviewer } from "./docx/RecipeReviewer";
 import { MultiSelectCombobox } from "./MultiSelectCombobox";
 import { joinCategories, RECIPE_DISH_TYPES } from "@/constants/categories";
 import { toast } from "sonner";
+import { IMPORT_ERROR_TOAST_DURATION_MS } from "@/constants/toastDurations";
 
 interface DocxImportModalProps {
   isOpen: boolean;
@@ -319,7 +320,10 @@ export const DocxImportModal = ({ isOpen, onClose, onRecipeSaved }: DocxImportMo
       const message = error.message || 'No se pudo guardar la receta';
       if (!silent) {
         setState(prev => ({ ...prev, error: message }));
-        toast.error('No se pudo guardar la receta', { description: message });
+        toast.error('No se pudo guardar la receta', {
+          description: message,
+          duration: IMPORT_ERROR_TOAST_DURATION_MS,
+        });
       }
       return false;
     }

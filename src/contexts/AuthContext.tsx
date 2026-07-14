@@ -25,30 +25,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const savedUser = localStorage.getItem('thermomix_user');
-    const authToken = localStorage.getItem('auth_token');
+    const initializeAuth = async () => {
+      const url = new URL(window.location.href);
 
-    // Both user data and token must exist for a valid session
-    if (savedUser && authToken) {
-      try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
+      if (url.searchParams.get('google_login') === 'success') {
+        try {
+          const response = await api.auth.completeGoogleLogin();
+          const userData = {
+            id: response.user.id,
+            email: response.user.email,
+            name: response.user.name,
+            alias: response.user.alias,
+            profilePhoto: response.user.profilePhoto
+          };
+          setUser(userData);
+          localStorage.setItem('thermomix_user', JSON.stringify(userData));
+          checkBookmarkletLogin();
+        } catch (error) {
+          console.error('Google login error:', error);
+          localStorage.removeItem('thermomix_user');
+          localStorage.removeItem('auth_token');
+        } finally {
+          url.searchParams.delete('google_login');
+          window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+          setIsLoading(false);
+        }
+        return;
+      }
 
-        // If this window was opened by bookmarklet, notify parent window
-        checkBookmarkletLogin();
-      } catch (error) {
-        console.error('Error parsing saved user data:', error);
-        // Clear invalid data
+      const savedUser = localStorage.getItem('thermomix_user');
+      const authToken = localStorage.getItem('auth_token');
+
+      if (savedUser && authToken) {
+        try {
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+          checkBookmarkletLogin();
+        } catch (error) {
+          console.error('Error parsing saved user data:', error);
+          localStorage.removeItem('thermomix_user');
+          localStorage.removeItem('auth_token');
+        }
+      } else {
         localStorage.removeItem('thermomix_user');
         localStorage.removeItem('auth_token');
       }
-    } else {
-      // Clear any partial data
-      localStorage.removeItem('thermomix_user');
-      localStorage.removeItem('auth_token');
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    void initializeAuth();
   }, []);
 
   // Function to check if this is a bookmarklet login and notify parent

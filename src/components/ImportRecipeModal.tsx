@@ -14,6 +14,7 @@ import { ThermomixSetting } from '@/components/ThermomixSetting';
 import { StepDescription, hasInlineThermomix } from '@/components/StepDescription';
 import { EditRecipeModal } from '@/components/EditRecipeModal';
 import { useDraggableDialog } from '@/hooks/useDraggableDialog';
+import { IMPORT_ERROR_TOAST_DURATION_MS } from '@/constants/toastDurations';
 
 interface ImportRecipeModalProps {
   isOpen: boolean;
@@ -50,7 +51,8 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
       toast({
         title: "URL requerida",
         description: "Por favor ingresa una URL válida",
-        variant: "destructive"
+        variant: "destructive",
+        duration: IMPORT_ERROR_TOAST_DURATION_MS,
       });
       return;
     }
@@ -106,10 +108,13 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           thermomix: recipe.thermomix,
           airFryer: recipe.airFryer,
           glutenFree: recipe.glutenFree,
+          sugarFree: recipe.sugarFree,
           keto: recipe.keto,
           lowCarb: recipe.lowCarb,
           proteica: recipe.proteica,
           vegetarian: recipe.vegetarian,
+          sweet: recipe.sweet,
+          savory: recipe.savory,
           calories: recipe.calories,
           protein: recipe.protein,
           carbohydrates: recipe.carbohydrates,
@@ -144,7 +149,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
             title: "Faltó la preparación",
             description: response.warning,
             variant: "destructive",
-            duration: 12000,
+            duration: IMPORT_ERROR_TOAST_DURATION_MS,
           });
         }
       }
@@ -157,7 +162,8 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
       toast({
         title: "Error al importar",
         description: error instanceof Error ? error.message : "No se pudo importar la receta",
-        variant: "destructive"
+        variant: "destructive",
+        duration: IMPORT_ERROR_TOAST_DURATION_MS,
       });
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
@@ -187,6 +193,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           title: "Portapapeles vacío",
           description: "No hay una URL para pegar",
           variant: "destructive",
+          duration: IMPORT_ERROR_TOAST_DURATION_MS,
         });
         return;
       }
@@ -198,6 +205,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
         title: "No se pudo pegar",
         description: "Permití el acceso al portapapeles o pegá la URL manualmente",
         variant: "destructive",
+        duration: IMPORT_ERROR_TOAST_DURATION_MS,
       });
     }
   };

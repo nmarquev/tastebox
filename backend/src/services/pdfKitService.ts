@@ -308,10 +308,13 @@ export class PdfKitService {
           { key: 'cooked', label: 'Cocinada' },
           { key: 'featured', label: 'Favorita' },
           { key: 'glutenFree', label: 'Sin Gluten' },
+          { key: 'sugarFree', label: 'Sin Azucar' },
           { key: 'keto', label: 'Keto' },
           { key: 'lowCarb', label: 'Low Carb' },
           { key: 'proteica', label: 'Proteica' },
           { key: 'vegetarian', label: 'Vegetariana' },
+          { key: 'sweet', label: 'Receta dulce' },
+          { key: 'savory', label: 'Receta salada' },
         ];
         const activeAttrs = attrDefs.filter(a => Boolean((recipe as any)[a.key]));
 

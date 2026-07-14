@@ -27,10 +27,13 @@ const FEATURE_FIELDS = [
   { field: 'thermomix', label: 'Thermomix' },
   { field: 'airFryer', label: 'Air Fryer' },
   { field: 'glutenFree', label: 'Sin Gluten' },
+  { field: 'sugarFree', label: 'Sin Azucar' },
   { field: 'keto', label: 'Keto' },
   { field: 'lowCarb', label: 'Low Carb' },
   { field: 'proteica', label: 'Proteica' },
   { field: 'vegetarian', label: 'Vegetariana' },
+  { field: 'sweet', label: 'Receta dulce' },
+  { field: 'savory', label: 'Receta salada' },
 ] as const;
 
 const emptyFeatures = (): Record<string, Tri> =>

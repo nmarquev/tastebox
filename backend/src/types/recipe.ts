@@ -97,10 +97,13 @@ export interface RecipeImportResponse {
   thermomix?: boolean; // true si es receta Thermomix (Cookidoo o con configuraciones TMX)
   airFryer?: boolean; // true si se prepara en freidora de aire
   glutenFree?: boolean; // true si es receta sin gluten
+  sugarFree?: boolean; // true si es receta sin azucar
   keto?: boolean; // true si es receta keto / cetogénica
   lowCarb?: boolean; // true si es receta baja en carbohidratos
   vegetarian?: boolean; // true si es receta vegetariana
   proteica?: boolean; // true si es receta proteica
+  sweet?: boolean; // true si es receta dulce
+  savory?: boolean; // true si es receta salada
   // Información nutricional por porción (ej. extraída exacta de Cookidoo).
   nutrition?: {
     calories?: number;

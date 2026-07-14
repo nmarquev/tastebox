@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const [sending, setSending] = useState(false);
   const { login, isLoading } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('google_error')) return;
+
+    toast({
+      title: 'No se pudo iniciar sesion con Google',
+      description: 'Intenta nuevamente o ingresa con tu email y contrasena.',
+      variant: 'destructive'
+    });
+    url.searchParams.delete('google_error');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,6 +214,25 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
             )}
           </Button>
         </form>
+
+        <div className="my-5 flex items-center gap-3" aria-hidden="true">
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">o</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={isLoading}
+          onClick={() => window.location.assign(api.auth.getGoogleLoginUrl(window.location.href))}
+        >
+          <span className="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-sm font-bold text-[#4285f4] shadow-sm">
+            G
+          </span>
+          Continuar con Google
+        </Button>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">

@@ -110,10 +110,13 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         thermomix: recipeData.thermomix ?? false,
         airFryer: recipeData.airFryer ?? false,
         glutenFree,
+        sugarFree: recipeData.sugarFree ?? false,
         keto: recipeData.keto ?? false,
         lowCarb: recipeData.lowCarb ?? false,
         vegetarian: recipeData.vegetarian ?? false,
         proteica: recipeData.proteica ?? false,
+        sweet: recipeData.sweet ?? false,
+        savory: recipeData.savory ?? false,
         // Nutrición exacta de Cookidoo (si vino en el HTML)
         calories: recipeData.nutrition?.calories,
         protein: recipeData.nutrition?.protein,

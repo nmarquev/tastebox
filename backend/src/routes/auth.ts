@@ -3,11 +3,76 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
+import crypto from 'crypto';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import emailService from '../services/emailService';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+const GOOGLE_STATE_COOKIE = 'tasteboxGoogleOAuthState';
+const DEFAULT_GOOGLE_CLIENT_ID = '366572363677-jvsvhomltge2jqjap2kg7am9u5hfs3kt.apps.googleusercontent.com';
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
+
+const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:8084';
+const getGoogleClientId = () => process.env.GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID;
+
+const getGoogleRedirectUri = (req: express.Request) => {
+  return process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+};
+
+const getSafeReturnTo = (candidate?: string) => {
+  const fallback = new URL('/app', getFrontendUrl()).toString();
+
+  try {
+    const url = new URL(candidate || fallback);
+    const configuredOrigin = new URL(getFrontendUrl()).origin;
+    const isLocalDevelopment = process.env.NODE_ENV !== 'production'
+      && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+
+    return url.origin === configuredOrigin || isLocalDevelopment ? url.toString() : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const addQueryParam = (url: string, key: string, value: string) => {
+  const target = new URL(url);
+  target.searchParams.set(key, value);
+  return target.toString();
+};
+
+const authCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax',
+  maxAge: 30 * 24 * 60 * 60 * 1000
+};
+
+const createSessionToken = (userId: string) => {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET no configurado');
+  }
+
+  return jwt.sign({ userId }, jwtSecret, { expiresIn: '30d' });
+};
+
+interface GoogleTokenResponse {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
+}
+
+interface GoogleUserInfo {
+  sub: string;
+  email?: string;
+  email_verified?: boolean;
+  name?: string;
+  picture?: string;
+}
 
 // Validation schemas
 const loginSchema = z.object({
@@ -39,6 +104,151 @@ const updateProfileSchema = z.object({
   return true;
 }, {
   message: "Se requieren tanto la contraseña actual como la nueva para cambiar la contraseña"
+});
+
+// Iniciar el flujo OAuth de Google. El state se guarda en una cookie HTTP-only
+// para validar que el callback corresponde al navegador que inicio el login.
+router.get('/google', (req, res) => {
+  const clientId = getGoogleClientId();
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!clientId || !process.env.GOOGLE_CLIENT_SECRET || !jwtSecret) {
+    return res.status(503).json({ error: 'El inicio de sesion con Google no esta configurado' });
+  }
+
+  const returnTo = getSafeReturnTo(typeof req.query.returnTo === 'string' ? req.query.returnTo : undefined);
+  const state = jwt.sign(
+    { nonce: crypto.randomBytes(24).toString('hex'), returnTo },
+    jwtSecret,
+    { expiresIn: '10m', audience: 'tastebox-google-oauth' }
+  );
+
+  res.cookie(GOOGLE_STATE_COOKIE, state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/api/auth/google',
+    maxAge: 10 * 60 * 1000
+  });
+
+  const authorizationUrl = new URL(GOOGLE_AUTH_URL);
+  authorizationUrl.search = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: getGoogleRedirectUri(req),
+    response_type: 'code',
+    scope: 'openid email profile',
+    state,
+    prompt: 'select_account'
+  }).toString();
+
+  return res.redirect(authorizationUrl.toString());
+});
+
+// Google vuelve a este endpoint con un codigo de un solo uso. El backend lo
+// intercambia por el perfil y crea o vincula la cuenta usando el email verificado.
+router.get('/google/callback', async (req, res) => {
+  const fallback = getSafeReturnTo();
+  const receivedState = typeof req.query.state === 'string' ? req.query.state : '';
+  const storedState = req.cookies?.[GOOGLE_STATE_COOKIE];
+  const code = typeof req.query.code === 'string' ? req.query.code : '';
+
+  res.clearCookie(GOOGLE_STATE_COOKIE, { path: '/api/auth/google' });
+
+  if (req.query.error) {
+    return res.redirect(addQueryParam(fallback, 'google_error', 'access_denied'));
+  }
+
+  if (!receivedState || !storedState || receivedState !== storedState || !code) {
+    return res.redirect(addQueryParam(fallback, 'google_error', 'invalid_state'));
+  }
+
+  try {
+    const jwtSecret = process.env.JWT_SECRET;
+    const clientId = getGoogleClientId();
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!jwtSecret || !clientId || !clientSecret) {
+      throw new Error('Google OAuth no configurado');
+    }
+
+    const statePayload = jwt.verify(receivedState, jwtSecret, {
+      audience: 'tastebox-google-oauth'
+    }) as { returnTo?: string };
+    const returnTo = getSafeReturnTo(statePayload.returnTo);
+
+    const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: getGoogleRedirectUri(req)
+      })
+    });
+    const tokens = await tokenResponse.json() as GoogleTokenResponse;
+    if (!tokenResponse.ok || !tokens.access_token) {
+      console.error('Google OAuth token exchange failed:', tokens.error, tokens.error_description);
+      return res.redirect(addQueryParam(returnTo, 'google_error', 'token_exchange'));
+    }
+
+    const profileResponse = await fetch(GOOGLE_USERINFO_URL, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` }
+    });
+    const googleProfile = await profileResponse.json() as GoogleUserInfo;
+    if (!profileResponse.ok || !googleProfile.email || googleProfile.email_verified !== true) {
+      return res.redirect(addQueryParam(returnTo, 'google_error', 'unverified_email'));
+    }
+
+    const email = googleProfile.email.trim().toLowerCase();
+    let user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      const generatedPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+      user = await prisma.user.create({
+        data: {
+          email,
+          name: googleProfile.name?.trim() || email.split('@')[0],
+          password: generatedPassword,
+          profilePhoto: googleProfile.picture || null
+        }
+      });
+    }
+
+    const token = createSessionToken(user.id);
+    res.cookie('authToken', token, authCookieOptions);
+    return res.redirect(addQueryParam(returnTo, 'google_login', 'success'));
+  } catch (error) {
+    console.error('Error de inicio de sesion con Google:', error);
+    return res.redirect(addQueryParam(fallback, 'google_error', 'oauth_failed'));
+  }
+});
+
+// Convierte la cookie HTTP-only creada por el callback en la sesion que ya usa
+// el frontend. El token nunca viaja por la URL de redireccionamiento.
+router.get('/google/session', authenticateToken, async (req: AuthRequest, res) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Autenticacion requerida' });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      alias: true,
+      profilePhoto: true,
+      createdAt: true
+    }
+  });
+
+  if (!user) {
+    return res.status(404).json({ error: 'Usuario no encontrado' });
+  }
+
+  return res.json({ user, token: createSessionToken(user.id) });
 });
 
 // Registro

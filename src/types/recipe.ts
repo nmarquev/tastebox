@@ -55,10 +55,13 @@ export interface Recipe {
   thermomix?: boolean;
   airFryer?: boolean;
   glutenFree?: boolean;
+  sugarFree?: boolean;
   keto?: boolean;
   lowCarb?: boolean;
   vegetarian?: boolean;
   proteica?: boolean;
+  sweet?: boolean;
+  savory?: boolean;
   locution?: string;
   // Informacion nutricional por porcion
   calories?: number | null;
@@ -94,10 +97,13 @@ export interface ImportRecipeResponse {
     thermomix?: boolean;
     airFryer?: boolean;
     glutenFree?: boolean;
+    sugarFree?: boolean;
     keto?: boolean;
     lowCarb?: boolean;
     vegetarian?: boolean;
     proteica?: boolean;
+    sweet?: boolean;
+    savory?: boolean;
     images: RecipeImage[];
     ingredients: Ingredient[];
     instructions: Instruction[];

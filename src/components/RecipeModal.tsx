@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Recipe } from "@/types/recipe";
-import { Beef, Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2 } from "lucide-react";
+import { Beef, CakeSlice, CandyOff, Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2, Utensils, MoreVertical } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { resolveImageUrl } from "@/utils/api";
 import { getSourceFromUrl, isValidUrl, getRecipeSource } from "@/utils/siteUtils";
@@ -15,12 +15,15 @@ import { ThermomixSetting } from "@/components/ThermomixSetting";
 import { StepDescription, hasInlineThermomix } from "@/components/StepDescription";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
+import { PreparationTimeIcon } from "@/components/icons/PreparationTimeIcon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseCategories } from "@/constants/categories";
 import { useNutritionCalculator } from "@/hooks/useNutritionCalculator";
 import { downloadRecipePdf, printRecipePdf, shareRecipePdf } from "@/utils/pdfUtils";
 import { EditRecipeModal } from "@/components/EditRecipeModal";
 import { useDraggableDialog } from "@/hooks/useDraggableDialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface RecipeModalProps {
   recipe: Recipe | null;
@@ -34,6 +37,7 @@ interface RecipeModalProps {
   isInCollection?: boolean;
   onToggleFavorite?: (recipe: Recipe) => void;
   onToggleCooked?: (recipe: Recipe) => void;
+  onToggleFeature?: (recipe: Recipe, field: string, value: boolean) => void;
   onPreviousRecipe?: () => void;
   onNextRecipe?: () => void;
   hasPreviousRecipe?: boolean;
@@ -42,6 +46,21 @@ interface RecipeModalProps {
   // "page" la muestra a página completa, sin la tarjeta/diálogo (ej. /receta/:id).
   variant?: "modal" | "page";
 }
+
+const DETAIL_FEATURE_TOGGLES: { field: keyof Recipe; label: string; icon: JSX.Element }[] = [
+  { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
+  { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-5 w-5" /> },
+  { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" className="h-5 w-5 object-contain" /> },
+  { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.png" alt="" className="h-4 w-4 object-contain" /> },
+  { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
+  { field: 'sugarFree', label: 'Sin Azucar', icon: <CandyOff className="h-4 w-4" /> },
+  { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-[18px] w-[18px]" /> },
+  { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" className="h-4 w-4 object-contain" /> },
+  { field: 'proteica', label: 'Proteica', icon: <Beef className="h-4 w-4" /> },
+  { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
+  { field: 'sweet', label: 'Receta dulce', icon: <CakeSlice className="h-4 w-4" /> },
+  { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
+];
 
 // Envoltorio que muestra el contenido como diálogo (modal) o a página completa (page).
 // Está a nivel de módulo para que no se re-monte el contenido en cada render.
@@ -140,6 +159,16 @@ const translateIngredientUnit = (unit?: string) => {
   return UNIT_TRANSLATIONS[normalized] || unit;
 };
 
+const isSpanishLanguage = (language?: string) => {
+  const normalized = (language || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+  return /^(?:es|espanol|spanish|castellano)(?:$|[\s(_-])/.test(normalized);
+};
+
 const parseAmountNumber = (value: string): number | null => {
   const normalized = value.trim().replace(',', '.');
   if (!normalized) return null;
@@ -204,6 +233,7 @@ export const RecipeModal = ({
   isInCollection = false,
   onToggleFavorite,
   onToggleCooked,
+  onToggleFeature,
   onPreviousRecipe,
   onNextRecipe,
   hasPreviousRecipe = false,
@@ -214,6 +244,7 @@ export const RecipeModal = ({
   const { dragHandleProps, contentStyle: dragContentStyle } = useDraggableDialog(isOpen);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollToTop = () => isPage
     ? window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -240,6 +271,7 @@ export const RecipeModal = ({
       window.speechSynthesis.cancel();
     }
     setIsPlaying(false);
+    setIsPaused(false);
     setIsGeneratingScript(false);
     setLocalRecipe(recipe);
     setCurrentImageIndex(0); // Reset image index when recipe changes
@@ -274,6 +306,7 @@ export const RecipeModal = ({
         window.speechSynthesis.cancel();
       }
       setIsPlaying(false);
+      setIsPaused(false);
       setIsGeneratingScript(false);
     }
   }, [isOpen]);
@@ -469,9 +502,15 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       applySettingsToUtterance(utterance);
 
       utterance.onstart = () => setIsPlaying(true);
-      utterance.onend = () => setIsPlaying(false);
-      utterance.onerror = () => {
+      utterance.onend = () => {
         setIsPlaying(false);
+        setIsPaused(false);
+      };
+      utterance.onerror = (event) => {
+        setIsPlaying(false);
+        setIsPaused(false);
+        if (event.error === 'canceled' || event.error === 'interrupted') return;
+        console.error('Speech synthesis error:', event.error);
         toast({
           title: "Error de reproducción",
           description: "No se pudo reproducir el audio",
@@ -535,6 +574,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             dishType: updatedRecipe.dishType,
             vegetarian: updatedRecipe.vegetarian,
             proteica: updatedRecipe.proteica,
+            sugarFree: updatedRecipe.sugarFree,
+            sweet: updatedRecipe.sweet,
+            savory: updatedRecipe.savory,
             locution: updatedRecipe.locution || "",
             calories: updatedRecipe.calories,
             protein: updatedRecipe.protein,
@@ -683,10 +725,20 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
   const handlePlayTTS = async () => {
     if (isPlaying) {
-      window.speechSynthesis.cancel();
+      window.speechSynthesis.pause();
       setIsPlaying(false);
+      setIsPaused(true);
       return;
     }
+
+    if (isPaused && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setIsPlaying(true);
+      setIsPaused(false);
+      return;
+    }
+
+    setIsPaused(false);
 
     let scriptText = localRecipe.locution;
 
@@ -710,6 +762,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             dishType: updatedRecipe.dishType,
             vegetarian: updatedRecipe.vegetarian,
             proteica: updatedRecipe.proteica,
+            sugarFree: updatedRecipe.sugarFree,
+            sweet: updatedRecipe.sweet,
+            savory: updatedRecipe.savory,
             locution: updatedRecipe.locution,
             images: updatedRecipe.images,
             ingredients: updatedRecipe.ingredients.map(ing => ({
@@ -758,6 +813,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       window.speechSynthesis.cancel();
     }
     setIsPlaying(false);
+    setIsPaused(false);
     setIsGeneratingScript(false);
     setCurrentImageIndex(0);
     onClose();
@@ -801,6 +857,145 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       setLoadingStates(prev => ({ ...prev, [action]: false }));
     }
   };
+
+  const imageActionButtons = (
+    <div
+      className="absolute right-3 top-3 z-10 flex items-center justify-end gap-1.5"
+      onClick={(event) => event.stopPropagation()}
+    >
+      {onToggleFavorite && (
+        <Button
+          variant="secondary"
+          size="sm"
+          className={`order-1 h-9 w-9 p-0 ${localRecipe.featured ? 'bg-red-100/80 hover:bg-red-200/90' : 'bg-white/80 hover:bg-white/90'}`}
+          onClick={() => onToggleFavorite(localRecipe)}
+          title={localRecipe.featured ? 'Quitar de Favoritos' : 'Agregar a Favoritos'}
+          aria-label={localRecipe.featured ? 'Quitar de Favoritos' : 'Agregar a Favoritos'}
+        >
+          <Heart
+            className={localRecipe.featured ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+            style={{ width: 20, height: 20 }}
+          />
+        </Button>
+      )}
+
+      {(onToggleFeature || onToggleCooked || onToggleFavorite) && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="order-3 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
+              title="Caracteristicas"
+              aria-label="Caracteristicas"
+            >
+              <ChefHat className="!h-5 !w-5 text-gray-500" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5">
+            <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Caracteristicas</p>
+            <div className="space-y-0.5">
+              {DETAIL_FEATURE_TOGGLES.map(({ field, label, icon }) => {
+                const active = Boolean(localRecipe[field]);
+                return (
+                  <button
+                    key={field}
+                    type="button"
+                    onClick={() => {
+                      if (field === 'featured' && onToggleFavorite) {
+                        onToggleFavorite(localRecipe);
+                      } else if (field === 'cooked' && onToggleCooked) {
+                        onToggleCooked(localRecipe);
+                      } else {
+                        onToggleFeature?.(localRecipe, field, !active);
+                      }
+                    }}
+                    className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                  >
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">{icon}</span>
+                      <span className="truncate text-left">{label}</span>
+                    </span>
+                    <span className={`w-6 shrink-0 text-right text-[10px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>
+                      {active ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {onSaveToCollection && (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="order-2 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
+          onClick={() => onSaveToCollection(localRecipe)}
+          title="Agregar a una coleccion"
+          aria-label="Agregar a una coleccion"
+        >
+          <Bookmark
+            aria-hidden="true"
+            className={isInCollection ? 'fill-primary text-primary' : 'text-gray-600'}
+            style={{ width: 20, height: 20 }}
+          />
+        </Button>
+      )}
+
+      {localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) && (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="order-4 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
+          onClick={() => window.open(localRecipe.sourceUrl, '_blank', 'noopener,noreferrer')}
+          title={`Ver receta original en ${getSourceFromUrl(localRecipe.sourceUrl)}`}
+          aria-label="Ver receta original"
+        >
+          <ExternalLink className="h-4 w-4 text-gray-600" />
+        </Button>
+      )}
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="order-5 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
+            title="Mas opciones"
+            aria-label="Mas opciones"
+          >
+            <MoreVertical className="h-4 w-4 text-gray-600" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => window.open(`/receta/${localRecipe.id}`, '_blank', 'noopener,noreferrer')}>
+            <ArrowUpRightFromSquare className="mr-2 h-4 w-4" />
+            Abrir en una nueva pestaña
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
+            <Edit className="mr-2 h-4 w-4" />
+            Editar receta
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handlePdfAction('print')}>
+            <Printer className="mr-2 h-4 w-4" />
+            Imprimir
+          </DropdownMenuItem>
+          {onDelete && (
+            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(localRecipe)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Eliminar receta
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 
   return (
     <>
@@ -897,7 +1092,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 title={localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) ? 'Ver receta original' : undefined}
               />
 
-              <div className="absolute right-3 top-3 z-10 flex items-center justify-end gap-1.5">
+              {imageActionButtons}
+              <div className="hidden">
                 {onToggleFavorite && (
                   <Button
                     variant="outline"
@@ -981,7 +1177,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
           ) : (
             <div className="relative aspect-square w-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-              <div className="absolute right-3 top-3 z-10 flex items-center justify-end gap-1.5">
+              {imageActionButtons}
+              <div className="hidden">
                 {onToggleFavorite && (
                   <Button
                     variant="outline"
@@ -1041,7 +1238,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 {!!localRecipe.prepTime && localRecipe.prepTime > 0 && (
                   <div className="flex items-center gap-2" title="Tiempo de preparación">
-                    <ChefHat className="h-5 w-5" />
+                    <PreparationTimeIcon className="h-5 w-5" />
                     <span>Prep. {localRecipe.prepTime} min</span>
                   </div>
                 )}
@@ -1058,8 +1255,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   </div>
                 )}
               </div>
-              {/* Características en grilla de 4 columnas → 2 filas de 4 (con las 8 activas).
-                  Cada ícono va en un casillero fijo (h-6 w-6) para que todos midan parejo. */}
+              {/* Caracteristicas activas en el orden definido para el detalle de receta. */}
               <div className="grid grid-cols-3 gap-x-6 gap-y-2 whitespace-nowrap [&_.feat-ico]:flex [&_.feat-ico]:h-6 [&_.feat-ico]:w-6 [&_.feat-ico]:shrink-0 [&_.feat-ico]:items-center [&_.feat-ico]:justify-center">
                 {isThermomixRecipe(localRecipe) && (
                   <div className="flex items-center gap-2">
@@ -1073,22 +1269,16 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     <span>Air Fryer</span>
                   </div>
                 )}
-                {localRecipe.cooked && (
-                  <div className="flex items-center gap-2" title="Receta cocinada">
-                    <span className="feat-ico"><RecipePreparedIcon className="h-5 w-5" /></span>
-                    <span>Cocinada</span>
-                  </div>
-                )}
-                {localRecipe.featured && (
-                  <div className="flex items-center gap-2" title="Receta favorita">
-                    <span className="feat-ico"><Heart className="h-5 w-5 fill-current" /></span>
-                    <span>Favorita</span>
-                  </div>
-                )}
                 {localRecipe.glutenFree && (
                   <div className="flex items-center gap-2" title="Sin gluten">
                     <span className="feat-ico"><WheatOff className="h-5 w-5" /></span>
-                    <span>Sin gluten</span>
+                    <span>Sin Gluten</span>
+                  </div>
+                )}
+                {localRecipe.sugarFree && (
+                  <div className="flex items-center gap-2" title="Sin Azucar">
+                    <span className="feat-ico"><CandyOff className="h-5 w-5" /></span>
+                    <span>Sin Azucar</span>
                   </div>
                 )}
                 {localRecipe.keto && (
@@ -1113,6 +1303,30 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   <div className="flex items-center gap-2" title="Vegetariana">
                     <span className="feat-ico"><Leaf className="h-5 w-5" /></span>
                     <span>Vegetariana</span>
+                  </div>
+                )}
+                {localRecipe.sweet && (
+                  <div className="flex items-center gap-2" title="Receta dulce">
+                    <span className="feat-ico"><CakeSlice className="h-5 w-5" /></span>
+                    <span>Receta dulce</span>
+                  </div>
+                )}
+                {localRecipe.savory && (
+                  <div className="flex items-center gap-2" title="Receta salada">
+                    <span className="feat-ico"><Utensils className="h-5 w-5" /></span>
+                    <span>Receta salada</span>
+                  </div>
+                )}
+                {localRecipe.cooked && (
+                  <div className="flex items-center gap-2" title="Receta cocinada">
+                    <span className="feat-ico"><RecipePreparedIcon className="h-5 w-5" /></span>
+                    <span>Cocinada</span>
+                  </div>
+                )}
+                {localRecipe.featured && (
+                  <div className="flex items-center gap-2" title="Receta favorita">
+                    <span className="feat-ico"><Heart className="h-5 w-5 fill-current" /></span>
+                    <span>Favorita</span>
                   </div>
                 )}
               </div>
@@ -1379,7 +1593,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
 
             {/* Right column: Nutrition Label - 1/3 width */}
-            <div className="lg:col-span-1 flex justify-center lg:justify-start lg:pl-6">
+            <div className={`flex justify-center lg:col-span-1 lg:justify-start lg:pl-6 ${!hasNutritionData(localRecipe) ? 'pr-12' : ''}`}>
               <div className="sticky top-4">
                 <NutritionLabel
                   nutrition={{
@@ -1397,7 +1611,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   onCalculate={handleCalculateNutrition}
                   isCalculating={isCalculating}
                 />
-                {/^(ingl[eé]s|english)$/i.test((localRecipe.language || '').trim()) && (
+                {(localRecipe.language || '').trim() && !isSpanishLanguage(localRecipe.language) && (
                   <Button
                     type="button"
                     variant="outline"
@@ -1417,7 +1631,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
           {/* Preparación - solo si la receta tiene instrucciones */}
           {localRecipe.instructions && localRecipe.instructions.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-4 pr-12">
             <h3 className="font-semibold text-xl">Preparación ({localRecipe.instructions.length} pasos)</h3>
               <div className="space-y-4">
                 {Array.from(instructionsBySection.entries()).map(([section, instructions], sectionIndex) => (
@@ -1472,7 +1686,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </div>
 
         {/* Flechitas para ir al principio / al final del contenido */}
-        <div className="pointer-events-none sticky bottom-3 z-30 flex flex-col items-end gap-1.5 pr-3">
+        <div className="pointer-events-none sticky bottom-3 z-30 ml-auto mr-3 flex w-fit translate-x-7 flex-col items-center gap-1.5">
           <button
             type="button"
             onClick={scrollToTop}

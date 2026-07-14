@@ -20,6 +20,7 @@ export interface RecipeFilters {
   thermomixOnly?: boolean;
   airFryerOnly?: boolean;
   glutenFreeOnly?: boolean;
+  sugarFreeOnly?: boolean;
   ketoOnly?: boolean;
   lowCarbOnly?: boolean;
   proteicaOnly?: boolean;

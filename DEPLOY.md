@@ -70,6 +70,21 @@ NODE_ENV=production
 SSL_ENABLED=false                  # IMPORTANTE: Nginx termina el TLS
 UPLOAD_DIR=./uploads
 FRONTEND_URL=https://tastebox.beweb.com.ar
+GOOGLE_CLIENT_ID=366572363677-jvsvhomltge2jqjap2kg7am9u5hfs3kt.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET="secreto-del-cliente-oauth"
+GOOGLE_REDIRECT_URI=https://tastebox.beweb.com.ar/api/auth/google/callback
+```
+
+En Google Cloud Console, configura exactamente esta URI de redireccionamiento autorizada:
+
+```text
+https://tastebox.beweb.com.ar/api/auth/google/callback
+```
+
+Para probar OAuth localmente con el backend en el puerto 3005, agrega tambien:
+
+```text
+http://localhost:3005/api/auth/google/callback
 ```
 
 ### Frontend `.env.production` (`$SITE_DIR/.env.production`) — OBLIGATORIO

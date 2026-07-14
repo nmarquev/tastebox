@@ -13,7 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
 import { Recipe } from '@/types/recipe';
 import { getRecipeSource } from '@/utils/siteUtils';
-import { Beef, Loader2, Check, X, Globe, Heart, WheatOff, Leaf, ClipboardPaste } from 'lucide-react';
+import { Beef, CakeSlice, CandyOff, Loader2, Check, X, Globe, Heart, WheatOff, Leaf, ClipboardPaste, Utensils } from 'lucide-react';
+import { IMPORT_ERROR_TOAST_DURATION_MS } from '@/constants/toastDurations';
 
 interface BulkUrlImportModalProps {
   isOpen: boolean;
@@ -49,9 +50,12 @@ interface CommonFields {
   thermomix: boolean;
   airFryer: boolean;
   glutenFree: boolean;
+  sugarFree: boolean;
   keto: boolean;
   lowCarb: boolean;
   proteica: boolean;
+  sweet: boolean;
+  savory: boolean;
   vegetarian: boolean;
 }
 
@@ -60,7 +64,7 @@ const MAX_URLS = 20;
 
 const EMPTY_COMMON: CommonFields = {
   source: '', importedFrom: '', difficulty: '', language: '', country: '', dishType: '', collectionId: '', recipeType: '',
-  featured: false, cooked: false, thermomix: false, airFryer: false, glutenFree: false, keto: false, lowCarb: false, proteica: false, vegetarian: false,
+  featured: false, cooked: false, thermomix: false, airFryer: false, glutenFree: false, sugarFree: false, keto: false, lowCarb: false, proteica: false, vegetarian: false, sweet: false, savory: false,
 };
 
 export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecipes }: BulkUrlImportModalProps) => {
@@ -184,9 +188,12 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
           thermomix: common.thermomix || recipe.thermomix,
           airFryer: common.airFryer || recipe.airFryer,
           glutenFree: common.glutenFree || recipe.glutenFree,
+          sugarFree: common.sugarFree || recipe.sugarFree,
           keto: common.keto || recipe.keto,
           lowCarb: common.lowCarb || recipe.lowCarb,
           proteica: common.proteica || recipe.proteica,
+          sweet: common.sweet || recipe.sweet,
+          savory: common.savory || recipe.savory,
           vegetarian: common.vegetarian || recipe.vegetarian,
           calories: recipe.calories,
           protein: recipe.protein,
@@ -216,7 +223,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
   const handleImport = async () => {
     const urls = parseUrls(urlsText);
     if (urls.length === 0) {
-      toast({ title: 'Sin URLs válidas', description: 'Pegá al menos una URL (http:// o https://), una por línea.', variant: 'destructive' });
+      toast({ title: 'Sin URLs válidas', description: 'Pegá al menos una URL (http:// o https://), una por línea.', variant: 'destructive', duration: IMPORT_ERROR_TOAST_DURATION_MS });
       return;
     }
 
@@ -252,7 +259,8 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
       toast({
         title: 'Importación finalizada',
         description: `${okCount} de ${urls.length} receta${urls.length > 1 ? 's' : ''} importada${okCount === 1 ? '' : 's'} correctamente.${dupText}`,
-        variant: okCount > 0 ? undefined : 'destructive'
+        variant: okCount > 0 ? undefined : 'destructive',
+        duration: okCount > 0 ? undefined : IMPORT_ERROR_TOAST_DURATION_MS,
       });
     }
   };
@@ -284,12 +292,12 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
     try {
       const text = (await navigator.clipboard.readText()).trim();
       if (!text) {
-        toast({ title: 'Portapapeles vacío', description: 'No hay ninguna dirección copiada.', variant: 'destructive' });
+        toast({ title: 'Portapapeles vacío', description: 'No hay ninguna dirección copiada.', variant: 'destructive', duration: IMPORT_ERROR_TOAST_DURATION_MS });
         return;
       }
       setUrlsText(prev => (prev.trim() ? `${prev.replace(/\s*$/, '')}\n${text}` : text));
     } catch {
-      toast({ title: 'No se pudo pegar', description: 'El navegador no permitió acceder al portapapeles. Pegá manualmente con Ctrl+V.', variant: 'destructive' });
+      toast({ title: 'No se pudo pegar', description: 'El navegador no permitió acceder al portapapeles. Pegá manualmente con Ctrl+V.', variant: 'destructive', duration: IMPORT_ERROR_TOAST_DURATION_MS });
     }
   };
 
@@ -311,10 +319,13 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
     { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
     { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
     { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
+    { field: 'sugarFree', label: 'Sin Azucar', icon: <CandyOff className="h-4 w-4" /> },
     { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-4 w-4" /> },
     { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
     { field: 'proteica', label: 'Proteica', icon: <Beef className="h-4 w-4" /> },
     { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
+    { field: 'sweet', label: 'Receta dulce', icon: <CakeSlice className="h-4 w-4" /> },
+    { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
   ] as const);
 
   const selectTriggerCls = "focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary";
@@ -394,6 +405,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                       title: `El máximo de links son ${MAX_URLS}`,
                       description: `Ingresaste ${urlCount}. Quitá ${urlCount - MAX_URLS} para continuar.`,
                       variant: 'destructive',
+                      duration: IMPORT_ERROR_TOAST_DURATION_MS,
                     });
                     return;
                   }

@@ -1,13 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Beef, Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf, X, Loader2, ToggleRight } from "lucide-react";
+import { Beef, CakeSlice, CandyOff, Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf, X, Loader2, Utensils } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MultiSelectCombobox } from "@/components/MultiSelectCombobox";
 import { Recipe } from "@/types/recipe";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
+import { PreparationTimeIcon } from "@/components/icons/PreparationTimeIcon";
 import { resolveImageUrl } from "@/utils/api";
 import { isThermomixRecipe } from "@/utils/recipeUtils";
 import { parseCategories } from "@/constants/categories";
@@ -48,14 +49,17 @@ interface RecipeCardProps {
 // Características editables desde el popover "ON".
 const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
-  { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-5 w-5" /> },
-  { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain" /> },
+  { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="!h-5 !w-5" /> },
+  { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="!h-5 !w-5 object-contain" /> },
   { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
   { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
-  { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-5 w-5" /> },
+  { field: 'sugarFree', label: 'Sin Azucar', icon: <CandyOff className="h-4 w-4" /> },
+  { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="!h-[18px] !w-[18px]" /> },
   { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
   { field: 'proteica', label: 'Proteica', icon: <Beef className="h-4 w-4" /> },
   { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
+  { field: 'sweet', label: 'Receta dulce', icon: <CakeSlice className="h-4 w-4" /> },
+  { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
 ];
 
 export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
@@ -209,7 +213,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               }}
               title={recipe.featured ? "Quitar de Favoritos" : "Agregar a Favoritos"}
               aria-label={recipe.featured ? "Quitar de Favoritos" : "Agregar a Favoritos"}
-              className={`h-8 w-8 p-0 ${recipe.featured ? 'bg-red-100/50 hover:bg-red-200/50' : 'bg-white/50 hover:bg-white/70'}`}
+              className={`order-1 h-8 w-8 p-0 ${recipe.featured ? 'bg-red-100/50 hover:bg-red-200/50' : 'bg-white/50 hover:bg-white/70'}`}
             >
               <Heart
                 className={recipe.featured ? 'fill-red-500 text-red-500' : 'text-gray-600'}
@@ -224,16 +228,16 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   type="button"
                   variant="secondary"
                   size="sm"
-                  className="h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
+                  className="order-3 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
                   title="Características (favorita, cocinada, thermomix, etc.)"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <ToggleRight className="!h-6 !w-6 text-gray-600" />
+                  <ChefHat className="!h-5 !w-5 text-gray-500" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-56 p-2" onClick={(e) => e.stopPropagation()}>
-                <p className="px-1 pb-1.5 text-xs font-medium text-muted-foreground">Características</p>
-                <div className="space-y-1">
+              <PopoverContent align="end" className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5" onClick={(e) => e.stopPropagation()}>
+                <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
+                <div className="space-y-0.5">
                   {FEATURE_TOGGLES.map(({ field, label, icon }) => {
                     const active = Boolean((recipe as any)[field]);
                     return (
@@ -252,10 +256,15 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                           }
                           onToggleFeature(recipe, field, !active);
                         }}
-                        className={`flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-sm transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                        className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
                       >
-                        <span className="flex items-center gap-2">{icon}{label}</span>
-                        <span className={`text-[11px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>{active ? 'ON' : 'OFF'}</span>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center [&>img]:h-4 [&>img]:w-4 [&>svg]:h-4 [&>svg]:w-4">
+                            {icon}
+                          </span>
+                          <span className="truncate text-left">{label}</span>
+                        </span>
+                        <span className={`w-6 shrink-0 text-right text-[10px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>{active ? 'ON' : 'OFF'}</span>
                       </button>
                     );
                   })}
@@ -268,7 +277,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               type="button"
               variant="secondary"
               size="sm"
-              className="h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
+              className="order-2 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
               title="Guardar en una colección"
               onClick={(event) => {
                 event.stopPropagation();
@@ -290,7 +299,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 e.stopPropagation();
                 window.open(recipe.sourceUrl, '_blank', 'noopener,noreferrer');
               }}
-              className="h-8 w-8 p-0 bg-white/50 hover:bg-white/70"
+              className="order-4 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
               title={`Ver receta original en ${getSourceFromUrl(recipe.sourceUrl)}`}
             >
               <ExternalLink className="h-4 w-4 text-gray-600" />
@@ -301,7 +310,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               <Button
                 variant="secondary"
                 size="sm"
-                className="h-8 w-8 p-0 bg-white/50 hover:bg-white/70"
+                className="order-5 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
               >
                 <MoreVertical className="h-4 w-4 text-gray-600" />
               </Button>
@@ -425,7 +434,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           <div className={`@container flex items-center flex-wrap text-muted-foreground ${compact ? "gap-x-2 gap-y-1 text-xs" : oneCol ? "gap-x-4 gap-y-1 text-base" : "gap-x-4 gap-y-1 text-sm"}`}>
             {!!recipe.prepTime && recipe.prepTime > 0 && (
               <div className="flex items-center gap-1 whitespace-nowrap" title="Tiempo de preparación">
-                <ChefHat className={infoIconClass} />
+                <PreparationTimeIcon className={infoIconClass} />
                 <span><span className="hidden @sm:inline">Prep. </span>{recipe.prepTime} min</span>
               </div>
             )}
@@ -444,7 +453,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           </div>
         )}
 
-        {!minimal && (recipe.thermomix || isThermomixRecipe(recipe) || recipe.airFryer || recipe.glutenFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.cooked || recipe.featured) && (
+        {!minimal && (recipe.thermomix || isThermomixRecipe(recipe) || recipe.airFryer || recipe.glutenFree || recipe.sugarFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.sweet || recipe.savory || recipe.cooked || recipe.featured) && (
           <div className={`flex items-center flex-wrap gap-2 text-muted-foreground ${oneCol ? "[&>span]:h-9 [&>span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6 [&_.keto-ico]:!h-8 [&_.keto-ico]:!w-8 [&_.cooked-ico]:!h-8 [&_.cooked-ico]:!w-8" : ""}`}>
             {(recipe.thermomix || isThermomixRecipe(recipe)) && (
               <span
@@ -478,6 +487,11 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
               >
                 <WheatOff className="h-4 w-4" />
+              </span>
+            )}
+            {recipe.sugarFree && (
+              <span title="Sin Azucar" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+                <CandyOff className="h-4 w-4" />
               </span>
             )}
             {recipe.keto && (
@@ -515,6 +529,16 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
               >
                 <Leaf className="h-[18px] w-[18px]" />
+              </span>
+            )}
+            {recipe.sweet && (
+              <span title="Receta dulce" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+                <CakeSlice className="h-[18px] w-[18px]" />
+              </span>
+            )}
+            {recipe.savory && (
+              <span title="Receta salada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+                <Utensils className="h-[18px] w-[18px]" />
               </span>
             )}
             {/* Cocinada y Favorita (1 a 4 columnas) */}
