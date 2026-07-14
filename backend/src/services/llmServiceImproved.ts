@@ -1030,6 +1030,9 @@ export class LLMServiceImproved {
           try { description = JSON.parse(encodedDescription); } catch { /* campo opcional */ }
         }
       }
+      if (!description) {
+        description = this.extractYouTubeDescriptionFromInitialData(initialData);
+      }
 
       const comments = await this.extractYouTubeComments(html, initialData, url);
       let content = title ? `Title: ${title}\n\n` : '';
@@ -1083,6 +1086,28 @@ export class LLMServiceImproved {
       }
     }
     return undefined;
+  }
+
+  private extractYouTubeDescriptionFromInitialData(value: unknown): string {
+    let description = '';
+    const consider = (candidate: unknown) => {
+      if (typeof candidate !== 'string') return;
+      const cleaned = decodeNumericHtmlEntities(candidate).trim();
+      if (cleaned.length > description.length) description = cleaned;
+    };
+    const visit = (node: unknown) => {
+      if (Array.isArray(node)) {
+        node.forEach(visit);
+        return;
+      }
+      if (!node || typeof node !== 'object') return;
+      const record = node as Record<string, any>;
+      consider(record.attributedDescription?.content);
+      consider(record.descriptionBodyText?.content);
+      Object.values(record).forEach(visit);
+    };
+    visit(value);
+    return description;
   }
 
   private collectYouTubeCommentTexts(value: unknown): string[] {
