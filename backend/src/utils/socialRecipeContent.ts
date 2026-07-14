@@ -1,6 +1,9 @@
 export const SOCIAL_INGREDIENTS_UNAVAILABLE =
   'No están disponibles los ingredientes ni los pasos de preparación en la publicación ni en sus primeros 5 comentarios.';
 
+export const YOUTUBE_INGREDIENTS_UNAVAILABLE =
+  'No se puede importar la receta porque faltan los ingredientes.';
+
 const ingredientPlaceholder = /^(?:ingrediente|ingredientes no especificados|ingredientes según el video)$/i;
 const instructionPlaceholder = /^(?:paso de preparación|preparar según la receta original|seguir las instrucciones mostradas en el video|visitar el enlace original para ver el contenido completo)$/i;
 

@@ -15,6 +15,7 @@ import {
   removeSocialInstructionPlaceholders,
   removeSocialPlaceholders,
   SOCIAL_INGREDIENTS_UNAVAILABLE,
+  YOUTUBE_INGREDIENTS_UNAVAILABLE,
 } from '../utils/socialRecipeContent';
 
 const router = express.Router();
@@ -71,8 +72,12 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       ) {
         return res.status(422).json({
           success: false,
-          code: 'SOCIAL_RECIPE_INGREDIENTS_UNAVAILABLE',
-          error: SOCIAL_INGREDIENTS_UNAVAILABLE,
+          code: isYouTubeRecipe
+            ? 'YOUTUBE_RECIPE_INGREDIENTS_UNAVAILABLE'
+            : 'SOCIAL_RECIPE_INGREDIENTS_UNAVAILABLE',
+          error: isYouTubeRecipe
+            ? YOUTUBE_INGREDIENTS_UNAVAILABLE
+            : SOCIAL_INGREDIENTS_UNAVAILABLE,
         });
       }
     }

@@ -161,7 +161,8 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
       console.error('Import error:', error);
       const message = error instanceof Error ? error.message : "No se pudo importar la receta";
       toast({
-        title: message.includes('No están disponibles los ingredientes')
+        title: message.toLowerCase().includes('no están disponibles los ingredientes')
+          || message.toLowerCase().includes('faltan los ingredientes')
           ? "Ingredientes no disponibles"
           : "Error al importar",
         description: message,

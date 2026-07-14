@@ -17,6 +17,7 @@ import {
   removeSocialInstructionPlaceholders,
   removeSocialPlaceholders,
   SOCIAL_INGREDIENTS_UNAVAILABLE,
+  YOUTUBE_INGREDIENTS_UNAVAILABLE,
 } from '../utils/socialRecipeContent';
 
 const router = express.Router();
@@ -91,8 +92,12 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     ) {
       return res.status(422).json({
         success: false,
-        code: 'SOCIAL_RECIPE_INGREDIENTS_UNAVAILABLE',
-        error: SOCIAL_INGREDIENTS_UNAVAILABLE
+        code: isYouTubeRecipe
+          ? 'YOUTUBE_RECIPE_INGREDIENTS_UNAVAILABLE'
+          : 'SOCIAL_RECIPE_INGREDIENTS_UNAVAILABLE',
+        error: isYouTubeRecipe
+          ? YOUTUBE_INGREDIENTS_UNAVAILABLE
+          : SOCIAL_INGREDIENTS_UNAVAILABLE
       });
     }
 
@@ -108,7 +113,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     } else if (isSocialRecipe && !hasIngredients && hasInstructions) {
       warning = 'Se importaron los pasos de preparación, pero los ingredientes no están disponibles en la publicación ni en sus primeros 5 comentarios.';
     } else if (isYouTubeRecipe && hasIngredients && !hasInstructions) {
-      warning = 'Se importaron los ingredientes, pero los pasos de preparación no están disponibles en la descripción ni en los comentarios públicos del video.';
+      warning = 'Se importaron los ingredientes, pero los pasos de preparación no están disponibles en la descripción ni en los primeros 5 comentarios.';
     }
 
     // Step 2: Download and process images
@@ -203,7 +208,10 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       errorMessage = error.message;
       if (error.message.includes('No valid recipe found')) {
         statusCode = 404;
-      } else if (error.message.includes('No están disponibles los ingredientes')) {
+      } else if (
+        error.message.toLowerCase().includes('no están disponibles los ingredientes')
+        || error.message.toLowerCase().includes('faltan los ingredientes')
+      ) {
         statusCode = 422;
       } else if (error.message.includes('Error al fetch')) {
         statusCode = 400;

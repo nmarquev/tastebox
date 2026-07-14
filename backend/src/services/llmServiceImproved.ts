@@ -4,7 +4,10 @@ import { RecipeImportResponse } from '../types/recipe';
 import axios from 'axios';
 import { createOpenAIClient } from '../config/openai';
 import { getModel, getVisionModel } from '../config/aiSettings';
-import { SOCIAL_INGREDIENTS_UNAVAILABLE } from '../utils/socialRecipeContent';
+import {
+  SOCIAL_INGREDIENTS_UNAVAILABLE,
+  YOUTUBE_INGREDIENTS_UNAVAILABLE,
+} from '../utils/socialRecipeContent';
 
 // Parseo robusto del JSON devuelto por el LLM. Algunos modelos (DeepSeek, etc.) ignoran
 // response_format:json_object y devuelven el JSON envuelto en fences markdown (```json ... ```)
@@ -958,7 +961,10 @@ export class LLMServiceImproved {
 
       // En Instagram/TikTok/YouTube no fabricar ingredientes ni pasos cuando la plataforma
       // no permite leer el contenido público necesario.
-      if (/instagram\.com|tiktok\.com|youtube\.com|youtu\.be/i.test(url)) {
+      if (/youtube\.com|youtu\.be/i.test(url)) {
+        throw new Error(YOUTUBE_INGREDIENTS_UNAVAILABLE);
+      }
+      if (/instagram\.com|tiktok\.com/i.test(url)) {
         throw new Error(SOCIAL_INGREDIENTS_UNAVAILABLE);
       }
 
@@ -1109,7 +1115,7 @@ export class LLMServiceImproved {
       Object.values(record).forEach(visit);
     };
     visit(value);
-    return Array.from(comments).slice(0, 20);
+    return Array.from(comments).slice(0, 5);
   }
 
   private findYouTubeCommentsContinuation(value: unknown): string | undefined {
@@ -1630,8 +1636,10 @@ REGLAS OBLIGATORIAS PARA INSTAGRAM/TIKTOK:
       : /youtube\.com|youtu\.be/i.test(sourceUrl)
         ? `
 REGLAS OBLIGATORIAS PARA YOUTUBE:
-- Revisa únicamente la descripción y los comentarios públicos incluidos.
+- Revisa únicamente la descripción y los primeros 5 comentarios públicos incluidos, respetando su orden original.
 - No uses el título para inventar, completar ni inferir ingredientes o pasos.
+- Si hay dudas sobre si el contenido contiene una lista real de ingredientes, considera que no están disponibles.
+- Nunca inventes ingredientes, cantidades ni unidades faltantes.
 - "sourceHasIngredients" debe ser true sólo si la descripción o los comentarios incluyen ingredientes reales; si no, usa false y devuelve "ingredients": [].
 - "sourceHasInstructions" debe ser true sólo si la descripción o los comentarios incluyen pasos reales; si no, usa false y devuelve "instructions": [].
 `
