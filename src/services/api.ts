@@ -608,6 +608,27 @@ export const api = {
       return data;
     },
 
+    fromText: async (
+      text: string,
+      suggestedTitle?: string,
+      signal?: AbortSignal,
+      multiple = false
+    ): Promise<ImportRecipeResponse> => {
+      const response = await authFetch('/import/text', {
+        method: 'POST',
+        body: JSON.stringify({ text, suggestedTitle, multiple }),
+        signal,
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'No se pudo importar la receta desde texto');
+      }
+
+      return data;
+    },
+
     validateUrl: async (url: string): Promise<{ valid: boolean; error?: string }> => {
       const response = await authFetch('/import/validate-url', {
         method: 'POST',

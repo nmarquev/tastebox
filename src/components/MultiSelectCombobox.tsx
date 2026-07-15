@@ -23,6 +23,7 @@ interface MultiSelectComboboxProps {
   allowCreate?: boolean;
   createLabel?: string;
   onCreate?: (value: string) => void | Promise<void>;
+  onDeleteOption?: (value: string) => void;
   singleSelect?: boolean;
   closeOnSelect?: boolean;
 }
@@ -38,6 +39,7 @@ export const MultiSelectCombobox = ({
   allowCreate = false,
   createLabel = "Agregar",
   onCreate,
+  onDeleteOption,
   singleSelect = false,
   closeOnSelect = false,
 }: MultiSelectComboboxProps) => {
@@ -97,7 +99,7 @@ export const MultiSelectCombobox = ({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between font-normal hover:!bg-transparent data-[state=open]:!bg-transparent focus-visible:!ring-0 focus-visible:!ring-offset-0 hover:border-primary/60 focus-visible:border-primary data-[state=open]:border-primary"
+            className="w-full justify-between font-normal text-foreground hover:!bg-transparent hover:!text-foreground data-[state=open]:!bg-transparent data-[state=open]:!text-foreground focus-visible:!text-foreground focus-visible:!ring-0 focus-visible:!ring-offset-0 hover:border-primary/60 focus-visible:border-primary data-[state=open]:border-primary"
           >
             <span className={cn("truncate", !selected.length && "text-muted-foreground")}>
               {selected.length
@@ -149,9 +151,31 @@ export const MultiSelectCombobox = ({
                   </CommandItem>
                 )}
                 {filteredOptions.map((opt) => (
-                  <CommandItem key={opt} value={opt} onSelect={() => toggle(opt)}>
-                    <Check className={cn("mr-2 h-4 w-4", selected.includes(opt) ? "opacity-100" : "opacity-0")} />
-                    {opt}
+                  <CommandItem key={opt} value={opt} onSelect={() => toggle(opt)} className="gap-2">
+                    <Check className={cn("h-4 w-4", selected.includes(opt) ? "opacity-100" : "opacity-0")} />
+                    <span className="min-w-0 flex-1 truncate">{opt}</span>
+                    {onDeleteOption && (
+                      <button
+                        type="button"
+                        className="ml-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        aria-label={`Eliminar ${opt}`}
+                        title="Eliminar de la lista"
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onDeleteOption(opt);
+                          if (selected.includes(opt)) {
+                            onChange(selected.filter(value => value !== opt));
+                          }
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </CommandItem>
                 ))}
               </CommandGroup>

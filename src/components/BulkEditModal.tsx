@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
+import { CreatableCombobox } from '@/components/CreatableCombobox';
 import { useToast } from '@/hooks/use-toast';
 import { api, RecipeCollection } from '@/services/api';
 import { Recipe } from '@/types/recipe';
@@ -20,6 +21,19 @@ interface BulkEditModalProps {
 
 // Estado de cada característica booleana: no tocar / poner en sí / poner en no.
 type Tri = 'keep' | 'yes' | 'no';
+
+const importSourceOptions = [
+  { value: 'www', label: 'Pagina web' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'doc', label: 'DOC' },
+];
+
+const getImportSourceLabel = (value?: string) =>
+  importSourceOptions.find(option => option.value === value)?.label || value || '';
+
+const getImportSourceValue = (label: string) =>
+  importSourceOptions.find(option => option.label.toLocaleLowerCase('es') === label.toLocaleLowerCase('es'))?.value || label;
 
 const FEATURE_FIELDS = [
   { field: 'featured', label: 'Favorita' },
@@ -60,6 +74,7 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
 
   // Opciones de los desplegables.
   const [sourceOptions, setSourceOptions] = useState<string[]>([]);
+  const [originOptions, setOriginOptions] = useState<string[]>(importSourceOptions.map(option => option.label));
   const [languageOptions, setLanguageOptions] = useState<string[]>([]);
   const [countryOptions, setCountryOptions] = useState<string[]>([]);
   const [dishTypeOptions, setDishTypeOptions] = useState<string[]>([]);
@@ -181,7 +196,7 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
       <DialogContent
         className="max-w-4xl max-h-[88vh] gap-2 overflow-y-auto"
-        closeButtonClassName="right-4 top-4 h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+        closeButtonClassName="right-4 top-4 h-8 w-8 rounded-md bg-primary/65 text-foreground opacity-100 inline-flex items-center justify-center shadow-sm backdrop-blur-sm hover:bg-primary/80 hover:opacity-100 data-[state=open]:bg-primary/65 data-[state=open]:text-foreground"
       >
         <DialogHeader>
           <DialogTitle>Editar campos comunes</DialogTitle>
@@ -202,19 +217,27 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
               placeholder="Elegí una fuente"
               searchPlaceholder="Buscar o escribir fuente..."
               singleSelect closeOnSelect allowCreate createLabel="Agregar"
+              onDeleteOption={(value) => {
+                setSourceOptions(prev => prev.filter(option => option !== value));
+                if (source === value) setSource('');
+              }}
             />
           </div>
           <div>
             <Label>Origen</Label>
-            <Select value={importedFrom || undefined} onValueChange={setImportedFrom}>
-              <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Elegí un origen" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="www">Página web</SelectItem>
-                <SelectItem value="instagram">Instagram</SelectItem>
-                <SelectItem value="youtube">YouTube</SelectItem>
-                <SelectItem value="doc">DOC</SelectItem>
-              </SelectContent>
-            </Select>
+            <CreatableCombobox
+              options={originOptions}
+              value={getImportSourceLabel(importedFrom)}
+              onChange={(value) => setImportedFrom(value ? getImportSourceValue(value) : '')}
+              placeholder="Elegi un origen"
+              searchPlaceholder="Buscar o escribir origen..."
+              createLabel="Agregar"
+              triggerClassName={selectTriggerCls}
+              onDeleteOption={(value) => {
+                setOriginOptions(prev => prev.filter(option => option !== value));
+                if (getImportSourceLabel(importedFrom) === value) setImportedFrom('');
+              }}
+            />
           </div>
           <div>
             <Label>Dificultad</Label>
@@ -236,6 +259,10 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
               placeholder="Elegí un idioma"
               searchPlaceholder="Buscar o escribir idioma..."
               singleSelect closeOnSelect allowCreate createLabel="Agregar"
+              onDeleteOption={(value) => {
+                setLanguageOptions(prev => prev.filter(option => option !== value));
+                if (language === value) setLanguage('');
+              }}
             />
           </div>
           <div>
@@ -247,6 +274,10 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
               placeholder="Elegí un país"
               searchPlaceholder="Buscar o escribir país..."
               singleSelect closeOnSelect allowCreate createLabel="Agregar"
+              onDeleteOption={(value) => {
+                setCountryOptions(prev => prev.filter(option => option !== value));
+                if (country === value) setCountry('');
+              }}
             />
           </div>
           <div>

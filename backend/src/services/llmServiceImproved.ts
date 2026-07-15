@@ -835,7 +835,7 @@ export class LLMServiceImproved {
 
   constructor() {
     this.openai = createOpenAIClient({
-      timeout: 60000 // Timeout de 60 segundos para requests LLM
+      timeout: 120000 // Timeout de 120 segundos para requests LLM
     });
   }
 
@@ -2610,7 +2610,7 @@ Responde SOLO con un JSON válido con este formato exacto:
       const response = await this.openai.chat.completions.create({
         model: getVisionModel(),
         messages,
-        max_completion_tokens: 8000,
+        max_completion_tokens: 12000,
         response_format: { type: 'json_object' }
       });
 

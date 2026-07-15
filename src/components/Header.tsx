@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Download, User, LogOut, Settings, FileText, Volume2, Sparkles, Chrome, Cpu, X } from "lucide-react";
+import { Search, Plus, Download, User, LogOut, Settings, Volume2, Sparkles, Chrome, Cpu, X, ClipboardPaste } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { EditProfileModal } from "@/components/EditProfileModal";
-import { DocxImportModal } from "@/components/DocxImportModal";
+import { TextImportModal } from "@/components/TextImportModal";
 import { IntelligentSearchModal } from "@/components/IntelligentSearchModal";
 import { ExtensionInstallModal } from "@/components/ExtensionInstallModal";
 import {
@@ -48,7 +48,7 @@ export const Header = ({
   const { user, logout } = useAuth();
   const { theme } = useTheme();
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
-  const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
+  const [isTextImportModalOpen, setIsTextImportModalOpen] = useState(false);
   const [isVoiceSettingsModalOpen, setIsVoiceSettingsModalOpen] = useState(false);
   const [isIntelligentSearchModalOpen, setIsIntelligentSearchModalOpen] = useState(false);
   const [isExtensionModalOpen, setIsExtensionModalOpen] = useState(false);
@@ -89,6 +89,8 @@ export const Header = ({
       onAddRecipe();
     } else if (action === "importar") {
       onImportRecipe();
+    } else if (action === "importar-texto") {
+      setIsTextImportModalOpen(true);
     } else if (action === "busqueda-inteligente") {
       setIsIntelligentSearchModalOpen(true);
     }
@@ -228,9 +230,9 @@ export const Header = ({
                     <Download className="mr-2 h-4 w-4 text-muted-foreground" />
                     URL
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsDocxImportModalOpen(true)}>
-                    <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
-                    DOCX
+                  <DropdownMenuItem onClick={() => setIsTextImportModalOpen(true)}>
+                    <ClipboardPaste className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Texto pegado
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -314,12 +316,12 @@ export const Header = ({
         onClose={() => setIsEditProfileModalOpen(false)}
       />
 
-      <DocxImportModal
-        isOpen={isDocxImportModalOpen}
-        onClose={() => setIsDocxImportModalOpen(false)}
+      <TextImportModal
+        isOpen={isTextImportModalOpen}
+        onClose={() => setIsTextImportModalOpen(false)}
         onRecipeSaved={(recipeId) => {
-          console.log('Recipe saved from DOCX:', recipeId);
-          onRecipeAdded?.(); // Refresh the recipes list
+          console.log('Recipe saved from pasted text:', recipeId);
+          onRecipeAdded?.();
         }}
       />
 

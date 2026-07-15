@@ -27,11 +27,126 @@ const importUrlSchema = z.object({
   url: z.string().url()
 });
 
+const importTextSchema = z.object({
+  text: z.string().trim().min(20, 'El texto es demasiado corto').max(200000, 'El texto es demasiado largo'),
+  suggestedTitle: z.string().trim().max(180).optional(),
+  multiple: z.boolean().optional().default(false)
+});
+
 // Initialize services
 const llmService = new LLMServiceImproved();
 const imageService = new ImageService();
 const cookidooService = new CookidooService();
 const fooditService = new FooditService();
+
+const normalizeTextIngredient = (ingredient: unknown, index: number) => {
+  if (typeof ingredient === 'string') {
+    return {
+      name: ingredient.trim(),
+      amount: '',
+      unit: '',
+      order: index + 1,
+      section: null
+    };
+  }
+
+  const item = ingredient as { name?: unknown; amount?: unknown; unit?: unknown; section?: unknown };
+  return {
+    name: String(item?.name || '').trim(),
+    amount: String(item?.amount || '').trim(),
+    unit: item?.unit ? String(item.unit).trim() : '',
+    order: index + 1,
+    section: item?.section ? String(item.section).trim() : null
+  };
+};
+
+const normalizeTextInstruction = (instruction: unknown, index: number) => {
+  if (typeof instruction === 'string') {
+    return {
+      step: index + 1,
+      description: instruction.trim(),
+      time: undefined,
+      temperature: undefined,
+      speed: undefined,
+      function: null,
+      section: null
+    };
+  }
+
+  const item = instruction as {
+    step?: unknown;
+    description?: unknown;
+    time?: unknown;
+    temperature?: unknown;
+    speed?: unknown;
+    function?: unknown;
+    section?: unknown;
+  };
+
+  return {
+    step: typeof item?.step === 'number' ? item.step : index + 1,
+    description: String(item?.description || '').trim(),
+    time: item?.time ? String(item.time) : undefined,
+    temperature: item?.temperature ? String(item.temperature) : undefined,
+    speed: item?.speed ? String(item.speed) : undefined,
+    function: item?.function ? String(item.function) : null,
+    section: item?.section ? String(item.section).trim() : null
+  };
+};
+
+const buildTextImportRecipeResponse = (recipeData: any) => {
+  const ingredients = (recipeData.ingredients || [])
+    .map(normalizeTextIngredient)
+    .filter((ingredient: { name: string }) => {
+      const name = ingredient.name.trim().toLowerCase();
+      return name && name !== 'ingredientes no especificados' && name !== 'ingrediente';
+    });
+
+  const instructions = (recipeData.instructions || [])
+    .map(normalizeTextInstruction)
+    .filter((instruction: { description: string }) => {
+      const description = instruction.description.trim().toLowerCase();
+      return description && description !== 'preparar segun la receta original' && description !== 'preparar según la receta original';
+    });
+
+  return {
+    title: String(recipeData.title || '').trim(),
+    description: recipeData.description,
+    suggestions: sanitizeSuggestionText(recipeData.suggestions),
+    prepTime: Number.isFinite(recipeData.prepTime) ? recipeData.prepTime : 30,
+    cookTime: Number.isFinite(recipeData.cookTime) ? recipeData.cookTime : undefined,
+    servings: Number.isFinite(recipeData.servings) ? recipeData.servings : 4,
+    difficulty: undefined,
+    recipeType: undefined,
+    country: undefined,
+    language: recipeData.language || undefined,
+    sourceUrl: undefined,
+    author: undefined,
+    importedFrom: 'Texto pegado',
+    thermomix: recipeData.thermomix ?? false,
+    airFryer: recipeData.airFryer ?? false,
+    glutenFree: recipeData.glutenFree === true || mentionsGlutenFree(recipeData),
+    sugarFree: recipeData.sugarFree ?? false,
+    keto: recipeData.keto ?? false,
+    lowCarb: recipeData.lowCarb ?? false,
+    vegetarian: recipeData.vegetarian ?? false,
+    proteica: recipeData.proteica ?? false,
+    sweet: recipeData.sweet ?? false,
+    savory: recipeData.savory ?? false,
+    calories: recipeData.nutrition?.calories,
+    protein: recipeData.nutrition?.protein,
+    carbohydrates: recipeData.nutrition?.carbohydrates,
+    fat: recipeData.nutrition?.fat,
+    saturatedFat: recipeData.nutrition?.saturatedFat,
+    fiber: recipeData.nutrition?.fiber,
+    sugar: recipeData.nutrition?.sugar,
+    sodium: recipeData.nutrition?.sodium,
+    images: [],
+    ingredients,
+    instructions,
+    tags: Array.isArray(recipeData.tags) ? recipeData.tags.filter(Boolean).slice(0, 5) : []
+  };
+};
 
 // Import recipe from URL
 router.post('/', authenticateToken, async (req: AuthRequest, res) => {
@@ -215,6 +330,83 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         statusCode = 422;
       } else if (error.message.includes('Error al fetch')) {
         statusCode = 400;
+      }
+    }
+
+    res.status(statusCode).json({
+      success: false,
+      error: errorMessage
+    });
+  }
+});
+
+// Import recipe from pasted plain text
+router.post('/text', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { text, suggestedTitle, multiple } = importTextSchema.parse(req.body);
+
+    console.log(`Starting recipe import from pasted text (${text.length} chars)`);
+
+    if (multiple) {
+      const extraction = await llmService.extractMultipleRecipesFromDocument(text);
+      if (!extraction.success) {
+        return res.status(422).json({
+          success: false,
+          error: extraction.error || 'No se pudieron detectar recetas en el texto.'
+        });
+      }
+
+      const recipes = extraction.recipes
+        .map(buildTextImportRecipeResponse)
+        .filter(recipe => recipe.title && recipe.ingredients.length > 0 && recipe.instructions.length > 0);
+
+      if (recipes.length === 0) {
+        return res.status(422).json({
+          success: false,
+          error: 'No se pudo importar porque el texto no tiene recetas con nombre, ingredientes y pasos de preparacion disponibles.'
+        });
+      }
+
+      return res.json({
+        success: true,
+        recipes,
+        preview: true
+      });
+    }
+
+    const recipeData = await llmService.extractRecipeFromText(text, {
+      suggestedTitle,
+      context: 'texto pegado manualmente'
+    });
+
+    const responseData = buildTextImportRecipeResponse(recipeData);
+
+    if (!responseData.title || responseData.ingredients.length === 0 || responseData.instructions.length === 0) {
+      return res.status(422).json({
+        success: false,
+        error: 'No se pudo importar la receta porque el texto no tiene nombre, ingredientes y pasos de preparacion disponibles.'
+      });
+    }
+
+    res.json({
+      success: true,
+      recipe: responseData,
+      preview: true
+    });
+  } catch (error) {
+    console.error('Text import error:', error);
+
+    let errorMessage = 'Error al importar la receta desde texto';
+    let statusCode = 500;
+
+    if (error instanceof z.ZodError) {
+      errorMessage = error.errors[0]?.message || 'Texto invalido';
+      statusCode = 400;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+      if (error.message.includes('No valid recipe found')) {
+        errorMessage = 'No se pudo importar la receta porque el texto no tiene nombre, ingredientes y pasos de preparacion disponibles.';
+        statusCode = 422;
       }
     }
 

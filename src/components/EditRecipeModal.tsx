@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, type MouseEvent as ReactMouseEvent } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Beef, CakeSlice, CandyOff, Loader2, Plus, X, Upload, Edit, Calculator, 
 import { resolveImageUrl } from '@/utils/api';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
+import { CreatableCombobox } from '@/components/CreatableCombobox';
 import { Switch } from '@/components/ui/switch';
 import { AvocadoIcon } from '@/components/icons/AvocadoIcon';
 import { RecipePreparedIcon } from '@/components/icons/RecipePreparedIcon';
@@ -39,7 +40,7 @@ interface RecipeFormData {
   title: string;
   description: string;
   suggestions: string;
-  importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
+  importedFrom?: string;
   sourceUrl: string;
   source: string;
   author: string;
@@ -78,6 +79,7 @@ interface RecipeFormData {
     amount: string;
     unit: string;
     section?: string;
+    pasted?: boolean;
   }>;
   instructions: Array<{
     description: string;
@@ -88,6 +90,19 @@ interface RecipeFormData {
     section?: string;
   }>;
 }
+
+const importSourceOptions = [
+  { value: 'www', label: 'Pagina web' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'doc', label: 'DOC' },
+];
+
+const getImportSourceLabel = (value?: string) =>
+  importSourceOptions.find(option => option.value === value)?.label || value || '';
+
+const getImportSourceValue = (label: string) =>
+  importSourceOptions.find(option => option.label.toLocaleLowerCase('es') === label.toLocaleLowerCase('es'))?.value || label;
 
 const toDateInputValue = (value?: string | Date | null) => {
   const date = value ? new Date(value) : new Date();
@@ -110,6 +125,19 @@ const normalizeSnapshotValue = (value: unknown): unknown => {
 };
 
 const getFormSnapshot = (value: unknown) => JSON.stringify(normalizeSnapshotValue(value));
+
+const normalizeDifficulty = (value?: string | null) => {
+  if (!value) return undefined;
+  const normalized = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es')
+    .trim();
+  if (normalized === 'facil') return 'Fácil';
+  if (normalized === 'medio') return 'Medio';
+  if (normalized === 'dificil') return 'Difícil';
+  return undefined;
+};
 
 export const EditRecipeModal = ({
   isOpen,
@@ -136,12 +164,19 @@ export const EditRecipeModal = ({
   const [initialCollectionIds, setInitialCollectionIds] = useState<string[]>([]);
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
   const [sourceOptions, setSourceOptions] = useState<string[]>([]);
+  const [originOptions, setOriginOptions] = useState<string[]>(importSourceOptions.map(option => option.label));
   const [languageOptions, setLanguageOptions] = useState<string[]>([]);
   const [countryOptions, setCountryOptions] = useState<string[]>([]);
   const [dishTypeOptions, setDishTypeOptions] = useState<string[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [tagOptions, setTagOptions] = useState<string[]>([]);
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
+  const [bulkEditingIngredients, setBulkEditingIngredients] = useState(false);
+  const [selectedIngredientIndexes, setSelectedIngredientIndexes] = useState<Set<number>>(new Set());
+  const [bulkIngredientSection, setBulkIngredientSection] = useState('__none__');
+  const [bulkEditingInstructions, setBulkEditingInstructions] = useState(false);
+  const [selectedInstructionIndexes, setSelectedInstructionIndexes] = useState<Set<number>>(new Set());
+  const [bulkInstructionSection, setBulkInstructionSection] = useState('__none__');
   const { toast } = useToast();
   const { calculateNutrition, isCalculating } = useNutritionCalculator();
 
@@ -154,6 +189,8 @@ export const EditRecipeModal = ({
   // (Más confiable que isDirty, que puede dar falsos positivos al inicializar.)
   const initialFormSnapshot = useRef<string | null>(null);
   const formScrollRef = useRef<HTMLDivElement>(null);
+  const lastSelectedIngredientIndex = useRef<number | null>(null);
+  const lastSelectedInstructionIndex = useRef<number | null>(null);
 
   const scrollFormToTop = () => formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   const scrollFormToBottom = () => formScrollRef.current?.scrollTo({
@@ -186,10 +223,85 @@ export const EditRecipeModal = ({
     appendIngredient({ name: '', amount: '', unit: '', section: inheritedSection });
   };
 
+  const handleClearIngredients = () => {
+    replaceIngredients([{ name: '', amount: '', unit: '', section: '' }]);
+    setShowNewIngredientSection({});
+    setSelectedIngredientIndexes(new Set());
+    setBulkEditingIngredients(false);
+    lastSelectedIngredientIndex.current = null;
+  };
+
+  const handleRemovePastedIngredient = (index: number) => {
+    if (ingredientFields.length === 1) {
+      handleClearIngredients();
+      return;
+    }
+    removeIngredient(index);
+  };
+
+  const handleIngredientSelection = (index: number, event: ReactMouseEvent<HTMLInputElement>) => {
+    setSelectedIngredientIndexes(prev => {
+      if (event.shiftKey && lastSelectedIngredientIndex.current !== null) {
+        const next = new Set(prev);
+        const start = Math.min(lastSelectedIngredientIndex.current, index);
+        const end = Math.max(lastSelectedIngredientIndex.current, index);
+        for (let itemIndex = start; itemIndex <= end; itemIndex += 1) next.add(itemIndex);
+        return next;
+      }
+
+      if (event.ctrlKey || event.metaKey) {
+        const next = new Set(prev);
+        if (next.has(index)) next.delete(index);
+        else next.add(index);
+        lastSelectedIngredientIndex.current = index;
+        return next;
+      }
+
+      lastSelectedIngredientIndex.current = index;
+      return prev.size === 1 && prev.has(index) ? new Set() : new Set([index]);
+    });
+  };
+
   const { fields: instructionFields, append: appendInstruction, remove: removeInstruction, replace: replaceInstructions } = useFieldArray({
     control,
     name: 'instructions'
   });
+
+  const handleAppendInstruction = () => {
+    appendInstruction({ description: '', function: '', time: '', temperature: '', speed: '', section: '' });
+  };
+
+  const handleClearInstructions = () => {
+    replaceInstructions([{ description: '', function: '', time: '', temperature: '', speed: '', section: '' }]);
+    setShowNewInstructionSection({});
+    setSelectedInstructionIndexes(new Set());
+    setBulkEditingInstructions(false);
+    setBulkInstructionSection('__none__');
+    lastSelectedInstructionIndex.current = null;
+  };
+
+  const handleInstructionSelection = (index: number, event: ReactMouseEvent<HTMLInputElement>) => {
+    setSelectedInstructionIndexes(prev => {
+      if (event.shiftKey && lastSelectedInstructionIndex.current !== null) {
+        const next = new Set(prev);
+        const start = Math.min(lastSelectedInstructionIndex.current, index);
+        const end = Math.max(lastSelectedInstructionIndex.current, index);
+        for (let itemIndex = start; itemIndex <= end; itemIndex += 1) next.add(itemIndex);
+        return next;
+      }
+
+      if (event.ctrlKey || event.metaKey) {
+        const next = new Set(prev);
+        if (next.has(index)) next.delete(index);
+        else next.add(index);
+        lastSelectedInstructionIndex.current = index;
+        return next;
+      }
+
+      lastSelectedInstructionIndex.current = index;
+      return prev.size === 1 && prev.has(index) ? new Set() : new Set([index]);
+    });
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -237,6 +349,7 @@ export const EditRecipeModal = ({
   // State for new section inputs
   const [showNewIngredientSection, setShowNewIngredientSection] = useState<{ [key: number]: boolean }>({});
   const [showNewInstructionSection, setShowNewInstructionSection] = useState<{ [key: number]: boolean }>({});
+  const [savedIngredientSections, setSavedIngredientSections] = useState<string[]>([]);
 
   // Detect unique sections from current form data (memoized)
   const uniqueSections = useMemo(() => {
@@ -261,9 +374,71 @@ export const EditRecipeModal = ({
     return Array.from(sections).sort();
   }, [watch('ingredients'), watch('instructions')]);
 
+  const ingredientSectionOptions = useMemo(
+    () => Array.from(new Set([...uniqueSections, ...savedIngredientSections]))
+      .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })),
+    [uniqueSections, savedIngredientSections]
+  );
+
+  const handleSaveIngredientSection = (index: number) => {
+    const section = (getValues(`ingredients.${index}.section`) || '').trim();
+    if (!section) {
+      toast({ title: 'Escribí un nombre para la sección', variant: 'destructive' });
+      return;
+    }
+    setValue(`ingredients.${index}.section`, section, { shouldDirty: true });
+    setSavedIngredientSections(prev => prev.some(item => item.toLocaleLowerCase('es') === section.toLocaleLowerCase('es'))
+      ? prev
+      : [...prev, section]);
+    setShowNewIngredientSection(prev => ({ ...prev, [index]: false }));
+  };
+
+  const handleApplyBulkIngredientSection = () => {
+    if (selectedIngredientIndexes.size === 0) {
+      toast({ title: 'Seleccioná al menos un ingrediente', variant: 'destructive' });
+      return;
+    }
+    const section = bulkIngredientSection === '__none__' ? '' : bulkIngredientSection;
+    selectedIngredientIndexes.forEach(index => {
+      setValue(`ingredients.${index}.section`, section, { shouldDirty: true });
+    });
+    toast({
+      title: section ? `Sección aplicada a ${selectedIngredientIndexes.size} ingredientes` : `Sección quitada de ${selectedIngredientIndexes.size} ingredientes`,
+    });
+    setSelectedIngredientIndexes(new Set());
+    setBulkEditingIngredients(false);
+    lastSelectedIngredientIndex.current = null;
+  };
+
+  const handleApplyBulkInstructionSection = () => {
+    if (selectedInstructionIndexes.size === 0) {
+      toast({ title: 'Seleccioná al menos un paso', variant: 'destructive' });
+      return;
+    }
+    const section = bulkInstructionSection === '__none__' ? '' : bulkInstructionSection;
+    selectedInstructionIndexes.forEach(index => {
+      setValue(`instructions.${index}.section`, section, { shouldDirty: true });
+    });
+    toast({
+      title: section ? `Sección aplicada a ${selectedInstructionIndexes.size} pasos` : `Sección quitada de ${selectedInstructionIndexes.size} pasos`,
+    });
+    setSelectedInstructionIndexes(new Set());
+    setBulkEditingInstructions(false);
+    lastSelectedInstructionIndex.current = null;
+  };
+
   // Initialize form with recipe data
   useEffect(() => {
     if (recipe && isOpen) {
+      setSavedIngredientSections([]);
+      setSelectedIngredientIndexes(new Set());
+      setBulkEditingIngredients(false);
+      setBulkIngredientSection('__none__');
+      lastSelectedIngredientIndex.current = null;
+      setSelectedInstructionIndexes(new Set());
+      setBulkEditingInstructions(false);
+      setBulkInstructionSection('__none__');
+      lastSelectedInstructionIndex.current = null;
       setExistingImages(recipe.images || []);
       setUploadedImages([]);
       setInitialImageCount(recipe.images?.length ?? 0);
@@ -495,12 +670,24 @@ export const EditRecipeModal = ({
     toast({ title: 'No se reconoció una imagen', description: 'Arrastrá un archivo o una imagen desde una página web.', variant: 'destructive' });
   };
 
-  // Pegar lista de ingredientes desde el portapapeles: una por línea (intenta separar cantidad/unidad).
+  // En creación se conserva la lista completa tal como fue pegada. En edición se
+  // mantiene el comportamiento histórico de separar cada línea en sus campos.
   const handlePasteIngredients = async () => {
     try {
       const text = await navigator.clipboard.readText();
+      if (!text.trim()) { toast({ title: 'El portapapeles está vacío', variant: 'destructive' }); return; }
+      if (mode === 'create') {
+        const pastedIngredients = text
+          .split(/\r?\n/)
+          .filter(line => line.trim())
+          .map(line => ({ name: line, amount: '', unit: '', section: '', pasted: true }));
+        replaceIngredients(pastedIngredients);
+        setSelectedIngredientIndexes(new Set());
+        lastSelectedIngredientIndex.current = null;
+        toast({ title: `${pastedIngredients.length} ingredientes pegados` });
+        return;
+      }
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-      if (!lines.length) { toast({ title: 'El portapapeles está vacío', variant: 'destructive' }); return; }
       const parsed = lines.map(line => {
         const m = line.replace(/^[-*•\d.)\s]+/, '').match(/^([\d.,/]+)\s*([a-zA-Záéíóúñ.]+)?\s+(.*)$/);
         if (m && m[3]) {
@@ -508,8 +695,10 @@ export const EditRecipeModal = ({
         }
         return { name: line.replace(/^[-*•\s]+/, '').trim(), amount: '', unit: '', section: '' };
       });
-      replaceIngredients(parsed);
-      toast({ title: `${parsed.length} ingredientes pegados` });
+      parsed.forEach(ingredient => appendIngredient(ingredient));
+      setSelectedIngredientIndexes(new Set());
+      lastSelectedIngredientIndex.current = null;
+      toast({ title: `${parsed.length} ingredientes agregados` });
     } catch {
       toast({ title: 'No se pudo leer el portapapeles', description: 'Permití el acceso al portapapeles o pegá manualmente.', variant: 'destructive' });
     }
@@ -521,8 +710,17 @@ export const EditRecipeModal = ({
       const text = await navigator.clipboard.readText();
       const lines = text.split(/\r?\n/).map(l => l.replace(/^[-*•\d.)\s]+/, '').trim()).filter(Boolean);
       if (!lines.length) { toast({ title: 'El portapapeles está vacío', variant: 'destructive' }); return; }
-      replaceInstructions(lines.map(description => ({ description, function: '', time: '', temperature: '', speed: '', section: '' })));
-      toast({ title: `${lines.length} pasos pegados` });
+      const pastedInstructions = lines.map(description => ({ description, function: '', time: '', temperature: '', speed: '', section: '' }));
+      if (mode === 'create') {
+        replaceInstructions(pastedInstructions);
+      } else {
+        pastedInstructions.forEach(instruction => appendInstruction(instruction));
+      }
+      setSelectedInstructionIndexes(new Set());
+      setBulkEditingInstructions(false);
+      setBulkInstructionSection('__none__');
+      lastSelectedInstructionIndex.current = null;
+      toast({ title: `${lines.length} pasos ${mode === 'create' ? 'pegados' : 'agregados'}` });
     } catch {
       toast({ title: 'No se pudo leer el portapapeles', description: 'Permití el acceso al portapapeles o pegá manualmente.', variant: 'destructive' });
     }
@@ -738,6 +936,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         ...newProcessedImages.map((img, index) => ({ ...img, order: existingImages.length + index + 1 }))
       ];
 
+      const shouldSaveThermomixSettings = data.thermomix === true;
+
       // Create recipe data structure
       const recipeData = {
         title: data.title,
@@ -755,7 +955,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         prepTime: Number.isFinite(data.prepTime as number) ? data.prepTime : undefined,
         cookTime: Number.isFinite(data.cookTime as number) ? data.cookTime : undefined,
         servings: Number.isFinite(data.servings as number) ? data.servings : undefined,
-        difficulty: data.difficulty || undefined,
+        difficulty: normalizeDifficulty(data.difficulty),
         recipeType: data.recipeType,
         dishType: data.dishType?.trim() || undefined,
         country: data.country,
@@ -768,7 +968,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         proteica: data.proteica,
         sweet: data.sweet,
         savory: data.savory,
-        thermomix: data.thermomix,
+        thermomix: shouldSaveThermomixSettings,
         airFryer: data.airFryer,
         featured: data.featured,
         cooked: data.cooked,
@@ -784,7 +984,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         ingredients: data.ingredients
           .filter(ing => (ing.name || '').trim())
           .map((ing, index) => ({
-            name: ing.name.trim(),
+            name: ing.pasted || (!ing.amount && !ing.unit && ing.name.includes('\n')) ? ing.name : ing.name.trim(),
             amount: ing.amount || '',
             unit: ing.unit,
             section: ing.section || undefined,
@@ -795,10 +995,10 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
           .map((inst, index) => ({
             step: index + 1,
             description: inst.description.trim(),
-            function: inst.function || "",
-            time: inst.time || "",
-            temperature: inst.temperature || "",
-            speed: inst.speed || "",
+            function: shouldSaveThermomixSettings ? inst.function || "" : "",
+            time: shouldSaveThermomixSettings ? inst.time || "" : "",
+            temperature: shouldSaveThermomixSettings ? inst.temperature || "" : "",
+            speed: shouldSaveThermomixSettings ? inst.speed || "" : "",
             section: inst.section || undefined
           }))
       };
@@ -808,7 +1008,13 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         const createdRecipe = await api.recipes.create(recipeData as any);
         await syncRecipeCollections(createdRecipe.id);
         onRecipeUpdated(createdRecipe);
-        handleClose();
+        const persistedImages = (createdRecipe.images || existingImages);
+        setExistingImages(persistedImages);
+        setUploadedImages([]);
+        setInitialImageCount(persistedImages.length);
+        setInitialCollectionIds(selectedCollectionIds);
+        reset(data);
+        initialFormSnapshot.current = getFormSnapshot(getValues());
         toast({
           title: "¡Receta creada!",
           description: `"${data.title}" se ha guardado exitosamente`,
@@ -877,6 +1083,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
   if (!recipe) return null;
 
   const totalImages = existingImages.length + uploadedImages.length;
+  const thermomixValue = watch('thermomix') as unknown;
+  const showThermomixInstructionFields = thermomixValue === true || thermomixValue === 'true';
 
   return (
     <>
@@ -884,7 +1092,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
       <DialogContent
         style={dragContentStyle}
         className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0"
-        closeButtonClassName="right-4 top-4 h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+        closeButtonClassName="right-4 top-4 h-8 w-8 rounded-md bg-primary/65 text-foreground opacity-100 inline-flex items-center justify-center shadow-sm backdrop-blur-sm hover:bg-primary/80 hover:opacity-100 data-[state=open]:bg-primary/65 data-[state=open]:text-foreground"
       >
         {/* Fixed Header (se puede arrastrar para mover el modal) */}
         <DialogHeader className="border-b px-6 pb-4 pt-6" {...dragHandleProps}>
@@ -925,10 +1133,10 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
             {activeTab === 'ingredients' && (
               <div className="mx-6 mt-4 flex flex-shrink-0 items-center justify-between gap-3 border-b bg-background px-0 pb-3">
                 <Label>Ingredientes</Label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
                   <Button type="button" onClick={handlePasteIngredients} size="sm" variant="outline">
                     <ClipboardList className="mr-1 h-4 w-4" />
-                    Pegar lista
+                    Pegar
                   </Button>
                   <Button
                     type="button"
@@ -939,6 +1147,29 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     <Plus className="mr-1 h-4 w-4" />
                     Agregar
                   </Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setBulkEditingIngredients(prev => !prev);
+                      setSelectedIngredientIndexes(new Set());
+                      setBulkIngredientSection('__none__');
+                      lastSelectedIngredientIndex.current = null;
+                    }}
+                    size="sm"
+                    variant={bulkEditingIngredients ? "default" : "outline"}
+                  >
+                    <Edit className="mr-1 h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleClearIngredients}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" />
+                    Eliminar
+                  </Button>
                 </div>
               </div>
             )}
@@ -946,19 +1177,42 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
             {activeTab === 'instructions' && (
               <div className="mx-6 mt-4 flex flex-shrink-0 items-center justify-between gap-3 border-b bg-background px-0 pb-3">
                 <Label>Preparacion</Label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
                   <Button type="button" onClick={handlePasteInstructions} size="sm" variant="outline">
                     <ClipboardList className="mr-1 h-4 w-4" />
-                    Pegar lista
+                    Pegar
                   </Button>
                   <Button
                     type="button"
-                    onClick={() => appendInstruction({ description: '', function: '', time: '', temperature: '', speed: '', section: '' })}
+                    onClick={handleAppendInstruction}
                     size="sm"
                     variant="outline"
                   >
                     <Plus className="mr-1 h-4 w-4" />
-                    Agregar Paso
+                    Agregar
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setBulkEditingInstructions(prev => !prev);
+                      setSelectedInstructionIndexes(new Set());
+                      setBulkInstructionSection('__none__');
+                      lastSelectedInstructionIndex.current = null;
+                    }}
+                    size="sm"
+                    variant={bulkEditingInstructions ? "default" : "outline"}
+                  >
+                    <Edit className="mr-1 h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleClearInstructions}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" />
+                    Eliminar
                   </Button>
                 </div>
               </div>
@@ -1005,6 +1259,10 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     closeOnSelect
                     allowCreate
                     createLabel="Agregar"
+                    onDeleteOption={(value) => {
+                      setSourceOptions(prev => prev.filter(option => option !== value));
+                      if (watch('source') === value) setValue('source', '', { shouldDirty: true });
+                    }}
                   />
                 </div>
                 <div>
@@ -1015,21 +1273,22 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 {/* d: Origen / Dificultad */}
                 <div>
                   <Label>Origen</Label>
-                  <Select
-                    value={watch('importedFrom') || (mode === 'create' ? undefined : 'own')}
-                    onValueChange={(value) => setValue('importedFrom', value === 'own' ? undefined : value as RecipeFormData['importedFrom'], { shouldDirty: true })}
-                  >
-                    <SelectTrigger className="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary">
-                      <SelectValue placeholder="Selecciona de donde proviene la receta" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="own">Receta propia</SelectItem>
-                      <SelectItem value="www">Pagina web</SelectItem>
-                      <SelectItem value="instagram">Instagram</SelectItem>
-                      <SelectItem value="youtube">YouTube</SelectItem>
-                      <SelectItem value="doc">DOC</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CreatableCombobox
+                    options={originOptions}
+                    value={getImportSourceLabel(watch('importedFrom'))}
+                    onChange={(value) => setValue('importedFrom', value ? getImportSourceValue(value) : undefined, { shouldDirty: true })}
+                    placeholder="Selecciona de donde proviene la receta"
+                    searchPlaceholder="Buscar o escribir origen..."
+                    createLabel="Agregar"
+                    emptyOptionLabel="Receta propia"
+                    triggerClassName="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary"
+                    onDeleteOption={(value) => {
+                      setOriginOptions(prev => prev.filter(option => option !== value));
+                      if (getImportSourceLabel(watch('importedFrom')) === value) {
+                        setValue('importedFrom', undefined, { shouldDirty: true });
+                      }
+                    }}
+                  />
                 </div>
                 <div>
                   <Label>Dificultad</Label>
@@ -1038,9 +1297,9 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       <SelectValue placeholder="Selecciona dificultad de la receta" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Facil">Facil</SelectItem>
+                      <SelectItem value="Fácil">Fácil</SelectItem>
                       <SelectItem value="Medio">Medio</SelectItem>
-                      <SelectItem value="Dificil">Dificil</SelectItem>
+                      <SelectItem value="Difícil">Difícil</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1058,6 +1317,10 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     closeOnSelect
                     allowCreate
                     createLabel="Agregar"
+                    onDeleteOption={(value) => {
+                      setLanguageOptions(prev => prev.filter(option => option !== value));
+                      if (watch('language') === value) setValue('language', '', { shouldDirty: true });
+                    }}
                   />
                 </div>
                 <div>
@@ -1072,6 +1335,10 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     closeOnSelect
                     allowCreate
                     createLabel="Agregar"
+                    onDeleteOption={(value) => {
+                      setCountryOptions(prev => prev.filter(option => option !== value));
+                      if (watch('country') === value) setValue('country', '', { shouldDirty: true });
+                    }}
                   />
                 </div>
 
@@ -1267,6 +1534,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       closeOnSelect
                       allowCreate
                       createLabel="Agregar"
+                      onDeleteOption={(value) => {
+                        setDishTypeOptions(prev => prev.filter(option => option !== value));
+                        const next = (watch('dishType') || '').split(',').map(s => s.trim()).filter(Boolean).filter(option => option !== value);
+                        setValue('dishType', next.join(', '), { shouldDirty: true });
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1302,6 +1574,13 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       closeOnSelect
                       allowCreate
                       createLabel="Crear coleccion"
+                      onDeleteOption={(value) => {
+                        const collection = collections.find(c => c.name === value);
+                        setCollections(prev => prev.filter(c => c.name !== value));
+                        if (collection) {
+                          setSelectedCollectionIds(prev => prev.filter(id => id !== collection.id));
+                        }
+                      }}
                     />
                   </div>
                 </div>
@@ -1325,6 +1604,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     closeOnSelect
                     allowCreate
                     createLabel="Agregar"
+                    onDeleteOption={(value) => {
+                      setCategoryOptions(prev => prev.filter(option => option !== value));
+                      const next = (watch('recipeType') || '').split(',').map(s => s.trim()).filter(Boolean).filter(option => option !== value);
+                      setValue('recipeType', next.join(', '), { shouldDirty: true });
+                    }}
                   />
                 </div>
 
@@ -1364,8 +1648,6 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 {/* c-f: Características (switches sí/no con ícono) — 4 por renglón, 2 renglones */}
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                   {([
-                    { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
-                    { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-4 w-4" /> },
                     { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
                     { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
                     { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
@@ -1376,6 +1658,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
                     { field: 'sweet', label: 'Receta dulce', icon: <CakeSlice className="h-4 w-4" /> },
                     { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
+                    { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-4 w-4" /> },
+                    { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
                   ] as const).map(({ field, label, icon }) => {
                     const active = Boolean(watch(field as any));
                     return (
@@ -1391,35 +1675,140 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 </div>
               </TabsContent>
 
-              <TabsContent value="ingredients" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
+              <TabsContent
+                value="ingredients"
+                className={`m-0 space-y-6 rounded-lg bg-muted/20 px-6 pb-6 ${bulkEditingIngredients ? 'pt-3' : 'pt-6'}`}
+              >
+              {bulkEditingIngredients && (
+                <div className="flex flex-wrap items-end gap-3 border-b border-border pb-4">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedIngredientIndexes(
+                        selectedIngredientIndexes.size === ingredientFields.length
+                          ? new Set()
+                          : new Set(ingredientFields.map((_, index) => index))
+                      );
+                      lastSelectedIngredientIndex.current = null;
+                    }}
+                  >
+                    {selectedIngredientIndexes.size === ingredientFields.length ? 'Quitar selección' : 'Seleccionar todos'}
+                  </Button>
+                  <div className="min-w-56 flex-1 space-y-1">
+                    <Label className="text-xs">Sección</Label>
+                    <CreatableCombobox
+                      value={bulkIngredientSection === '__none__' ? '' : bulkIngredientSection}
+                      options={ingredientSectionOptions}
+                      onChange={(value) => {
+                        const section = value.trim();
+                        setBulkIngredientSection(section || '__none__');
+                        if (section) {
+                          setSavedIngredientSections(prev => Array.from(new Set([...prev, section])));
+                        }
+                      }}
+                      placeholder="Sin sección"
+                      searchPlaceholder="Elegir o crear sección..."
+                      createLabel="Crear sección"
+                      emptyOptionLabel="Sin sección"
+                      triggerClassName="h-9"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleApplyBulkIngredientSection}
+                    disabled={selectedIngredientIndexes.size === 0}
+                  >
+                    <Check className="mr-1 h-4 w-4" />
+                    Aplicar a {selectedIngredientIndexes.size || 0}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setBulkEditingIngredients(false);
+                      setSelectedIngredientIndexes(new Set());
+                      lastSelectedIngredientIndex.current = null;
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
               {/* Ingredients */}
               <div>
                 <div className="space-y-2">
-                  {ingredientFields.map((field, index) => (
-                    <div key={field.id} className="space-y-2 border rounded-lg p-3">
-                      <div className="flex gap-2 items-end">
-                        <div className="flex-1">
+                  {ingredientFields.map((field, index) => {
+                    const ingredient = watch(`ingredients.${index}`);
+                    const isPastedBlock = Boolean(
+                      ingredient?.name?.includes('\n')
+                      && !ingredient?.amount
+                      && !ingredient?.unit
+                    );
+                    const isPastedIngredient = ingredient?.pasted === true;
+
+                    return (
+                    <div key={field.id} className={`space-y-2 rounded-lg border ${bulkEditingIngredients ? 'p-2' : 'p-3'} ${selectedIngredientIndexes.has(index) ? 'border-primary bg-accent/30' : ''}`}>
+                      {bulkEditingIngredients ? (
+                        <div className="grid gap-3 md:grid-cols-[9rem_minmax(0,1fr)_minmax(12rem,0.38fr)] md:items-end">
+                          <label className="flex h-9 cursor-pointer items-center gap-2 text-sm font-medium">
+                            <input
+                              type="checkbox"
+                              checked={selectedIngredientIndexes.has(index)}
+                              readOnly
+                              onClick={(event) => handleIngredientSelection(index, event)}
+                              aria-label={`Seleccionar ingrediente ${index + 1}`}
+                              className="h-4 w-4 cursor-pointer accent-primary"
+                            />
+                            Seleccionar
+                          </label>
+                          <div className="min-w-0 space-y-1">
+                            <Label className="text-xs">Ingrediente</Label>
+                            <Input
+                              {...register(`ingredients.${index}.name`)}
+                              aria-label={`Ingrediente ${index + 1}`}
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="min-w-0 space-y-1">
+                            <Label className="text-xs">Sección</Label>
+                            <CreatableCombobox
+                              value={ingredient?.section || ''}
+                              options={ingredientSectionOptions}
+                              onChange={(value) => {
+                                const section = value.trim();
+                                setValue(`ingredients.${index}.section`, section, { shouldDirty: true });
+                                if (section) {
+                                  setSavedIngredientSections(prev => Array.from(new Set([...prev, section])));
+                                }
+                              }}
+                              placeholder="Sin sección"
+                              searchPlaceholder="Elegir o crear sección..."
+                              createLabel="Crear sección"
+                              emptyOptionLabel="Sin sección"
+                              triggerClassName="h-9"
+                            />
+                          </div>
+                        </div>
+                      ) : isPastedBlock ? (
+                        <Textarea
+                          {...register(`ingredients.${index}.name`)}
+                          aria-label="Lista de ingredientes"
+                          className="min-h-[180px] whitespace-pre-wrap"
+                        />
+                      ) : isPastedIngredient ? (
+                        <div className="flex items-end gap-2">
                           <Input
                             {...register(`ingredients.${index}.name`)}
-                            placeholder="Ingrediente"
+                            aria-label={`Ingrediente ${index + 1}`}
+                            className="flex-1"
                           />
-                        </div>
-                        <div className="w-24">
-                          <Input
-                            {...register(`ingredients.${index}.amount`)}
-                            placeholder="Cantidad"
-                          />
-                        </div>
-                        <div className="w-20">
-                          <Input
-                            {...register(`ingredients.${index}.unit`)}
-                            placeholder="Unidad"
-                          />
-                        </div>
-                        {ingredientFields.length > 1 && (
                           <Button
                             type="button"
-                            onClick={() => removeIngredient(index)}
+                            onClick={() => handleRemovePastedIngredient(index)}
                             size="sm"
                             variant="destructive"
                             className="-translate-y-1 !h-[22px] !w-[22px] !p-0"
@@ -1428,8 +1817,43 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                           >
                             <X className="!h-[11px] !w-[11px]" />
                           </Button>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 items-end">
+                          <div className="flex-1">
+                            <Input
+                              {...register(`ingredients.${index}.name`)}
+                              placeholder="Ingrediente"
+                            />
+                          </div>
+                          <div className="w-24">
+                            <Input
+                              {...register(`ingredients.${index}.amount`)}
+                              placeholder="Cantidad"
+                            />
+                          </div>
+                          <div className="w-20">
+                            <Input
+                              {...register(`ingredients.${index}.unit`)}
+                              placeholder="Unidad"
+                            />
+                          </div>
+                          {ingredientFields.length > 1 && (
+                            <Button
+                              type="button"
+                              onClick={() => removeIngredient(index)}
+                              size="sm"
+                              variant="destructive"
+                              className="-translate-y-1 !h-[22px] !w-[22px] !p-0"
+                              title="Eliminar ingrediente"
+                              aria-label="Eliminar ingrediente"
+                            >
+                              <X className="!h-[11px] !w-[11px]" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {!bulkEditingIngredients && !isPastedBlock && (
                       <div className="w-full space-y-2">
                         <Label className="text-xs">Seccion (opcional)</Label>
                         {!showNewIngredientSection[index] ? (
@@ -1451,7 +1875,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="__none__">Sin seccion</SelectItem>
-                              {uniqueSections.map(section => (
+                              {ingredientSectionOptions.map(section => (
                                 <SelectItem key={section} value={section}>{section}</SelectItem>
                               ))}
                               <SelectItem value="__new__">+ Nueva seccion</SelectItem>
@@ -1464,139 +1888,286 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               placeholder="Nombre de la nueva seccion"
                               className="text-sm"
                               autoFocus
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                  event.preventDefault();
+                                  handleSaveIngredientSection(index);
+                                }
+                              }}
                             />
                             <Button
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() => setShowNewIngredientSection(prev => ({ ...prev, [index]: false }))}
+                              onClick={() => handleSaveIngredientSection(index)}
+                            >
+                              <Check className="mr-1 h-4 w-4" />
+                              Guardar
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setValue(`ingredients.${index}.section`, '', { shouldDirty: true });
+                                setShowNewIngredientSection(prev => ({ ...prev, [index]: false }));
+                              }}
                             >
                               Cancelar
                             </Button>
                           </div>
                         )}
                       </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </TabsContent>
 
-              <TabsContent value="instructions" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
+              <TabsContent
+                value="instructions"
+                className={`m-0 space-y-6 rounded-lg bg-muted/20 px-6 pb-6 ${bulkEditingInstructions ? 'pt-3' : 'pt-6'}`}
+              >
+              {bulkEditingInstructions && (
+                <div className="flex flex-wrap items-end gap-3 border-b border-border pb-4">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedInstructionIndexes(
+                        selectedInstructionIndexes.size === instructionFields.length
+                          ? new Set()
+                          : new Set(instructionFields.map((_, index) => index))
+                      );
+                      lastSelectedInstructionIndex.current = null;
+                    }}
+                  >
+                    {selectedInstructionIndexes.size === instructionFields.length ? 'Quitar selección' : 'Seleccionar todos'}
+                  </Button>
+                  <div className="min-w-56 flex-1 space-y-1">
+                    <Label className="text-xs">Sección</Label>
+                    <CreatableCombobox
+                      value={bulkInstructionSection === '__none__' ? '' : bulkInstructionSection}
+                      options={ingredientSectionOptions}
+                      onChange={(value) => {
+                        const section = value.trim();
+                        setBulkInstructionSection(section || '__none__');
+                        if (section) {
+                          setSavedIngredientSections(prev => Array.from(new Set([...prev, section])));
+                        }
+                      }}
+                      placeholder="Sin sección"
+                      searchPlaceholder="Elegir o crear sección..."
+                      createLabel="Crear sección"
+                      emptyOptionLabel="Sin sección"
+                      triggerClassName="h-9"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleApplyBulkInstructionSection}
+                    disabled={selectedInstructionIndexes.size === 0}
+                  >
+                    <Check className="mr-1 h-4 w-4" />
+                    Aplicar a {selectedInstructionIndexes.size || 0}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setBulkEditingInstructions(false);
+                      setSelectedInstructionIndexes(new Set());
+                      lastSelectedInstructionIndex.current = null;
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
               {/* Instructions */}
               <div>
-                <div className="space-y-4">
-                  {instructionFields.map((field, index) => (
-                    <div key={field.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Paso {index + 1}</Label>
-                        {instructionFields.length > 1 && (
-                          <Button
-                            type="button"
-                            onClick={() => removeInstruction(index)}
-                            size="sm"
-                            variant="destructive"
-                            className="-translate-y-1 !h-[22px] !w-[22px] !p-0"
-                            title="Eliminar paso"
-                            aria-label="Eliminar paso"
-                          >
-                            <X className="!h-[11px] !w-[11px]" />
-                          </Button>
-                        )}
-                      </div>
-                      <Textarea
-                        {...register(`instructions.${index}.description`)}
-                        placeholder="Describe el paso..."
-                        className="mb-2"
-                      />
-                      <div className="mb-2">
-                        <Label className="text-xs">Seccion (opcional)</Label>
-                        {!showNewInstructionSection[index] ? (
-                          <Select
-                            value={watch(`instructions.${index}.section`) || '__none__'}
-                            onValueChange={(value) => {
-                              if (value === '__new__') {
-                                setShowNewInstructionSection(prev => ({ ...prev, [index]: true }));
-                                setValue(`instructions.${index}.section`, '', { shouldDirty: true });
-                              } else if (value === '__none__') {
-                                setValue(`instructions.${index}.section`, '', { shouldDirty: true });
-                              } else {
-                                setValue(`instructions.${index}.section`, value, { shouldDirty: true });
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="text-sm">
-                              <SelectValue placeholder="Sin seccion" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">Sin seccion</SelectItem>
-                              {uniqueSections.map(section => (
-                                <SelectItem key={section} value={section}>{section}</SelectItem>
-                              ))}
-                              <SelectItem value="__new__">+ Nueva seccion</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="flex gap-2 mb-2">
-                            <Input
-                              {...register(`instructions.${index}.section`)}
-                              placeholder="Nombre de la nueva seccion"
-                              className="text-sm"
-                              autoFocus
+                <div className={bulkEditingInstructions ? 'space-y-2' : 'space-y-4'}>
+                  {instructionFields.map((field, index) => {
+                    const instruction = watch(`instructions.${index}`);
+
+                    return (
+                    <div key={field.id} className={`rounded-lg border ${bulkEditingInstructions ? 'p-2' : 'p-4'} ${selectedInstructionIndexes.has(index) ? 'border-primary bg-accent/30' : ''}`}>
+                      {bulkEditingInstructions ? (
+                        <div className="grid gap-3 md:grid-cols-[9rem_minmax(0,1fr)_minmax(12rem,0.38fr)] md:items-end">
+                          <label className="flex h-9 cursor-pointer items-center gap-2 text-sm font-medium">
+                            <input
+                              type="checkbox"
+                              checked={selectedInstructionIndexes.has(index)}
+                              readOnly
+                              onClick={(event) => handleInstructionSelection(index, event)}
+                              aria-label={`Seleccionar paso ${index + 1}`}
+                              className="h-4 w-4 cursor-pointer accent-primary"
                             />
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setShowNewInstructionSection(prev => ({ ...prev, [index]: false }))}
-                            >
-                              Cancelar
-                            </Button>
+                            Seleccionar
+                          </label>
+                          <div className="min-w-0 space-y-1">
+                            <Label className="text-xs">Paso {index + 1}</Label>
+                            <Input
+                              {...register(`instructions.${index}.description`)}
+                              aria-label={`Paso ${index + 1}`}
+                              className="h-9"
+                            />
                           </div>
-                        )}
-                      </div>
-                      {watch('thermomix') && (
+                          <div className="min-w-0 space-y-1">
+                            <Label className="text-xs">Sección</Label>
+                            <CreatableCombobox
+                              value={instruction?.section || ''}
+                              options={ingredientSectionOptions}
+                              onChange={(value) => {
+                                const section = value.trim();
+                                setValue(`instructions.${index}.section`, section, { shouldDirty: true });
+                                if (section) {
+                                  setSavedIngredientSections(prev => Array.from(new Set([...prev, section])));
+                                }
+                              }}
+                              placeholder="Sin sección"
+                              searchPlaceholder="Elegir o crear sección..."
+                              createLabel="Crear sección"
+                              emptyOptionLabel="Sin sección"
+                              triggerClassName="h-9"
+                            />
+                          </div>
+                        </div>
+                      ) : (
                         <>
-                          <div className="mb-2 grid grid-cols-2 gap-2">
-                            <div>
-                              <Label className="text-xs">Funcion Thermomix</Label>
-                              <Input
-                                {...register(`instructions.${index}.function`)}
-                                placeholder="ej: Amasar, Batir, Picar"
+                          <div className="mb-2 flex items-center justify-between">
+                            <Label>Paso {index + 1}</Label>
+                            {instructionFields.length > 1 && (
+                              <Button
+                                type="button"
+                                onClick={() => removeInstruction(index)}
                                 size="sm"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Tiempo</Label>
-                              <Input
-                                {...register(`instructions.${index}.time`)}
-                                placeholder="ej: 5 min"
-                                size="sm"
-                              />
-                            </div>
+                                variant="destructive"
+                                className="-translate-y-1 !h-[22px] !w-[22px] !p-0"
+                                title="Eliminar paso"
+                                aria-label="Eliminar paso"
+                              >
+                                <X className="!h-[11px] !w-[11px]" />
+                              </Button>
+                            )}
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <Label className="text-xs">Temperatura</Label>
-                              <Input
-                                {...register(`instructions.${index}.temperature`)}
-                                placeholder="ej: 100 grados"
-                                size="sm"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Velocidad</Label>
-                              <Input
-                                {...register(`instructions.${index}.speed`)}
-                                placeholder="ej: vel 5"
-                                size="sm"
-                              />
-                            </div>
+                          <Textarea
+                            {...register(`instructions.${index}.description`)}
+                            placeholder="Describe el paso..."
+                            className="mb-2"
+                          />
+                          <div className="mb-2">
+                            <Label className="text-xs">Seccion (opcional)</Label>
+                            {!showNewInstructionSection[index] ? (
+                              <Select
+                                value={watch(`instructions.${index}.section`) || '__none__'}
+                                onValueChange={(value) => {
+                                  if (value === '__new__') {
+                                    setShowNewInstructionSection(prev => ({ ...prev, [index]: true }));
+                                    setValue(`instructions.${index}.section`, '', { shouldDirty: true });
+                                  } else if (value === '__none__') {
+                                    setValue(`instructions.${index}.section`, '', { shouldDirty: true });
+                                  } else {
+                                    setValue(`instructions.${index}.section`, value, { shouldDirty: true });
+                                    setSavedIngredientSections(prev => Array.from(new Set([...prev, value])));
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue placeholder="Sin seccion" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none__">Sin seccion</SelectItem>
+                                  {ingredientSectionOptions.map(section => (
+                                    <SelectItem key={section} value={section}>{section}</SelectItem>
+                                  ))}
+                                  <SelectItem value="__new__">+ Nueva seccion</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="mb-2 flex gap-2">
+                                <Input
+                                  {...register(`instructions.${index}.section`)}
+                                  placeholder="Nombre de la nueva seccion"
+                                  className="text-sm"
+                                  autoFocus
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const section = (getValues(`instructions.${index}.section`) || '').trim();
+                                    if (section) {
+                                      setValue(`instructions.${index}.section`, section, { shouldDirty: true });
+                                      setSavedIngredientSections(prev => Array.from(new Set([...prev, section])));
+                                    }
+                                    setShowNewInstructionSection(prev => ({ ...prev, [index]: false }));
+                                  }}
+                                >
+                                  Guardar
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setShowNewInstructionSection(prev => ({ ...prev, [index]: false }))}
+                                >
+                                  Cancelar
+                                </Button>
+                              </div>
+                            )}
                           </div>
+                          {showThermomixInstructionFields && (
+                            <>
+                              <div className="mb-2 grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs">Funcion Thermomix</Label>
+                                  <Input
+                                    {...register(`instructions.${index}.function`)}
+                                    placeholder="ej: Amasar, Batir, Picar"
+                                    size="sm"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Tiempo</Label>
+                                  <Input
+                                    {...register(`instructions.${index}.time`)}
+                                    placeholder="ej: 5 min"
+                                    size="sm"
+                                  />
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs">Temperatura</Label>
+                                  <Input
+                                    {...register(`instructions.${index}.temperature`)}
+                                    placeholder="ej: 100 grados"
+                                    size="sm"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Velocidad</Label>
+                                  <Input
+                                    {...register(`instructions.${index}.speed`)}
+                                    placeholder="ej: vel 5"
+                                    size="sm"
+                                  />
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1657,7 +2228,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               <button
                 type="button"
                 onClick={scrollFormToTop}
-                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-md transition-all hover:scale-105 hover:bg-primary"
+                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-foreground shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
                 title="Ir al principio"
                 aria-label="Ir al principio"
               >
@@ -1666,7 +2237,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               <button
                 type="button"
                 onClick={scrollFormToBottom}
-                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-md transition-all hover:scale-105 hover:bg-primary"
+                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-foreground shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
                 title="Ir al final"
                 aria-label="Ir al final"
               >
@@ -1692,7 +2263,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 Omitir
               </Button>
             )}
-            <Button type="submit" disabled={isLoading || (!hasChanges && !queue)}>
+            <Button type="submit" disabled={isLoading || !hasChanges}>
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1759,7 +2330,33 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${checked ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 text-transparent'}`}>
                     <Check className="h-3.5 w-3.5" />
                   </span>
-                  {tag}
+                  <span className="min-w-0 flex-1 truncate">{tag}</span>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setTagOptions(prev => prev.filter(option => option !== tag));
+                      if (tags.includes(tag)) {
+                        setValue('tags', tags.filter(value => value !== tag), { shouldDirty: true });
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter' && event.key !== ' ') return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setTagOptions(prev => prev.filter(option => option !== tag));
+                      if (tags.includes(tag)) {
+                        setValue('tags', tags.filter(value => value !== tag), { shouldDirty: true });
+                      }
+                    }}
+                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Eliminar ${tag}`}
+                    title="Eliminar de la lista"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </span>
                 </button>
               );
             })}

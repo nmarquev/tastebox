@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
+import { CreatableCombobox } from '@/components/CreatableCombobox';
 import { AvocadoIcon } from '@/components/icons/AvocadoIcon';
 import { RecipePreparedIcon } from '@/components/icons/RecipePreparedIcon';
 import { useToast } from '@/hooks/use-toast';
@@ -59,6 +60,19 @@ interface CommonFields {
   vegetarian: boolean;
 }
 
+const importSourceOptions = [
+  { value: 'www', label: 'Pagina web' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'doc', label: 'DOC' },
+];
+
+const getImportSourceLabel = (value?: string) =>
+  importSourceOptions.find(option => option.value === value)?.label || value || '';
+
+const getImportSourceValue = (label: string) =>
+  importSourceOptions.find(option => option.label.toLocaleLowerCase('es') === label.toLocaleLowerCase('es'))?.value || label;
+
 // Máximo de recetas que se pueden importar en un lote.
 const MAX_URLS = 20;
 
@@ -82,6 +96,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
 
   // Listas de opciones para los desplegables de campos en común.
   const [sourceOptions, setSourceOptions] = useState<string[]>([]);
+  const [originOptions, setOriginOptions] = useState<string[]>(importSourceOptions.map(option => option.label));
   const [languageOptions, setLanguageOptions] = useState<string[]>([]);
   const [countryOptions, setCountryOptions] = useState<string[]>([]);
   const [dishTypeOptions, setDishTypeOptions] = useState<string[]>([]);
@@ -334,7 +349,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent
         className={`max-h-[94vh] overflow-y-auto ${step === 2 ? 'max-w-4xl' : 'max-w-2xl'}`}
-        closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+        closeButtonClassName="h-8 w-8 rounded-md bg-primary/65 text-foreground opacity-100 inline-flex items-center justify-center shadow-sm backdrop-blur-sm hover:bg-primary/80 hover:opacity-100 data-[state=open]:bg-primary/65 data-[state=open]:text-foreground"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
@@ -432,19 +447,27 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                       placeholder="Elegí una fuente"
                       searchPlaceholder="Buscar o escribir fuente..."
                       singleSelect closeOnSelect allowCreate createLabel="Agregar"
+                      onDeleteOption={(value) => {
+                        setSourceOptions(prev => prev.filter(option => option !== value));
+                        if (common.source === value) setCommon(c => ({ ...c, source: '' }));
+                      }}
                     />
                   </div>
                   <div>
                     <Label>Origen</Label>
-                    <Select value={common.importedFrom || undefined} onValueChange={(v) => setCommon(c => ({ ...c, importedFrom: v }))}>
-                      <SelectTrigger className={selectTriggerCls}><SelectValue placeholder="Elegí un origen" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="www">Página web</SelectItem>
-                        <SelectItem value="instagram">Instagram</SelectItem>
-                        <SelectItem value="youtube">YouTube</SelectItem>
-                        <SelectItem value="doc">DOC</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <CreatableCombobox
+                      options={originOptions}
+                      value={getImportSourceLabel(common.importedFrom)}
+                      onChange={(value) => setCommon(c => ({ ...c, importedFrom: value ? getImportSourceValue(value) : '' }))}
+                      placeholder="Elegi un origen"
+                      searchPlaceholder="Buscar o escribir origen..."
+                      createLabel="Agregar"
+                      triggerClassName={selectTriggerCls}
+                      onDeleteOption={(value) => {
+                        setOriginOptions(prev => prev.filter(option => option !== value));
+                        if (getImportSourceLabel(common.importedFrom) === value) setCommon(c => ({ ...c, importedFrom: '' }));
+                      }}
+                    />
                   </div>
                   <div>
                     <Label>Dificultad</Label>
@@ -466,6 +489,10 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                       placeholder="Elegí un idioma"
                       searchPlaceholder="Buscar o escribir idioma..."
                       singleSelect closeOnSelect allowCreate createLabel="Agregar"
+                      onDeleteOption={(value) => {
+                        setLanguageOptions(prev => prev.filter(option => option !== value));
+                        if (common.language === value) setCommon(c => ({ ...c, language: '' }));
+                      }}
                     />
                   </div>
                   <div>
@@ -477,6 +504,10 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                       placeholder="Elegí un país"
                       searchPlaceholder="Buscar o escribir país..."
                       singleSelect closeOnSelect allowCreate createLabel="Agregar"
+                      onDeleteOption={(value) => {
+                        setCountryOptions(prev => prev.filter(option => option !== value));
+                        if (common.country === value) setCommon(c => ({ ...c, country: '' }));
+                      }}
                     />
                   </div>
                   <div>

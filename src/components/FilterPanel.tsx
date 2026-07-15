@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Filter, ChevronDown, X, Heart, ChefHat } from "lucide-react";
+import { Filter, ChevronDown, X, Heart, ChefHat, WheatOff, CandyOff, CakeSlice, Utensils } from "lucide-react";
 import { Recipe } from "@/components/RecipeCard";
 import { getSourceFromUrl } from "@/utils/siteUtils";
 
@@ -25,6 +25,8 @@ export interface RecipeFilters {
   lowCarbOnly?: boolean;
   proteicaOnly?: boolean;
   vegetarianOnly?: boolean;
+  sweetOnly?: boolean;
+  savoryOnly?: boolean;
   ingredients?: string[];
   collectionId?: string;
   sources?: string[];
@@ -134,6 +136,13 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
     });
   };
 
+  const handleBooleanFilterChange = (field: keyof RecipeFilters, checked: boolean) => {
+    onFiltersChange({
+      ...filters,
+      [field]: checked || undefined
+    });
+  };
+
   const hasActiveFilters =
     filters.difficulty.length > 0 ||
     filters.tags.length > 0 ||
@@ -144,6 +153,10 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
     (filters.cookTimeRange?.[1] ?? 120) < maxCookTime ||
     filters.featured === true ||
     filters.thermomixOnly === true ||
+    filters.glutenFreeOnly === true ||
+    filters.sugarFreeOnly === true ||
+    filters.sweetOnly === true ||
+    filters.savoryOnly === true ||
     (filters.sources?.length ?? 0) > 0;
 
   return (
@@ -213,6 +226,61 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
                   <ChefHat className="h-3 w-3 text-orange-500" />
                   Solo recetas Thermomix
                 </Label>
+              </div>
+            </div>
+
+            {/* Caracteristicas Filter */}
+            <div>
+              <Label className="text-xs font-medium mb-2 block">Caracteristicas</Label>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="glutenFree"
+                    checked={filters.glutenFreeOnly === true}
+                    onCheckedChange={(checked) => handleBooleanFilterChange('glutenFreeOnly', checked as boolean)}
+                    className="h-3 w-3"
+                  />
+                  <Label htmlFor="glutenFree" className="text-xs cursor-pointer flex items-center gap-1">
+                    <WheatOff className="h-3 w-3" />
+                    Sin Gluten
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="sugarFree"
+                    checked={filters.sugarFreeOnly === true}
+                    onCheckedChange={(checked) => handleBooleanFilterChange('sugarFreeOnly', checked as boolean)}
+                    className="h-3 w-3"
+                  />
+                  <Label htmlFor="sugarFree" className="text-xs cursor-pointer flex items-center gap-1">
+                    <CandyOff className="h-3 w-3" />
+                    Sin Azucar
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="sweetOnly"
+                    checked={filters.sweetOnly === true}
+                    onCheckedChange={(checked) => handleBooleanFilterChange('sweetOnly', checked as boolean)}
+                    className="h-3 w-3"
+                  />
+                  <Label htmlFor="sweetOnly" className="text-xs cursor-pointer flex items-center gap-1">
+                    <CakeSlice className="h-3 w-3" />
+                    Recetas Dulces
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="savoryOnly"
+                    checked={filters.savoryOnly === true}
+                    onCheckedChange={(checked) => handleBooleanFilterChange('savoryOnly', checked as boolean)}
+                    className="h-3 w-3"
+                  />
+                  <Label htmlFor="savoryOnly" className="text-xs cursor-pointer flex items-center gap-1">
+                    <Utensils className="h-3 w-3" />
+                    Recetas Saladas
+                  </Label>
+                </div>
               </div>
             </div>
 

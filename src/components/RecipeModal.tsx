@@ -1051,7 +1051,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   onClick={handleModalClose}
                   title="Cerrar"
                   aria-label="Cerrar"
-                  className="h-8 w-8 rounded-md border-0 bg-primary p-0 text-primary-foreground shadow-sm hover:bg-primary/90"
+                  className="h-8 w-8 rounded-md border-0 bg-primary/65 p-0 text-foreground shadow-sm backdrop-blur-sm hover:bg-primary/80"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1460,12 +1460,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 <h3 className="font-semibold text-base">Origen</h3>
                 <Badge>
                   {localRecipe.importedFrom
-                    ? {
-                        www: 'Página web',
+                    ? ({
+                        www: 'Pagina web',
                         instagram: 'Instagram',
                         youtube: 'YouTube',
                         doc: 'DOC'
-                      }[localRecipe.importedFrom]
+                      }[localRecipe.importedFrom] || localRecipe.importedFrom)
                     : 'Receta propia'}
                 </Badge>
               </div>
@@ -1578,8 +1578,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <span className="flex h-6 items-center shrink-0">
                               <span className="w-1 h-1 bg-primary rounded-full" />
                             </span>
-                            <span>
-                              <span className="font-medium">{ingredient.amount} {ingredient.unit}</span> {ingredient.name}
+                            <span className={!ingredient.amount && !ingredient.unit && ingredient.name.includes('\n') ? 'whitespace-pre-wrap' : undefined}>
+                              {(ingredient.amount || ingredient.unit) && (
+                                <span className="font-medium">{ingredient.amount} {ingredient.unit}</span>
+                              )}{' '}{ingredient.name}
                             </span>
                           </li>
                         ))}
@@ -1690,7 +1692,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <button
             type="button"
             onClick={scrollToTop}
-            className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-md transition-all hover:bg-primary hover:scale-105"
+            className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-foreground shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
             title="Ir al principio"
             aria-label="Ir al principio"
           >
@@ -1699,7 +1701,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <button
             type="button"
             onClick={scrollToBottom}
-            className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-md transition-all hover:bg-primary hover:scale-105"
+            className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-foreground shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
             title="Ir al final"
             aria-label="Ir al final"
           >

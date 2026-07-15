@@ -2,7 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { detectImportSource, getAuthorFromSourceUrl, importSources } from '../utils/importSource';
+import { detectImportSource, getAuthorFromSourceUrl } from '../utils/importSource';
 import { getSourceFromUrl } from '../utils/sourceUtils';
 import { getRecipeTags } from '../utils/recipeTags';
 import { normalizeInstructionDescription, normalizeRecipeTitle } from '../utils/recipeText';
@@ -14,6 +14,24 @@ const router = express.Router();
 const prisma = new PrismaClient();
 const imageService = new ImageService();
 
+const normalizeDifficulty = (value: unknown) => {
+  if (typeof value !== 'string') return value;
+  const normalized = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es')
+    .trim();
+  if (normalized === 'facil') return 'Fácil';
+  if (normalized === 'medio') return 'Medio';
+  if (normalized === 'dificil') return 'Difícil';
+  return value;
+};
+
+const difficultySchema = z.preprocess(
+  normalizeDifficulty,
+  z.enum(['Fácil', 'Medio', 'Difícil']).optional().nullable()
+);
+
 // Validation schemas
 const createRecipeSchema = z.object({
   title: z.string().min(1),
@@ -22,7 +40,7 @@ const createRecipeSchema = z.object({
   prepTime: z.number().optional().nullable(),
   cookTime: z.number().optional().nullable(),
   servings: z.number().optional().nullable(),
-  difficulty: z.enum(['Fácil', 'Medio', 'Difícil']).optional().nullable(),
+  difficulty: difficultySchema,
   recipeType: z.string().optional().nullable(),
   dishType: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
@@ -31,7 +49,7 @@ const createRecipeSchema = z.object({
   source: z.string().nullable().optional(),
   author: z.string().nullable().optional(),
   createdAt: z.coerce.date().optional(),
-  importedFrom: z.enum(importSources).optional(),
+  importedFrom: z.string().trim().min(1).optional(),
   thermomix: z.boolean().optional(),
   airFryer: z.boolean().optional(),
   glutenFree: z.boolean().optional(),
@@ -89,7 +107,7 @@ const updateRecipeSchema = z.object({
   prepTime: z.number().optional().nullable(),
   cookTime: z.number().optional().nullable(),
   servings: z.number().optional().nullable(),
-  difficulty: z.enum(['Fácil', 'Medio', 'Difícil']).optional().nullable(),
+  difficulty: difficultySchema,
   recipeType: z.string().optional().nullable(),
   dishType: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
@@ -98,7 +116,7 @@ const updateRecipeSchema = z.object({
   source: z.string().nullable().optional(),
   author: z.string().nullable().optional(),
   createdAt: z.coerce.date().optional(),
-  importedFrom: z.enum(importSources).optional(),
+  importedFrom: z.string().trim().min(1).optional(),
   thermomix: z.boolean().optional(),
   airFryer: z.boolean().optional(),
   glutenFree: z.boolean().optional(),
@@ -464,8 +482,8 @@ router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
     recipeIds: z.array(z.string()).min(1),
     fields: z.object({
       source: z.string().optional().nullable(),
-      importedFrom: z.enum(['www', 'instagram', 'youtube', 'doc']).optional(),
-      difficulty: z.enum(['Fácil', 'Medio', 'Difícil']).optional().nullable(),
+      importedFrom: z.string().trim().min(1).optional(),
+      difficulty: difficultySchema,
       language: z.string().optional().nullable(),
       country: z.string().optional().nullable(),
       createdAt: z.string().optional(),

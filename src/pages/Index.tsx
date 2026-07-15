@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Beef, CakeSlice, CandyOff, Grid3X3, Grid2X2, Grid, Columns, Filter, FilterX, ChevronDown, Trash2, Play, Pause, Search, ChefHat, Heart, Bookmark, WheatOff, Leaf, ArrowUpDown, ArrowUp, ArrowDown, Check, ListChecks, Printer, Loader2, X, ExternalLink, Utensils, UtensilsCrossed, MoreVertical, ImageIcon, User, List, Square, Clock, Plus, Tag, Edit, Menu, Download, Sparkles, PlusCircle } from "lucide-react";
+import { Beef, CakeSlice, CandyOff, Grid3X3, Grid2X2, Grid, Columns, Filter, FilterX, ChevronDown, Trash2, Play, Pause, Search, ChefHat, Heart, Bookmark, WheatOff, Leaf, ArrowUpDown, ArrowUp, ArrowDown, Check, ListChecks, Printer, Loader2, X, ExternalLink, Utensils, UtensilsCrossed, MoreVertical, ImageIcon, User, List, Square, Clock, Plus, Tag, Edit, Menu, Download, Sparkles, PlusCircle, ClipboardPaste } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
@@ -220,6 +220,8 @@ const Index = () => {
       lowCarbOnly: initialRecipeTypeFilter === 'low-carb' ? true : undefined,
       proteicaOnly: initialRecipeTypeFilter === 'proteicas' ? true : undefined,
       vegetarianOnly: initialRecipeTypeFilter === 'vegetarianas' ? true : undefined,
+      sweetOnly: initialRecipeTypeFilter === 'dulces' ? true : undefined,
+      savoryOnly: initialRecipeTypeFilter === 'saladas' ? true : undefined,
       collectionId,
       sources: fuente ? [fuente] : undefined,
       dishType: tipo || undefined,
@@ -262,6 +264,8 @@ const Index = () => {
       lowCarbOnly: typeFilter === 'low-carb' ? true : undefined,
       proteicaOnly: typeFilter === 'proteicas' ? true : undefined,
       vegetarianOnly: typeFilter === 'vegetarianas' ? true : undefined,
+      sweetOnly: typeFilter === 'dulces' ? true : undefined,
+      savoryOnly: typeFilter === 'saladas' ? true : undefined,
       collectionId: undefined,
       sources: undefined,
       dishType: undefined,
@@ -372,6 +376,11 @@ const Index = () => {
   const [creatingDishType, setCreatingDishType] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [bulkAction, setBulkAction] = useState<'print' | 'print-cards' | 'print-list' | 'delete' | null>(null);
+  const closeRecipeBulkPanel = () => {
+    setActiveBulkPanel(null);
+    setSelectedRecipeIds(new Set());
+    setBulkAction(null);
+  };
   const [printCardsDialogOpen, setPrintCardsDialogOpen] = useState(false);
   const [printCardsTitle, setPrintCardsTitle] = useState('');
   const [printCardsHeader, setPrintCardsHeader] = useState('');
@@ -379,8 +388,9 @@ const Index = () => {
   const [printCardsPageNumber, setPrintCardsPageNumber] = useState(false);
   const [printCardsColumns, setPrintCardsColumns] = useState(5);
   const [printCardsFields, setPrintCardsFields] = useState({
-    image: true, title: true, source: false, difficulty: false, dishType: false, category: false, times: false, icons: false,
+    image: true, title: true, source: false, collection: false, difficulty: false, dishType: false, category: false, times: false, icons: false,
   });
+  const printCardsCompactFieldsOnly = printCardsColumns >= 5;
   const [printListDialogOpen, setPrintListDialogOpen] = useState(false);
   const [printListTitle, setPrintListTitle] = useState('');
   const [printListHeader, setPrintListHeader] = useState('');
@@ -644,6 +654,8 @@ const Index = () => {
     const matchesLowCarb = !filters.lowCarbOnly || recipe.lowCarb === true;
     const matchesProteica = !filters.proteicaOnly || recipe.proteica === true;
     const matchesVegetarian = !filters.vegetarianOnly || recipe.vegetarian === true;
+    const matchesSweet = !filters.sweetOnly || recipe.sweet === true;
+    const matchesSavory = !filters.savoryOnly || recipe.savory === true;
     const selectedCollection = filters.collectionId
       ? collections.find(collection => collection.id === filters.collectionId)
       : undefined;
@@ -656,7 +668,7 @@ const Index = () => {
     const matchesDishType = selectedDishTypes.length === 0 || recipeDishTypes.some(dt => selectedDishTypes.includes(dt));
     const matchesAuthor = !filters.author || (recipe.author || '').trim() === filters.author;
 
-    return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesSugarFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesCollection && matchesSource && matchesDishType && matchesAuthor;
+    return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesSugarFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesSweet && matchesSavory && matchesCollection && matchesSource && matchesDishType && matchesAuthor;
   }).sort((a, b) => {
     const directionFactor = sortDirection === 'asc' ? 1 : -1;
     const compareText = (left: string, right: string) =>
@@ -696,8 +708,10 @@ const Index = () => {
     if (recipeSort === 'difficulty') {
       const difficultyOrder: Record<string, number> = {
         'Facil': 0,
+        'Fácil': 0,
         'Medio': 1,
-        'Dificil': 2
+        'Dificil': 2,
+        'Difícil': 2
       };
       const difficultyA = difficultyOrder[a.difficulty || ''] ?? 3;
       const difficultyB = difficultyOrder[b.difficulty || ''] ?? 3;
@@ -1839,7 +1853,7 @@ const Index = () => {
 
   const handleToggleRecipeSelection = (
     recipe: Recipe,
-    modifiersi: { shift?: boolean; ctrl?: boolean }
+    modifiers: { shift?: boolean; ctrl?: boolean }
   ) => {
     const id = recipe.id;
 
@@ -1933,7 +1947,7 @@ const Index = () => {
     setPrintCardsFooter('');
     setPrintCardsPageNumber(false);
     setPrintCardsColumns(5);
-    setPrintCardsFields({ image: true, title: true, source: false, difficulty: false, dishType: false, category: false, times: false, icons: false });
+    setPrintCardsFields({ image: true, title: true, source: false, collection: false, difficulty: false, dishType: false, category: false, times: false, icons: false });
     setPrintCardsDialogOpen(true);
   };
 
@@ -1944,7 +1958,16 @@ const Index = () => {
 
     setBulkAction('print-cards');
     try {
-      await printRecipeCards(selectedActionRecipes, { title: printCardsTitle, header: printCardsHeader, footer: printCardsFooter, pageNumber: printCardsPageNumber, columns: printCardsColumns, fields: printCardsFields });
+      const recipesWithCollections = selectedActionRecipes.map(recipe => ({
+        ...recipe,
+        collectionNames: collections
+          .filter(collection => collection.recipeIds.includes(recipe.id))
+          .map(collection => collection.name),
+      }));
+      const fieldsForPrint = printCardsColumns >= 5
+        ? { image: true, title: true, source: printCardsFields.source, collection: false, difficulty: false, dishType: false, category: false, times: false, icons: false }
+        : printCardsFields;
+      await printRecipeCards(recipesWithCollections, { title: printCardsTitle, header: printCardsHeader, footer: printCardsFooter, pageNumber: printCardsPageNumber, columns: printCardsColumns, fields: fieldsForPrint });
     } catch (error) {
       toast({
         title: "Error al imprimir tarjetas",
@@ -2270,6 +2293,8 @@ const Index = () => {
     || filters.lowCarbOnly === true
     || filters.proteicaOnly === true
     || filters.vegetarianOnly === true
+    || filters.sweetOnly === true
+    || filters.savoryOnly === true
     || Boolean(filters.collectionId)
     || Boolean(filters.sources?.length)
     || Boolean(filters.dishType)
@@ -2299,6 +2324,8 @@ const Index = () => {
   if (filters.lowCarbOnly) activeFilterChips.push({ value: 'Low Carb', onRemove: () => handleFiltersChange({ ...filters, lowCarbOnly: undefined }) });
   if (filters.proteicaOnly) activeFilterChips.push({ value: 'Proteicas', onRemove: () => handleFiltersChange({ ...filters, proteicaOnly: undefined }) });
   if (filters.vegetarianOnly) activeFilterChips.push({ value: 'Vegetarianas', onRemove: () => handleFiltersChange({ ...filters, vegetarianOnly: undefined }) });
+  if (filters.sweetOnly) activeFilterChips.push({ value: 'Recetas Dulces', onRemove: () => handleFiltersChange({ ...filters, sweetOnly: undefined }) });
+  if (filters.savoryOnly) activeFilterChips.push({ value: 'Recetas Saladas', onRemove: () => handleFiltersChange({ ...filters, savoryOnly: undefined }) });
 
   const handleClearFilters = () => {
     setFilters({
@@ -2317,6 +2344,8 @@ const Index = () => {
       lowCarbOnly: undefined,
       proteicaOnly: undefined,
       vegetarianOnly: undefined,
+      sweetOnly: undefined,
+      savoryOnly: undefined,
       collectionId: undefined,
       sources: undefined,
       dishType: undefined,
@@ -3049,6 +3078,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       glutenFreeActive={filters.glutenFreeOnly === true}
       glutenFreeCount={recipes.filter((r) => r.glutenFree === true).length}
       onSelectGlutenFree={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, glutenFreeOnly: filters.glutenFreeOnly ? undefined : true }); }}
+      sugarFreeActive={filters.sugarFreeOnly === true}
+      sugarFreeCount={recipes.filter((r) => r.sugarFree === true).length}
+      onSelectSugarFree={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, sugarFreeOnly: filters.sugarFreeOnly ? undefined : true }); }}
       ketoActive={filters.ketoOnly === true}
       ketoCount={recipes.filter((r) => r.keto === true).length}
       onSelectKeto={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, ketoOnly: filters.ketoOnly ? undefined : true }); }}
@@ -3061,6 +3093,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       vegetarianActive={filters.vegetarianOnly === true}
       vegetarianCount={recipes.filter((r) => r.vegetarian === true).length}
       onSelectVegetarian={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, vegetarianOnly: filters.vegetarianOnly ? undefined : true }); }}
+      sweetActive={filters.sweetOnly === true}
+      sweetCount={recipes.filter((r) => r.sweet === true).length}
+      onSelectSweet={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, sweetOnly: filters.sweetOnly ? undefined : true }); }}
+      savoryActive={filters.savoryOnly === true}
+      savoryCount={recipes.filter((r) => r.savory === true).length}
+      onSelectSavory={() => { setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); handleFiltersChange({ ...filters, savoryOnly: filters.savoryOnly ? undefined : true }); }}
       categories={categoryList}
       activeCategory={filters.recipeTypes?.length === 1 ? filters.recipeTypes[0] : undefined}
       onSelectCategory={(name) => {
@@ -3293,6 +3331,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   <DropdownMenuItem onClick={() => { navigate(`/app?accion=importar&_=${Date.now()}`); }}>
                     <Download className="mr-2 h-4 w-4" />
                     Importar receta
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { navigate(`/app?accion=importar-texto&_=${Date.now()}`); }}>
+                    <ClipboardPaste className="mr-2 h-4 w-4" />
+                    Importar texto
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { navigate(`/app?accion=busqueda-inteligente&_=${Date.now()}`); }}>
                     <Sparkles className="mr-2 h-4 w-4" />
@@ -3886,7 +3928,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
 
               {/* Toggles (Favoritos, Cocinadas, Thermomix, etc.) al final del bloque: 4 y 4 en iPad */}
-              <div className="mt-2 grid grid-cols-2 justify-items-center gap-2 sm:grid-cols-4 xl:grid-cols-9 [&>button]:w-[94%] [&>button]:px-2 [&>button]:text-[13px]">
+              <div className="mt-2 grid grid-cols-2 justify-items-center gap-2 sm:grid-cols-4 xl:grid-cols-6 [&>button]:w-[94%] [&>button]:px-2 [&>button]:text-[13px]">
                 <Button
                   variant={filters.featured === true ? "default" : "outline"}
                   size="sm"
@@ -3943,6 +3985,15 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   Sin Gluten
                 </Button>
                 <Button
+                  variant={filters.sugarFreeOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFiltersChange({ ...filters, sugarFreeOnly: filters.sugarFreeOnly ? undefined : true })}
+                  className="h-8"
+                >
+                  <CandyOff className="h-4 w-4 mr-2" />
+                  Sin Azucar
+                </Button>
+                <Button
                   variant={filters.ketoOnly ? "default" : "outline"}
                   size="sm"
                   onClick={() => handleFiltersChange({ ...filters, ketoOnly: filters.ketoOnly ? undefined : true })}
@@ -3986,6 +4037,24 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   <Leaf className="h-4 w-4 mr-2" />
                   Vegetarianas
                 </Button>
+                <Button
+                  variant={filters.sweetOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFiltersChange({ ...filters, sweetOnly: filters.sweetOnly ? undefined : true })}
+                  className="h-8"
+                >
+                  <CakeSlice className="h-4 w-4 mr-2" />
+                  Recetas Dulces
+                </Button>
+                <Button
+                  variant={filters.savoryOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFiltersChange({ ...filters, savoryOnly: filters.savoryOnly ? undefined : true })}
+                  className="h-8"
+                >
+                  <Utensils className="h-4 w-4 mr-2" />
+                  Recetas Saladas
+                </Button>
               </div>
             </div>
         )}
@@ -3993,13 +4062,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         {/* Panel de impresion de COLECCIONES */}
         {showCollectionsGallery && activeBulkPanel === 'print' && (
             <div
-              className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
+              className="relative sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
               style={{ top: 'calc(var(--tastebox-header-height, 113px) + var(--tastebox-recipe-toolbar-height, 75px))' }}
             >
               <button
                 type="button"
                 onClick={() => { setActiveBulkPanel(null); setSelectedCollectionBulkIds(new Set()); }}
-                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
                 aria-label="Cerrar acciones"
                 title="Cerrar"
               >
@@ -4081,7 +4150,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         {/* Panel de eliminacion de COLECCIONES */}
         {showCollectionsGallery && activeBulkPanel === 'delete' && (
             <div
-              className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
+              className="relative sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
               style={{ top: 'calc(var(--tastebox-header-height, 113px) + var(--tastebox-recipe-toolbar-height, 75px))' }}
             >
               <button
@@ -4152,7 +4221,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         {/* Panel de impresion de TIPOS DE RECETA */}
         {showDishTypesGallery && activeBulkPanel === 'print' && (
             <div
-              className="sticky z-30 bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
+              className="sticky z-[60] bg-muted rounded-lg px-4 py-3 mb-4 shadow-sm"
               style={{ top: 'calc(var(--tastebox-header-height, 113px) + var(--tastebox-recipe-toolbar-height, 75px))' }}
             >
               <button
@@ -4786,8 +4855,17 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             >
               <button
                 type="button"
-                onClick={() => { setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); }}
-                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  closeRecipeBulkPanel();
+                }}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  closeRecipeBulkPanel();
+                }}
+                className="absolute right-2 top-2 z-[70] flex h-8 w-8 items-center justify-center rounded-md bg-background/70 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
                 aria-label="Cerrar acciones"
                 title="Cerrar"
               >
@@ -6908,7 +6986,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <AlertDialogHeader>
             <AlertDialogTitle>{galleryPrint?.kind === 'cards' ? 'Imprimir tarjetas' : 'Imprimir lista'}</AlertDialogTitle>
             <AlertDialogDescription>
-              Opcional: agreg? un titulo, encabezado y pie de pagina para la hoja a imprimir.
+              Opcional: agrega un titulo, encabezado y pie de pagina para la hoja a imprimir.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3">
@@ -7014,7 +7092,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <AlertDialogHeader>
             <AlertDialogTitle>Imprimir lista</AlertDialogTitle>
             <AlertDialogDescription>
-              Opcional: agreg? un titulo, encabezado y pie de pagina para la hoja a imprimir.
+              Opcional: agrega un titulo, encabezado y pie de pagina para la hoja a imprimir.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3">
@@ -7079,7 +7157,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <AlertDialogHeader>
             <AlertDialogTitle>Imprimir tarjetas</AlertDialogTitle>
             <AlertDialogDescription>
-              Opcional: agreg? un titulo y un pie de pagina para la hoja a imprimir.
+              Opcional: agrega un titulo y un pie de pagina para la hoja a imprimir.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3">
@@ -7094,7 +7172,22 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     variant={printCardsColumns === n ? "default" : "outline"}
                     size="sm"
                     className="w-10"
-                    onClick={() => setPrintCardsColumns(n)}
+                    onClick={() => {
+                      setPrintCardsColumns(n);
+                      if (n >= 5) {
+                        setPrintCardsFields(prev => ({
+                          image: true,
+                          title: true,
+                          source: prev.source,
+                          collection: false,
+                          difficulty: false,
+                          dishType: false,
+                          category: false,
+                          times: false,
+                          icons: false,
+                        }));
+                      }
+                    }}
                   >
                     {n}
                   </Button>
@@ -7107,22 +7200,27 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {([
                   { key: 'source', label: 'Fuente' },
+                  { key: 'collection', label: 'Coleccion' },
                   { key: 'difficulty', label: 'Dificultad' },
                   { key: 'dishType', label: 'Tipo de comida' },
                   { key: 'category', label: 'Categoria' },
                   { key: 'times', label: 'Tiempos y porciones' },
                   { key: 'icons', label: 'Iconos' },
-                ] as const).map(({ key, label }) => (
-                  <label key={key} className="flex cursor-pointer items-center gap-2 text-sm">
+                ] as const).map(({ key, label }) => {
+                  const disabled = printCardsCompactFieldsOnly && key !== 'source';
+                  return (
+                  <label key={key} className={`flex items-center gap-2 text-sm ${disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer'}`}>
                     <input
                       type="checkbox"
                       className="h-4 w-4 accent-primary"
-                      checked={printCardsFields[key]}
+                      checked={disabled ? false : printCardsFields[key]}
+                      disabled={disabled}
                       onChange={(e) => setPrintCardsFields(prev => ({ ...prev, [key]: e.target.checked }))}
                     />
                     {label}
                   </label>
-                ))}
+                  );
+                })}
               </div>
             </div>
             {/* 3 - Titulo del documento */}
@@ -7182,7 +7280,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_3px_10px_rgba(0,0,0,0.28)] transition-all hover:bg-primary/90 hover:scale-105 hover:shadow-[0_5px_14px_rgba(0,0,0,0.32)]"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-foreground shadow-[0_3px_10px_rgba(0,0,0,0.22)] backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80 hover:shadow-[0_5px_14px_rgba(0,0,0,0.28)]"
             aria-label="Ir a la primera receta"
             title="Ir a la primera receta"
           >
@@ -7192,7 +7290,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         <button
           type="button"
           onClick={() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_3px_10px_rgba(0,0,0,0.28)] transition-all hover:bg-primary/90 hover:scale-105 hover:shadow-[0_5px_14px_rgba(0,0,0,0.32)]"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-foreground shadow-[0_3px_10px_rgba(0,0,0,0.22)] backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80 hover:shadow-[0_5px_14px_rgba(0,0,0,0.28)]"
           aria-label="Ir a la ultima receta"
           title="Ir a la ultima receta"
         >

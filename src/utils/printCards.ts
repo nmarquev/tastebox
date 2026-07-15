@@ -20,12 +20,15 @@ const ICONS = {
   vegetarian: svgIcon('<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>'),
   sweet: svgIcon('<path d="M8 2v2"/><path d="M16 2v2"/><path d="M3 10h18"/><path d="M5 10v10h14V10"/><path d="M5 15c2 1 3-1 5 0s3 1 5 0 3-1 4 0"/>'),
   savory: svgIcon('<path d="M3 2v7a3 3 0 0 0 6 0V2"/><path d="M6 2v20"/><path d="M18 2v20"/><path d="M18 2c-3 2-3 7 0 9"/>'),
+  cooked: svgIcon('<path d="M3.5 9.5c2-2.2 5-3.3 8.5-3.3s6.5 1.1 8.5 3.3"/><path d="M10 5.7h4"/><path d="M4.8 12.3H3"/><path d="M19.2 12.3H21"/><path d="M4.8 9.5h14.4v7.7a2 2 0 0 1-2 2H6.8a2 2 0 0 1-2-2z"/><path d="M9.2 14.4l2.1 2.1 3.5-3.9"/>'),
+  featured: svgIcon('<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>'),
 };
 
 interface PrintCardsFields {
   image?: boolean;
   title?: boolean;
   source?: boolean;
+  collection?: boolean;
   difficulty?: boolean;
   dishType?: boolean;
   category?: boolean;
@@ -66,7 +69,7 @@ export const printRecipeCards = async (recipes: Recipe[], options: PrintCardsOpt
 
   // Campos a imprimir (por defecto todos). Solo se imprime el campo si está marcado y si existe.
   const fld: Required<PrintCardsFields> = {
-    image: true, title: true, source: true, difficulty: true, dishType: true, category: true, times: true, icons: true,
+    image: true, title: true, source: true, collection: true, difficulty: true, dishType: true, category: true, times: true, icons: true,
     ...(options.fields || {}),
   };
 
@@ -81,27 +84,35 @@ export const printRecipeCards = async (recipes: Recipe[], options: PrintCardsOpt
     const category = (recipe.recipeType || '').trim();
     const dish = (recipe.dishType || '').trim();
     const difficulty = (recipe.difficulty || '').trim();
+    const collection = ((recipe as Recipe & { collectionNames?: string[] }).collectionNames || [])
+      .filter(name => name && name.trim())
+      .join(', ');
 
     const stats: string[] = [];
-    if (recipe.prepTime && recipe.prepTime > 0) stats.push(`${ICONS.prep} ${recipe.prepTime} min`);
-    if (recipe.cookTime && recipe.cookTime > 0) stats.push(`${ICONS.clock} ${(recipe.prepTime || 0) + recipe.cookTime} min`);
-    if (recipe.servings && recipe.servings > 0) stats.push(`${ICONS.user} ${recipe.servings}`);
+    const statCell = (icon: string, text: string): string => `<span class="stat-cell">${icon}<span>${escapeHtml(text)}</span></span>`;
+    if (recipe.prepTime && recipe.prepTime > 0) stats.push(statCell(ICONS.prep, `${recipe.prepTime} min`));
+    if (recipe.cookTime && recipe.cookTime > 0) stats.push(statCell(ICONS.clock, `${(recipe.prepTime || 0) + recipe.cookTime} min`));
+    if (recipe.servings && recipe.servings > 0) stats.push(statCell(ICONS.user, `${recipe.servings}`));
 
     const icons: string[] = [];
-    if (recipe.thermomix) icons.push(`<img src="${origin}/thermomix-logo.png" style="width:${iconPx}px;height:${iconPx}px;object-fit:contain" />`);
-    if (recipe.airFryer) icons.push(`<img src="${origin}/air-fryer.png" style="width:${iconPx}px;height:${iconPx}px;object-fit:contain" />`);
-    if (recipe.glutenFree) icons.push(ICONS.glutenFree);
-    if (recipe.sugarFree) icons.push(ICONS.sugarFree);
-    if (recipe.keto) icons.push(ICONS.keto);
-    if (recipe.lowCarb) icons.push(`<img src="${origin}/logo-saludable.png" style="width:${iconPx}px;height:${iconPx}px;object-fit:contain;filter:grayscale(1)" />`);
-    if (recipe.proteica) icons.push(ICONS.proteica);
-    if (recipe.vegetarian) icons.push(ICONS.vegetarian);
-    if (recipe.sweet) icons.push(ICONS.sweet);
-    if (recipe.savory) icons.push(ICONS.savory);
+    const iconCell = (icon: string): string => `<span class="icon-cell">${icon}</span>`;
+    if (recipe.thermomix) icons.push(iconCell(`<img class="feature-icon-img" src="${origin}/thermomix-logo.png" />`));
+    if (recipe.airFryer) icons.push(iconCell(`<img class="feature-icon-img" src="${origin}/air-fryer.png" />`));
+    if (recipe.glutenFree) icons.push(iconCell(ICONS.glutenFree));
+    if (recipe.sugarFree) icons.push(iconCell(ICONS.sugarFree));
+    if (recipe.keto) icons.push(iconCell(ICONS.keto));
+    if (recipe.lowCarb) icons.push(iconCell(`<img class="feature-icon-img muted" src="${origin}/logo-saludable.png" />`));
+    if (recipe.proteica) icons.push(iconCell(ICONS.proteica));
+    if (recipe.vegetarian) icons.push(iconCell(ICONS.vegetarian));
+    if (recipe.sweet) icons.push(iconCell(ICONS.sweet));
+    if (recipe.savory) icons.push(iconCell(ICONS.savory));
+    if (recipe.cooked) icons.push(iconCell(ICONS.cooked));
+    if (recipe.featured) icons.push(iconCell(ICONS.featured));
 
     const parts: string[] = [];
     if (fld.title && name) parts.push(`<div class="fld-title">${name}</div>`);
-    if (fld.source && source) parts.push(`<div class="fld-source"><b>Fuente:</b> ${escapeHtml(source)}</div>`);
+    if (fld.source && source) parts.push(`<div class="fld-source">${columns >= 5 ? escapeHtml(source) : `<b>Fuente:</b> ${escapeHtml(source)}`}</div>`);
+    if (fld.collection && collection) parts.push(`<div class="fld-meta"><b>Coleccion:</b> ${escapeHtml(collection)}</div>`);
     if (fld.difficulty && difficulty) parts.push(`<div class="fld-meta"><b>Dificultad:</b> ${escapeHtml(difficulty)}</div>`);
     if (fld.dishType && dish) parts.push(`<div class="fld-meta"><b>Tipo de receta:</b> ${escapeHtml(dish)}</div>`);
     if (fld.category && category) parts.push(`<div class="fld-meta"><b>Categoría:</b> ${escapeHtml(category)}</div>`);
@@ -116,7 +127,7 @@ export const printRecipeCards = async (recipes: Recipe[], options: PrintCardsOpt
   // Fila horizontal (vista de 1 columna): imagen a la izquierda, datos a la derecha.
   const buildRowCard = (recipe: Recipe): string => {
     const imageUrl = imageOf(recipe);
-    const imgHtml = fld.image && imageUrl ? `<img class="row-img" src="${imageUrl}" crossorigin="anonymous" alt="" />` : '';
+    const imgHtml = fld.image && imageUrl ? `<img class="recipe-img row-img" src="${imageUrl}" crossorigin="anonymous" alt="" />` : '';
     return `
       <div class="row-card">
         ${imgHtml}
@@ -127,7 +138,7 @@ export const printRecipeCards = async (recipes: Recipe[], options: PrintCardsOpt
   // Tarjeta de grilla (2-6 columnas): imagen arriba + campos debajo.
   const buildGridCard = (recipe: Recipe): string => {
     const imageUrl = imageOf(recipe);
-    const imgHtml = fld.image && imageUrl ? `<img src="${imageUrl}" crossorigin="anonymous" alt="" />` : '';
+    const imgHtml = fld.image && imageUrl ? `<img class="recipe-img" src="${imageUrl}" crossorigin="anonymous" alt="" />` : '';
     const body = buildFieldPieces(recipe);
     return `
       <div class="card">
@@ -181,7 +192,7 @@ export const printRecipeCards = async (recipes: Recipe[], options: PrintCardsOpt
       break-inside: avoid;
     }
     /* Imagen cuadrada para que se vea mejor; margen arriba, izquierda y derecha. */
-    .card img, .card .noimg {
+    .card .recipe-img, .card .noimg {
       margin: 2mm 2mm 0 2mm;
       width: calc(100% - 4mm);
       aspect-ratio: 1 / 1;
@@ -195,8 +206,36 @@ export const printRecipeCards = async (recipes: Recipe[], options: PrintCardsOpt
     .card .fld-title { font-size: 12px; font-weight: 700; line-height: 1.2; }
     .card .fld-source { font-size: 10px; color: #888; }
     .card .fld-meta { font-size: 10px; color: #555; }
-    .card .fld-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; color: #444; }
-    .card .fld-icons { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .card .fld-stats { display: flex; flex-wrap: nowrap; align-items: center; gap: ${columns >= 4 ? '4px' : '8px'}; font-size: ${columns >= 4 ? '10px' : '11px'}; color: #444; white-space: nowrap; }
+    .stat-cell { display: inline-flex; align-items: center; gap: ${columns >= 4 ? '3px' : '4px'}; min-width: 0; line-height: 1; }
+    .stat-cell svg { width: ${columns >= 4 ? 13 : 16}px; height: ${columns >= 4 ? 13 : 16}px; flex: 0 0 auto; }
+    .fld-icons {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(${iconPx + 4}px, ${iconPx + 4}px));
+      align-items: center;
+      gap: 3px 4px;
+      max-width: 100%;
+    }
+    .icon-cell {
+      width: ${iconPx + 4}px;
+      height: ${iconPx + 4}px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      overflow: hidden;
+    }
+    .icon-cell svg,
+    .icon-cell .feature-icon-img {
+      width: ${iconPx}px !important;
+      height: ${iconPx}px !important;
+      max-width: ${iconPx}px;
+      max-height: ${iconPx}px;
+      object-fit: contain;
+      display: block;
+      margin: 0;
+    }
+    .icon-cell .feature-icon-img.muted { filter: grayscale(1); opacity: 0.78; }
     /* Vista de 1 columna: imagen a la izquierda, datos a la derecha. */
     .list { display: flex; flex-direction: column; gap: 4mm; }
     .row-card {
@@ -221,7 +260,7 @@ export const printRecipeCards = async (recipes: Recipe[], options: PrintCardsOpt
     .row-card .fld-source { font-size: 12px; color: #888; }
     .row-card .fld-meta { font-size: 12px; color: #555; }
     .row-card .fld-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; font-size: 13px; color: #444; }
-    .row-card .fld-icons { display: flex; align-items: center; gap: 10px; }
+    .row-card .fld-icons { grid-template-columns: repeat(auto-fill, minmax(${iconPx + 6}px, ${iconPx + 6}px)); gap: 5px 6px; }
     .page-footer {
       position: fixed;
       bottom: 0;

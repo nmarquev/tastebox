@@ -91,6 +91,7 @@ export class PdfKitService {
     const black = '#1a1a1a';
     const pngMap: Record<string, string> = {
       thermomix: 'thermomix-logo.transparent.png',
+      airFryer: 'air-fryer.png',
       lowCarb: 'logo-saludable.png',
     };
     if (pngMap[key]) {
@@ -137,16 +138,40 @@ export class PdfKitService {
         'M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z',
         'M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z',
       ],
+      sugarFree: [
+        'm8.5 8.5-1 1a4.95 4.95 0 0 0 7 7l1-1',
+        'M11.843 6.187A4.947 4.947 0 0 1 16.5 7.5a4.947 4.947 0 0 1 1.313 4.657',
+        'M14 16.5V14',
+        'M14 6.5v1.843',
+        'M10 10v7.5',
+        'm16 7 1-5 1.367.683A3 3 0 0 0 19.708 3H21v1.292a3 3 0 0 0 .317 1.341L22 7l-5 1',
+        'm8 17-1 5-1.367-.683A3 3 0 0 0 4.292 21H3v-1.292a3 3 0 0 0-.317-1.341L2 17l5-1',
+      ],
+      proteica: [
+        'M12.5 2a6.5 6.5 0 0 0-6.22 4.6c-1.1 3.13-.78 3.9-3.18 6.08A3 3 0 0 0 5 18c4 0 8.4-1.8 11.4-4.3A6.5 6.5 0 0 0 12.5 2Z',
+        'm18.5 6 2.19 4.5a6.48 6.48 0 0 1 .31 2 6.49 6.49 0 0 1-2.6 5.2C15.4 20.2 11 22 7 22a3 3 0 0 1-2.68-1.66L2.4 16.5',
+      ],
+      sweet: [
+        'M7.2 7.9 3 11v9c0 .6.4 1 1 1h16c.6 0 1-.4 1-1v-9c0-2-3-6-7-8l-3.6 2.6',
+        'M16 13H3',
+        'M16 17H3',
+      ],
+      savory: [
+        'M3 2v7a3 3 0 0 0 6 0V2',
+        'M6 2v20',
+        'M18 2v20',
+        'M18 2c-3 2-3 7 0 9',
+      ],
     };
 
     // Algunos iconos se ven chicos: se dibujan un poco más grandes y centrados.
-    const vecExtra: Record<string, number> = { cooked: 5, airFryer: 4, keto: 4 };
+    const vecExtra: Record<string, number> = { cooked: 5, airFryer: 4, keto: 4, sugarFree: 5 };
     const vecSize = size + (vecExtra[key] ?? 0);
     const voff = (vecSize - size) / 2;
     doc.save();
     doc.translate(x - voff, y - voff);
     doc.scale(vecSize / 24);
-    doc.strokeColor(black).lineWidth(2).lineJoin('round').lineCap('round');
+    doc.strokeColor(black).fillColor(black).lineWidth(key === 'sugarFree' ? 1.7 : 2).lineJoin('round').lineCap('round');
 
     const paths = svgPaths[key];
     if (key === 'airFryer') {
@@ -156,10 +181,50 @@ export class PdfKitService {
       doc.moveTo(4.5, 9).lineTo(19.5, 9).stroke();      // línea del panel superior
       doc.fillColor(black).circle(15.6, 6.2, 1).fill(); // perilla
       doc.roundedRect(9, 15, 6, 3.4, 1.2).stroke();     // canasta / agarre inferior
+    } else if (key === 'sugarFree') {
+      doc.lineWidth(2);
+      doc.roundedRect(7, 7, 10, 10, 3).stroke();
+      doc.path('M7 9 3 6 4 11 7 13').stroke();
+      doc.path('M17 11 21 8 20 13 17 15').stroke();
+      doc.moveTo(10, 8).lineTo(10, 16).stroke();
+      doc.moveTo(14, 8).lineTo(14, 16).stroke();
+      doc.moveTo(4, 4).lineTo(20, 20).stroke();
+    } else if (key === 'proteica') {
+      doc.lineWidth(2);
+      doc.ellipse(11, 10, 7, 6).stroke();
+      doc.ellipse(15.5, 14.5, 5.5, 4.5).stroke();
+      doc.circle(10, 8.5, 2).stroke();
+      doc.moveTo(7, 16).lineTo(4, 19).stroke();
+      doc.moveTo(5, 18).lineTo(3, 16).stroke();
+    } else if (key === 'sweet') {
+      doc.lineWidth(2);
+      doc.path('M4 11 L14 4 L21 11 L21 20 L4 20 Z').stroke();
+      doc.moveTo(4, 13).lineTo(21, 13).stroke();
+      doc.moveTo(4, 17).lineTo(21, 17).stroke();
+      doc.moveTo(10, 4).lineTo(10, 2).stroke();
+      doc.circle(10, 2, 1.2).stroke();
+    } else if (key === 'savory') {
+      doc.lineWidth(2);
+      doc.moveTo(5, 3).lineTo(5, 10).stroke();
+      doc.moveTo(8, 3).lineTo(8, 10).stroke();
+      doc.moveTo(11, 3).lineTo(11, 10).stroke();
+      doc.moveTo(5, 10).lineTo(11, 10).stroke();
+      doc.moveTo(8, 10).lineTo(8, 21).stroke();
+      doc.moveTo(17, 3).lineTo(17, 21).stroke();
+      doc.path('M17 3 C14 6 14 10 17 12').stroke();
     } else if (paths) {
+      if (key === 'featured') {
+        doc.fillColor('#ef4444').strokeColor('#ef4444');
+        for (const d of paths) doc.path(d).fillAndStroke();
+        doc.restore();
+        return;
+      }
       for (const d of paths) doc.path(d).stroke();
       if (key === 'keto') doc.circle(12, 14.5, 2.6).stroke(); // carozo de la palta
+      if (key === 'proteica') doc.circle(12.5, 8.5, 2.5).stroke();
+      if (key === 'sweet') doc.circle(9, 7, 2).stroke();
       if (key === 'glutenFree') doc.path('M4 4 L20 20').stroke(); // tachado de la espiga
+      if (key === 'sugarFree') doc.path('M2 2 L22 22').stroke(); // tachado del caramelo
     } else {
       doc.circle(12, 12, 9).stroke();
     }
@@ -290,9 +355,10 @@ export class PdfKitService {
         const boxWidth = doc.page.width - 60;
         const contentLeft = 40;
         const contentRight = doc.page.width - 40;
-        const iconSize = 12;
-        const iconGap = 5;
-        const attrRowHeight = 18;
+        const iconSize = 13;
+        const chipSize = 22;
+        const chipGap = 6;
+        const attrRowHeight = chipSize + chipGap;
 
         // Estadísticas (tiempos y porciones).
         const stats = [
@@ -305,34 +371,21 @@ export class PdfKitService {
         const attrDefs = [
           { key: 'thermomix', label: 'Thermomix' },
           { key: 'airFryer', label: 'Air Fryer' },
-          { key: 'cooked', label: 'Cocinada' },
-          { key: 'featured', label: 'Favorita' },
           { key: 'glutenFree', label: 'Sin Gluten' },
           { key: 'sugarFree', label: 'Sin Azucar' },
           { key: 'keto', label: 'Keto' },
           { key: 'lowCarb', label: 'Low Carb' },
           { key: 'proteica', label: 'Proteica' },
           { key: 'vegetarian', label: 'Vegetariana' },
-          { key: 'sweet', label: 'Receta dulce' },
-          { key: 'savory', label: 'Receta salada' },
+          { key: 'sweet', label: 'Receta Dulce' },
+          { key: 'savory', label: 'Receta Salada' },
+          { key: 'cooked', label: 'Cocinada' },
+          { key: 'featured', label: 'Favorita' },
         ];
         const activeAttrs = attrDefs.filter(a => Boolean((recipe as any)[a.key]));
 
-        doc.fontSize(9).font('Helvetica-Bold');
-        const pillGap = 16;
-        const placed: Array<{ key: string; label: string; x: number; row: number }> = [];
-        let curX = contentLeft;
-        let rowIdx = 0;
-        for (const def of activeAttrs) {
-          const pillW = iconSize + iconGap + doc.widthOfString(def.label);
-          if (curX + pillW > contentRight && curX > contentLeft) {
-            rowIdx += 1;
-            curX = contentLeft;
-          }
-          placed.push({ key: def.key, label: def.label, x: curX, row: rowIdx });
-          curX += pillW + pillGap;
-        }
-        const attrRows = activeAttrs.length ? rowIdx + 1 : 0;
+        const attrColumns = Math.max(1, Math.floor((contentRight - contentLeft + chipGap) / (chipSize + chipGap)));
+        const attrRows = activeAttrs.length ? Math.ceil(activeAttrs.length / attrColumns) : 0;
 
         const statsHeight = 36;
         const attrsBlockHeight = attrRows ? (8 + attrRows * attrRowHeight) : 0;
@@ -356,12 +409,20 @@ export class PdfKitService {
           const attrsTop = yPos + statsHeight;
           doc.strokeColor('#ffd9c7').lineWidth(0.7)
              .moveTo(contentLeft, attrsTop - 2).lineTo(contentRight, attrsTop - 2).stroke();
-          for (const pill of placed) {
-            const py = attrsTop + 6 + pill.row * attrRowHeight;
-            PdfKitService.drawAttrIcon(doc, pill.key, pill.x, py, iconSize);
-            doc.fillColor('#333').fontSize(9).font('Helvetica-Bold')
-               .text(pill.label, pill.x + iconSize + iconGap, py + 2);
-          }
+          activeAttrs.forEach((attr, index) => {
+            const col = index % attrColumns;
+            const row = Math.floor(index / attrColumns);
+            const px = contentLeft + col * (chipSize + chipGap);
+            const py = attrsTop + 6 + row * attrRowHeight;
+            doc.roundedRect(px, py, chipSize, chipSize, 4).fill('#eef7f5');
+            PdfKitService.drawAttrIcon(
+              doc,
+              attr.key,
+              px + (chipSize - iconSize) / 2,
+              py + (chipSize - iconSize) / 2,
+              iconSize
+            );
+          });
         }
 
         yPos += boxHeight + 15;

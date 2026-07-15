@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Beef, ChevronRight, ChevronDown, ImageIcon, Plus, Loader2, Heart, WheatOff, Leaf, ChefHat } from "lucide-react";
+import { Beef, CakeSlice, CandyOff, ChevronRight, ChevronDown, ImageIcon, Plus, Loader2, Heart, WheatOff, Leaf, ChefHat, Utensils } from "lucide-react";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { RecipeCollection } from "@/services/api";
@@ -36,6 +36,9 @@ interface CollectionsSidebarProps {
   glutenFreeActive?: boolean;
   glutenFreeCount?: number;
   onSelectGlutenFree?: () => void;
+  sugarFreeActive?: boolean;
+  sugarFreeCount?: number;
+  onSelectSugarFree?: () => void;
   ketoActive?: boolean;
   ketoCount?: number;
   onSelectKeto?: () => void;
@@ -48,6 +51,12 @@ interface CollectionsSidebarProps {
   vegetarianActive?: boolean;
   vegetarianCount?: number;
   onSelectVegetarian?: () => void;
+  sweetActive?: boolean;
+  sweetCount?: number;
+  onSelectSweet?: () => void;
+  savoryActive?: boolean;
+  savoryCount?: number;
+  onSelectSavory?: () => void;
   categories?: CategoryItem[];
   activeCategory?: string;
   onSelectCategory?: (name: string) => void;
@@ -101,6 +110,9 @@ export const CollectionsSidebar = ({
   glutenFreeActive,
   glutenFreeCount,
   onSelectGlutenFree,
+  sugarFreeActive,
+  sugarFreeCount,
+  onSelectSugarFree,
   ketoActive,
   ketoCount,
   onSelectKeto,
@@ -113,6 +125,12 @@ export const CollectionsSidebar = ({
   vegetarianActive,
   vegetarianCount,
   onSelectVegetarian,
+  sweetActive,
+  sweetCount,
+  onSelectSweet,
+  savoryActive,
+  savoryCount,
+  onSelectSavory,
   categories,
   activeCategory,
   onSelectCategory,
@@ -863,6 +881,25 @@ export const CollectionsSidebar = ({
         </button>
       )}
 
+      {/* Sin Azucar */}
+      {onSelectSugarFree && (
+        <button
+          type="button"
+          onClick={onSelectSugarFree}
+          className={`flex w-full items-center justify-between border-t border-border/60 h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
+            sugarFreeActive ? "bg-accent/60 text-foreground" : "text-muted-foreground hover:bg-muted/50"
+          }`}
+        >
+          <span>Sin Azucar</span>
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{sugarFreeCount ?? 0}</span>
+            <span className="flex h-6 w-6 items-center justify-center">
+              <CandyOff className="h-4 w-4" />
+            </span>
+          </span>
+        </button>
+      )}
+
       {/* Keto */}
       {onSelectKeto && (
         <button
@@ -934,6 +971,44 @@ export const CollectionsSidebar = ({
             <span className="text-xs text-muted-foreground">{vegetarianCount ?? 0}</span>
             <span className="flex h-6 w-6 items-center justify-center">
               <Leaf className="h-[18px] w-[18px]" />
+            </span>
+          </span>
+        </button>
+      )}
+
+      {/* Recetas Dulces */}
+      {onSelectSweet && (
+        <button
+          type="button"
+          onClick={onSelectSweet}
+          className={`flex w-full items-center justify-between border-t border-border/60 h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
+            sweetActive ? "bg-accent/60 text-foreground" : "text-muted-foreground hover:bg-muted/50"
+          }`}
+        >
+          <span>Recetas Dulces</span>
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{sweetCount ?? 0}</span>
+            <span className="flex h-6 w-6 items-center justify-center">
+              <CakeSlice className="h-[18px] w-[18px]" />
+            </span>
+          </span>
+        </button>
+      )}
+
+      {/* Recetas Saladas */}
+      {onSelectSavory && (
+        <button
+          type="button"
+          onClick={onSelectSavory}
+          className={`flex w-full items-center justify-between border-t border-border/60 h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
+            savoryActive ? "bg-accent/60 text-foreground" : "text-muted-foreground hover:bg-muted/50"
+          }`}
+        >
+          <span>Recetas Saladas</span>
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{savoryCount ?? 0}</span>
+            <span className="flex h-6 w-6 items-center justify-center">
+              <Utensils className="h-[18px] w-[18px]" />
             </span>
           </span>
         </button>

@@ -2,18 +2,21 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
   Beef,
+  CakeSlice,
   CandyOff,
   ChefHat,
   ChevronDown,
+  ClipboardPaste,
   Download,
-  Flame,
   Heart,
   Leaf,
   PlusCircle,
   Search,
   Sparkles,
+  Utensils,
   WheatOff,
 } from "lucide-react";
+import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import {
   DropdownMenu,
@@ -45,7 +48,7 @@ const recipeTypeItems = [
   },
   { label: "Sin Gluten", to: "/app?filtro=sin-gluten", icon: <WheatOff className="h-4 w-4" /> },
   { label: "Sin Azucar", to: "/app?filtro=sin-azucar", icon: <CandyOff className="h-4 w-4" /> },
-  { label: "Keto", to: "/app?filtro=keto", icon: <Flame className="h-4 w-4" /> },
+  { label: "Keto", to: "/app?filtro=keto", icon: <AvocadoIcon className="h-[18px] w-[18px]" /> },
   {
     label: "Low Carb",
     to: "/app?filtro=low-carb",
@@ -53,11 +56,14 @@ const recipeTypeItems = [
   },
   { label: "Proteicas", to: "/app?filtro=proteicas", icon: <Beef className="h-4 w-4" /> },
   { label: "Vegetarianas", to: "/app?filtro=vegetarianas", icon: <Leaf className="h-4 w-4" /> },
+  { label: "Recetas Dulces", to: "/app?filtro=dulces", icon: <CakeSlice className="h-4 w-4" /> },
+  { label: "Recetas Saladas", to: "/app?filtro=saladas", icon: <Utensils className="h-4 w-4" /> },
 ];
 
 const actionItems = [
   { label: "Nueva Receta", action: "nueva", icon: <PlusCircle className="h-4 w-4" /> },
-  { label: "Importar receta", action: "importar", icon: <Download className="h-4 w-4" /> },
+  { label: "Importar receta de URL", action: "importar", icon: <Download className="h-4 w-4" /> },
+  { label: "Importar receta de texto", action: "importar-texto", icon: <ClipboardPaste className="h-4 w-4" /> },
   { label: "Buscador inteligente", action: "busqueda-inteligente", icon: <Sparkles className="h-4 w-4" /> },
 ];
 

@@ -45,7 +45,7 @@ export interface Recipe {
   sourceUrl?: string;
   source?: string;
   author?: string;
-  importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
+  importedFrom?: string;
   recipeType?: string;
   dishType?: string;
   country?: string;
@@ -93,7 +93,7 @@ export interface ImportRecipeResponse {
     sourceUrl?: string;
     source?: string;
     author?: string;
-    importedFrom?: 'www' | 'instagram' | 'youtube' | 'doc';
+    importedFrom?: string;
     thermomix?: boolean;
     airFryer?: boolean;
     glutenFree?: boolean;
@@ -117,6 +117,7 @@ export interface ImportRecipeResponse {
     sugar?: number | null;
     sodium?: number | null;
   };
+  recipes?: Array<NonNullable<ImportRecipeResponse['recipe']>>;
   preview?: boolean;
   error?: string;
   warning?: string;

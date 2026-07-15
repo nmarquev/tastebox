@@ -395,7 +395,7 @@ export const DocxImportModal = ({ isOpen, onClose, onRecipeSaved }: DocxImportMo
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent
         className="max-w-4xl max-h-[90vh] overflow-y-auto"
-        closeButtonClassName="h-8 w-8 rounded-md bg-primary text-primary-foreground opacity-100 inline-flex items-center justify-center shadow-sm hover:bg-primary/90 hover:opacity-100 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
+        closeButtonClassName="h-8 w-8 rounded-md bg-primary/65 text-foreground opacity-100 inline-flex items-center justify-center shadow-sm backdrop-blur-sm hover:bg-primary/80 hover:opacity-100 data-[state=open]:bg-primary/65 data-[state=open]:text-foreground"
       >
         <DialogHeader>
           <div className="flex items-center justify-between gap-2 pr-10">
