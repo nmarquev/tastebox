@@ -441,7 +441,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             {!!recipe.cookTime && recipe.cookTime > 0 && (
               <div className="flex items-center gap-1 whitespace-nowrap" title="Tiempo total">
                 <Clock className={infoIconClass} />
-                <span><span className="hidden @sm:inline">Total </span>{(recipe.prepTime || 0) + recipe.cookTime} min</span>
+                <span><span className="hidden @sm:inline">Total </span>{recipe.cookTime} min</span>
               </div>
             )}
             {!!recipe.servings && recipe.servings > 0 && (

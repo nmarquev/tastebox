@@ -725,8 +725,8 @@ const Index = () => {
     }
 
     if (recipeSort === 'totalTime') {
-      const totalTimeA = (a.prepTime || 0) + (a.cookTime || 0);
-      const totalTimeB = (b.prepTime || 0) + (b.cookTime || 0);
+      const totalTimeA = a.cookTime || 0;
+      const totalTimeB = b.cookTime || 0;
       const comparableTotalA = totalTimeA > 0 ? totalTimeA : Number.POSITIVE_INFINITY;
       const comparableTotalB = totalTimeB > 0 ? totalTimeB : Number.POSITIVE_INFINITY;
       return directionFactor * ((comparableTotalA - comparableTotalB) || titleComparison);
@@ -5936,7 +5936,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         )}
                         {!!recipe.cookTime && recipe.cookTime > 0 && (
                           <span className="flex items-center gap-1 whitespace-nowrap" title="Tiempo total">
-                            <Clock className="h-4 w-4" />{(recipe.prepTime || 0) + recipe.cookTime} min
+                            <Clock className="h-4 w-4" />{recipe.cookTime} min
                           </span>
                         )}
                         {!!recipe.servings && recipe.servings > 0 && (
@@ -6063,7 +6063,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         )}
                         {!!recipe.cookTime && recipe.cookTime > 0 && (
                           <span className="flex items-center gap-1 whitespace-nowrap" title="Tiempo total">
-                            <Clock className="h-5 w-5" />{(recipe.prepTime || 0) + recipe.cookTime} min
+                            <Clock className="h-5 w-5" />{recipe.cookTime} min
                           </span>
                         )}
                         {!!recipe.servings && recipe.servings > 0 && (

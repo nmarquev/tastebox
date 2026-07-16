@@ -61,7 +61,7 @@ export const printRecipeList = async (recipes: Recipe[], options: PrintListOptio
 
     const stats: string[] = [];
     if (recipe.prepTime && recipe.prepTime > 0) stats.push(`${ICONS.prep} ${recipe.prepTime} min`);
-    if (recipe.cookTime && recipe.cookTime > 0) stats.push(`${ICONS.clock} ${(recipe.prepTime || 0) + recipe.cookTime} min`);
+    if (recipe.cookTime && recipe.cookTime > 0) stats.push(`${ICONS.clock} ${recipe.cookTime} min`);
     if (recipe.servings && recipe.servings > 0) stats.push(`${ICONS.user} ${recipe.servings}`);
 
     const icons: string[] = [];

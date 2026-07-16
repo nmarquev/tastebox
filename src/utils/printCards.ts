@@ -91,7 +91,7 @@ export const printRecipeCards = async (recipes: Recipe[], options: PrintCardsOpt
     const stats: string[] = [];
     const statCell = (icon: string, text: string): string => `<span class="stat-cell">${icon}<span>${escapeHtml(text)}</span></span>`;
     if (recipe.prepTime && recipe.prepTime > 0) stats.push(statCell(ICONS.prep, `${recipe.prepTime} min`));
-    if (recipe.cookTime && recipe.cookTime > 0) stats.push(statCell(ICONS.clock, `${(recipe.prepTime || 0) + recipe.cookTime} min`));
+    if (recipe.cookTime && recipe.cookTime > 0) stats.push(statCell(ICONS.clock, `${recipe.cookTime} min`));
     if (recipe.servings && recipe.servings > 0) stats.push(statCell(ICONS.user, `${recipe.servings}`));
 
     const icons: string[] = [];

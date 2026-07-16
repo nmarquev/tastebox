@@ -363,7 +363,7 @@ export class PdfKitService {
         // Estadísticas (tiempos y porciones).
         const stats = [
           { icon: 'prep', label: 'Preparacion', value: `${recipe.prepTime ?? 0} min` },
-          { icon: 'total', label: 'Total', value: `${(recipe.prepTime ?? 0) + (recipe.cookTime ?? 0)} min` },
+          { icon: 'total', label: 'Total', value: `${recipe.cookTime ?? 0} min` },
           { icon: 'servings', label: 'Porciones', value: `${recipe.servings ?? '-'}` },
         ];
 

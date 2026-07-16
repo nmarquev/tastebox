@@ -1245,7 +1245,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 {!!localRecipe.cookTime && localRecipe.cookTime > 0 && (
                   <div className="flex items-center gap-2" title="Tiempo total">
                     <Clock className="h-4 w-4" />
-                    <span>Total {(localRecipe.prepTime || 0) + localRecipe.cookTime} min</span>
+                    <span>Total {localRecipe.cookTime} min</span>
                   </div>
                 )}
                 {!!localRecipe.servings && localRecipe.servings > 0 && (
