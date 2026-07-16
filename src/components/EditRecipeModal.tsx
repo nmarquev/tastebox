@@ -249,16 +249,11 @@ export const EditRecipeModal = ({
         return next;
       }
 
-      if (event.ctrlKey || event.metaKey) {
-        const next = new Set(prev);
-        if (next.has(index)) next.delete(index);
-        else next.add(index);
-        lastSelectedIngredientIndex.current = index;
-        return next;
-      }
-
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
       lastSelectedIngredientIndex.current = index;
-      return prev.size === 1 && prev.has(index) ? new Set() : new Set([index]);
+      return next;
     });
   };
 
@@ -290,16 +285,11 @@ export const EditRecipeModal = ({
         return next;
       }
 
-      if (event.ctrlKey || event.metaKey) {
-        const next = new Set(prev);
-        if (next.has(index)) next.delete(index);
-        else next.add(index);
-        lastSelectedInstructionIndex.current = index;
-        return next;
-      }
-
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
       lastSelectedInstructionIndex.current = index;
-      return prev.size === 1 && prev.has(index) ? new Set() : new Set([index]);
+      return next;
     });
   };
 
@@ -1121,11 +1111,12 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
           {/* Fixed Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
             <div className="px-6 pt-4 flex-shrink-0">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid h-auto w-full grid-cols-3 sm:grid-cols-6">
                 <TabsTrigger value="info">Informacion</TabsTrigger>
                 <TabsTrigger value="classification">Clasificacion</TabsTrigger>
                 <TabsTrigger value="ingredients">Ingredientes</TabsTrigger>
                 <TabsTrigger value="instructions">Preparacion</TabsTrigger>
+                <TabsTrigger value="suggestions">Sugerencias</TabsTrigger>
                 <TabsTrigger value="locution">Locucion</TabsTrigger>
               </TabsList>
             </div>
@@ -1677,10 +1668,10 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
 
               <TabsContent
                 value="ingredients"
-                className={`m-0 space-y-6 rounded-lg bg-muted/20 px-6 pb-6 ${bulkEditingIngredients ? 'pt-3' : 'pt-6'}`}
+                className={`m-0 space-y-6 rounded-lg bg-muted/20 px-6 pb-6 ${bulkEditingIngredients ? 'pt-0' : 'pt-6'}`}
               >
               {bulkEditingIngredients && (
-                <div className="flex flex-wrap items-end gap-3 border-b border-border pb-4">
+                <div className="sticky top-0 z-20 -mx-6 flex flex-wrap items-end gap-3 border-b border-border bg-background/95 px-6 pb-3 pt-0 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/90">
                   <Button
                     type="button"
                     size="sm"
@@ -1751,10 +1742,15 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     const isPastedIngredient = ingredient?.pasted === true;
 
                     return (
-                    <div key={field.id} className={`space-y-2 rounded-lg border ${bulkEditingIngredients ? 'p-2' : 'p-3'} ${selectedIngredientIndexes.has(index) ? 'border-primary bg-accent/30' : ''}`}>
+                    <div
+                      key={field.id}
+                      className={bulkEditingIngredients
+                        ? 'space-y-2 py-1'
+                        : 'space-y-2 rounded-lg border p-3'}
+                    >
                       {bulkEditingIngredients ? (
-                        <div className="grid gap-3 md:grid-cols-[9rem_minmax(0,1fr)_minmax(12rem,0.38fr)] md:items-end">
-                          <label className="flex h-9 cursor-pointer items-center gap-2 text-sm font-medium">
+                        <div className="grid gap-3 md:grid-cols-[2rem_minmax(0,1fr)_minmax(12rem,0.38fr)] md:items-end">
+                          <label className="flex h-9 cursor-pointer items-center text-sm font-medium">
                             <input
                               type="checkbox"
                               checked={selectedIngredientIndexes.has(index)}
@@ -1763,18 +1759,15 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               aria-label={`Seleccionar ingrediente ${index + 1}`}
                               className="h-4 w-4 cursor-pointer accent-primary"
                             />
-                            Seleccionar
                           </label>
-                          <div className="min-w-0 space-y-1">
-                            <Label className="text-xs">Ingrediente</Label>
+                          <div className="min-w-0">
                             <Input
                               {...register(`ingredients.${index}.name`)}
                               aria-label={`Ingrediente ${index + 1}`}
                               className="h-9"
                             />
                           </div>
-                          <div className="min-w-0 space-y-1">
-                            <Label className="text-xs">Sección</Label>
+                          <div className="min-w-0">
                             <CreatableCombobox
                               value={ingredient?.section || ''}
                               options={ingredientSectionOptions}
@@ -1928,10 +1921,10 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
 
               <TabsContent
                 value="instructions"
-                className={`m-0 space-y-6 rounded-lg bg-muted/20 px-6 pb-6 ${bulkEditingInstructions ? 'pt-3' : 'pt-6'}`}
+                className={`m-0 space-y-6 rounded-lg bg-muted/20 px-6 pb-6 ${bulkEditingInstructions ? 'pt-0' : 'pt-6'}`}
               >
               {bulkEditingInstructions && (
-                <div className="flex flex-wrap items-end gap-3 border-b border-border pb-4">
+                <div className="sticky top-0 z-20 -mx-6 flex flex-wrap items-end gap-3 border-b border-border bg-background/95 px-6 pb-3 pt-0 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/90">
                   <Button
                     type="button"
                     size="sm"
@@ -1996,10 +1989,15 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     const instruction = watch(`instructions.${index}`);
 
                     return (
-                    <div key={field.id} className={`rounded-lg border ${bulkEditingInstructions ? 'p-2' : 'p-4'} ${selectedInstructionIndexes.has(index) ? 'border-primary bg-accent/30' : ''}`}>
+                    <div
+                      key={field.id}
+                      className={bulkEditingInstructions
+                        ? 'py-1'
+                        : 'rounded-lg border p-4'}
+                    >
                       {bulkEditingInstructions ? (
-                        <div className="grid gap-3 md:grid-cols-[9rem_minmax(0,1fr)_minmax(12rem,0.38fr)] md:items-end">
-                          <label className="flex h-9 cursor-pointer items-center gap-2 text-sm font-medium">
+                        <div className="grid gap-3 md:grid-cols-[2rem_1.5rem_minmax(0,1fr)_minmax(12rem,0.38fr)] md:items-end">
+                          <label className="flex h-9 cursor-pointer items-center text-sm font-medium">
                             <input
                               type="checkbox"
                               checked={selectedInstructionIndexes.has(index)}
@@ -2008,18 +2006,18 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               aria-label={`Seleccionar paso ${index + 1}`}
                               className="h-4 w-4 cursor-pointer accent-primary"
                             />
-                            Seleccionar
                           </label>
-                          <div className="min-w-0 space-y-1">
-                            <Label className="text-xs">Paso {index + 1}</Label>
+                          <span className="flex h-9 items-center justify-end text-sm font-medium">
+                            {index + 1}
+                          </span>
+                          <div className="min-w-0">
                             <Input
                               {...register(`instructions.${index}.description`)}
                               aria-label={`Paso ${index + 1}`}
                               className="h-9"
                             />
                           </div>
-                          <div className="min-w-0 space-y-1">
-                            <Label className="text-xs">Sección</Label>
+                          <div className="min-w-0">
                             <CreatableCombobox
                               value={instruction?.section || ''}
                               options={ingredientSectionOptions}
@@ -2170,8 +2168,9 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   })}
                 </div>
               </div>
+            </TabsContent>
 
-              {/* Sugerencias (debajo de los pasos de la preparación) */}
+              <TabsContent value="suggestions" className="mt-4 space-y-6 rounded-lg bg-muted/20 p-6 m-0">
               <div>
                 <Label htmlFor="suggestions">Sugerencias</Label>
                 <Textarea
