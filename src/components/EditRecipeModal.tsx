@@ -369,6 +369,32 @@ export const EditRecipeModal = ({
     [uniqueSections, savedIngredientSections]
   );
 
+  const handleDeleteSharedSection = (sectionToDelete: string) => {
+    const normalizedSection = sectionToDelete.trim().toLocaleLowerCase('es');
+    if (!normalizedSection) return;
+
+    watchedIngredients.forEach((ingredient, index) => {
+      if (ingredient.section?.trim().toLocaleLowerCase('es') === normalizedSection) {
+        setValue(`ingredients.${index}.section`, '', { shouldDirty: true });
+      }
+    });
+    watchedInstructions.forEach((instruction, index) => {
+      if (instruction.section?.trim().toLocaleLowerCase('es') === normalizedSection) {
+        setValue(`instructions.${index}.section`, '', { shouldDirty: true });
+      }
+    });
+    setSavedIngredientSections(prev => prev.filter(
+      section => section.trim().toLocaleLowerCase('es') !== normalizedSection
+    ));
+    if (bulkIngredientSection.trim().toLocaleLowerCase('es') === normalizedSection) {
+      setBulkIngredientSection('__none__');
+    }
+    if (bulkInstructionSection.trim().toLocaleLowerCase('es') === normalizedSection) {
+      setBulkInstructionSection('__none__');
+    }
+    toast({ title: `Sección “${sectionToDelete}” eliminada` });
+  };
+
   const handleSaveIngredientSection = (index: number) => {
     const section = (getValues(`ingredients.${index}.section`) || '').trim();
     if (!section) {
@@ -1701,6 +1727,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       createLabel="Crear sección"
                       emptyOptionLabel="Sin sección"
                       triggerClassName="h-9"
+                      onDeleteOption={handleDeleteSharedSection}
                     />
                   </div>
                   <Button
@@ -1780,6 +1807,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               createLabel="Crear sección"
                               emptyOptionLabel="Sin sección"
                               triggerClassName="h-9"
+                              onDeleteOption={handleDeleteSharedSection}
                             />
                           </div>
                         </div>
@@ -1847,6 +1875,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       <div className="w-full space-y-2">
                         <Label className="text-xs">Seccion (opcional)</Label>
                         {!showNewIngredientSection[index] ? (
+                          <div className="flex gap-2">
                           <Select
                             value={watch(`ingredients.${index}.section`) || '__none__'}
                             onValueChange={(value) => {
@@ -1860,7 +1889,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               }
                             }}
                           >
-                            <SelectTrigger className="text-sm">
+                            <SelectTrigger className="min-w-0 flex-1 text-sm">
                               <SelectValue placeholder="Sin seccion" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1871,6 +1900,19 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               <SelectItem value="__new__">+ Nueva seccion</SelectItem>
                             </SelectContent>
                           </Select>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-10 w-10 shrink-0 p-0"
+                            disabled={!ingredient?.section}
+                            onClick={() => ingredient?.section && handleDeleteSharedSection(ingredient.section)}
+                            title="Eliminar sección de la receta"
+                            aria-label="Eliminar sección de la receta"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          </div>
                         ) : (
                           <div className="flex gap-2">
                             <Input
@@ -1954,6 +1996,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       createLabel="Crear sección"
                       emptyOptionLabel="Sin sección"
                       triggerClassName="h-9"
+                      onDeleteOption={handleDeleteSharedSection}
                     />
                   </div>
                   <Button
@@ -2030,6 +2073,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               createLabel="Crear sección"
                               emptyOptionLabel="Sin sección"
                               triggerClassName="h-9"
+                              onDeleteOption={handleDeleteSharedSection}
                             />
                           </div>
                         </div>
@@ -2059,6 +2103,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                           <div className="mb-2">
                             <Label className="text-xs">Seccion (opcional)</Label>
                             {!showNewInstructionSection[index] ? (
+                              <div className="flex gap-2">
                               <Select
                                 value={watch(`instructions.${index}.section`) || '__none__'}
                                 onValueChange={(value) => {
@@ -2073,7 +2118,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                                   }
                                 }}
                               >
-                                <SelectTrigger className="text-sm">
+                                <SelectTrigger className="min-w-0 flex-1 text-sm">
                                   <SelectValue placeholder="Sin seccion" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -2084,6 +2129,19 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                                   <SelectItem value="__new__">+ Nueva seccion</SelectItem>
                                 </SelectContent>
                               </Select>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-10 w-10 shrink-0 p-0"
+                                disabled={!instruction?.section}
+                                onClick={() => instruction?.section && handleDeleteSharedSection(instruction.section)}
+                                title="Eliminar sección de la receta"
+                                aria-label="Eliminar sección de la receta"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                              </div>
                             ) : (
                               <div className="mb-2 flex gap-2">
                                 <Input
