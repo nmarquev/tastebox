@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, type MouseEvent as ReactMouseEvent } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -340,29 +340,28 @@ export const EditRecipeModal = ({
   const [showNewIngredientSection, setShowNewIngredientSection] = useState<{ [key: number]: boolean }>({});
   const [showNewInstructionSection, setShowNewInstructionSection] = useState<{ [key: number]: boolean }>({});
   const [savedIngredientSections, setSavedIngredientSections] = useState<string[]>([]);
+  const watchedIngredients = useWatch({ control, name: 'ingredients' }) || [];
+  const watchedInstructions = useWatch({ control, name: 'instructions' }) || [];
 
-  // Detect unique sections from current form data (memoized)
+  // Lista compartida: las secciones creadas en ingredientes se sugieren en
+  // preparación y viceversa, incluso antes de guardar la receta.
   const uniqueSections = useMemo(() => {
     const sections = new Set<string>();
 
-    // Get sections from ingredients
-    const ingredients = watch('ingredients') || [];
-    ingredients.forEach(ing => {
+    watchedIngredients.forEach(ing => {
       if (ing.section && ing.section.trim()) {
         sections.add(ing.section.trim());
       }
     });
 
-    // Get sections from instructions
-    const instructions = watch('instructions') || [];
-    instructions.forEach(inst => {
+    watchedInstructions.forEach(inst => {
       if (inst.section && inst.section.trim()) {
         sections.add(inst.section.trim());
       }
     });
 
     return Array.from(sections).sort();
-  }, [watch('ingredients'), watch('instructions')]);
+  }, [watchedIngredients, watchedInstructions]);
 
   const ingredientSectionOptions = useMemo(
     () => Array.from(new Set([...uniqueSections, ...savedIngredientSections]))
@@ -396,7 +395,6 @@ export const EditRecipeModal = ({
       title: section ? `Sección aplicada a ${selectedIngredientIndexes.size} ingredientes` : `Sección quitada de ${selectedIngredientIndexes.size} ingredientes`,
     });
     setSelectedIngredientIndexes(new Set());
-    setBulkEditingIngredients(false);
     lastSelectedIngredientIndex.current = null;
   };
 
@@ -413,7 +411,6 @@ export const EditRecipeModal = ({
       title: section ? `Sección aplicada a ${selectedInstructionIndexes.size} pasos` : `Sección quitada de ${selectedInstructionIndexes.size} pasos`,
     });
     setSelectedInstructionIndexes(new Set());
-    setBulkEditingInstructions(false);
     lastSelectedInstructionIndex.current = null;
   };
 
@@ -1725,7 +1722,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       lastSelectedIngredientIndex.current = null;
                     }}
                   >
-                    Cancelar
+                    Finalizar edición
                   </Button>
                 </div>
               )}
@@ -1978,7 +1975,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       lastSelectedInstructionIndex.current = null;
                     }}
                   >
-                    Cancelar
+                    Finalizar edición
                   </Button>
                 </div>
               )}
