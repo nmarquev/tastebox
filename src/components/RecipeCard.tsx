@@ -589,7 +589,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         )}
       </CardContent>
 
-      {/* Panel derecho (solo en vista de 1 columna): Tipo de comida, Categoría, Colección */}
+      {/* Panel derecho (solo en vista de 1 columna): Colección, Categoría, Tipo de comida */}
       {oneCol && (
         <div className="shrink-0 space-y-3 border-t p-4 text-sm sm:w-60 sm:border-l sm:border-t-0" onClick={inlineEditing ? (e) => e.stopPropagation() : undefined}>
           {(onInlineSave || onEdit) && !inlineEditing && (
@@ -620,23 +620,23 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 />
               </div>
               <div>
-                <p className="mb-1 font-semibold text-foreground">Tipo de comida</p>
-                <MultiSelectCombobox
-                  options={dishTypeOptions}
-                  selected={editDishType}
-                  onChange={setEditDishType}
-                  placeholder="Elegi uno o mas"
-                  searchPlaceholder="Buscar o escribir..."
-                  closeOnSelect allowCreate createLabel="Agregar"
-                />
-              </div>
-              <div>
                 <p className="mb-1 font-semibold text-foreground">Categoria</p>
                 <MultiSelectCombobox
                   options={categoryOptions}
                   selected={editCategories}
                   onChange={setEditCategories}
                   placeholder="Elegi una o mas"
+                  searchPlaceholder="Buscar o escribir..."
+                  closeOnSelect allowCreate createLabel="Agregar"
+                />
+              </div>
+              <div>
+                <p className="mb-1 font-semibold text-foreground">Tipo de comida</p>
+                <MultiSelectCombobox
+                  options={dishTypeOptions}
+                  selected={editDishType}
+                  onChange={setEditDishType}
+                  placeholder="Elegi uno o mas"
                   searchPlaceholder="Buscar o escribir..."
                   closeOnSelect allowCreate createLabel="Agregar"
                 />
@@ -667,10 +667,10 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             </>
           ) : (
             <>
-              {recipe.dishType?.trim() && (
+              {collectionNames.some(n => n && n.trim()) && (
                 <div>
-                  <p className="font-semibold text-foreground">Tipo de comida</p>
-                  <p className="text-muted-foreground">{recipe.dishType.trim()}</p>
+                  <p className="font-semibold text-foreground">Coleccion</p>
+                  <p className="text-muted-foreground">{collectionNames.filter(n => n && n.trim()).join(', ')}</p>
                 </div>
               )}
               {categories.length > 0 && (
@@ -679,10 +679,10 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   <p className="text-muted-foreground">{categories.join(', ')}</p>
                 </div>
               )}
-              {collectionNames.some(n => n && n.trim()) && (
+              {recipe.dishType?.trim() && (
                 <div>
-                  <p className="font-semibold text-foreground">Coleccion</p>
-                  <p className="text-muted-foreground">{collectionNames.filter(n => n && n.trim()).join(', ')}</p>
+                  <p className="font-semibold text-foreground">Tipo de comida</p>
+                  <p className="text-muted-foreground">{recipe.dishType.trim()}</p>
                 </div>
               )}
             </>
