@@ -62,6 +62,32 @@ const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
 ];
 
+const FEATURE_ROW_SIZES: Record<number, number[]> = {
+  1: [1],
+  2: [2],
+  3: [3],
+  4: [4],
+  5: [3, 2],
+  6: [3, 3],
+  7: [4, 3],
+  8: [4, 4],
+  9: [3, 3, 3],
+  10: [4, 3, 3],
+  11: [4, 4, 3],
+  12: [4, 4, 4],
+};
+
+const splitFeaturesIntoRows = (features: JSX.Element[]) => {
+  const rowSizes = FEATURE_ROW_SIZES[features.length] || [features.length];
+  let offset = 0;
+
+  return rowSizes.map((size) => {
+    const row = features.slice(offset, offset + size);
+    offset += size;
+    return row;
+  });
+};
+
 export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   // Edición inline (vista 1 columna) de los campos visibles.
@@ -150,6 +176,69 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
   const oneCol = columns === 1;
   const infoIconClass = oneCol ? "h-5 w-5" : compact ? "h-3 w-3" : "h-4 w-4";
   const hasNutritionData = recipe.calories !== null && recipe.calories !== undefined && recipe.calories > 0;
+  const activeCardFeatures = [
+    (recipe.thermomix || isThermomixRecipe(recipe)) ? (
+      <span key="thermomix" title="Thermomix" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-6 w-6 object-contain mix-blend-multiply" />
+      </span>
+    ) : null,
+    recipe.airFryer ? (
+      <span key="airFryer" title="Air Fryer" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <img src="/air-fryer.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain mix-blend-multiply" />
+      </span>
+    ) : null,
+    recipe.glutenFree ? (
+      <span key="glutenFree" title="Sin Gluten" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <WheatOff className="h-4 w-4" />
+      </span>
+    ) : null,
+    recipe.sugarFree ? (
+      <span key="sugarFree" title="Sin Azucar" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <CandyOff className="h-4 w-4" />
+      </span>
+    ) : null,
+    recipe.keto ? (
+      <span key="keto" title="Keto" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <AvocadoIcon className="h-[26px] w-[26px] keto-ico" />
+      </span>
+    ) : null,
+    recipe.lowCarb ? (
+      <span key="lowCarb" title="Low Carb" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain grayscale opacity-70" />
+      </span>
+    ) : null,
+    recipe.proteica ? (
+      <span key="proteica" title="Proteica" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <Beef className="h-[18px] w-[18px]" />
+      </span>
+    ) : null,
+    recipe.vegetarian ? (
+      <span key="vegetarian" title="Vegetariana" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <Leaf className="h-[18px] w-[18px]" />
+      </span>
+    ) : null,
+    recipe.sweet ? (
+      <span key="sweet" title="Receta dulce" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <CakeSlice className="h-[18px] w-[18px]" />
+      </span>
+    ) : null,
+    recipe.savory ? (
+      <span key="savory" title="Receta salada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <Utensils className="h-[18px] w-[18px]" />
+      </span>
+    ) : null,
+    recipe.cooked ? (
+      <span key="cooked" title="Cocinada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <RecipePreparedIcon className="cooked-ico" style={{ width: 22, height: 22 }} />
+      </span>
+    ) : null,
+    recipe.featured ? (
+      <span key="featured" title="Favorita" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+        <Heart className="h-[18px] w-[18px] fill-red-500 text-red-500" />
+      </span>
+    ) : null,
+  ].filter((feature): feature is JSX.Element => feature !== null);
+  const activeFeatureRows = splitFeaturesIntoRows(activeCardFeatures);
 
   // Get dynamic image height based on columns
   const getImageHeight = () => {
@@ -457,105 +546,13 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           </div>
         )}
 
-        {!minimal && (recipe.thermomix || isThermomixRecipe(recipe) || recipe.airFryer || recipe.glutenFree || recipe.sugarFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.sweet || recipe.savory || recipe.cooked || recipe.featured) && (
-          <div className={`flex items-center flex-wrap gap-2 text-muted-foreground ${oneCol ? "[&>span]:h-9 [&>span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6 [&_.keto-ico]:!h-8 [&_.keto-ico]:!w-8 [&_.cooked-ico]:!h-8 [&_.cooked-ico]:!w-8" : ""}`}>
-            {(recipe.thermomix || isThermomixRecipe(recipe)) && (
-              <span
-                title="Thermomix"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
-              >
-                <img
-                  src="/thermomix-logo.png"
-                  alt=""
-                  aria-hidden="true"
-                  className="h-6 w-6 object-contain mix-blend-multiply"
-                />
-              </span>
-            )}
-            {recipe.airFryer && (
-              <span
-                title="Air Fryer"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
-              >
-                <img
-                  src="/air-fryer.png"
-                  alt=""
-                  aria-hidden="true"
-                  className="h-5 w-5 object-contain mix-blend-multiply"
-                />
-              </span>
-            )}
-            {recipe.glutenFree && (
-              <span
-                title="Sin Gluten"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
-              >
-                <WheatOff className="h-4 w-4" />
-              </span>
-            )}
-            {recipe.sugarFree && (
-              <span title="Sin Azucar" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
-                <CandyOff className="h-4 w-4" />
-              </span>
-            )}
-            {recipe.keto && (
-              <span
-                title="Keto"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
-              >
-                <AvocadoIcon className="h-[26px] w-[26px] keto-ico" />
-              </span>
-            )}
-            {recipe.lowCarb && (
-              <span
-                title="Low Carb"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
-              >
-                <img
-                  src="/logo-saludable.png"
-                  alt=""
-                  aria-hidden="true"
-                  className="h-5 w-5 object-contain grayscale opacity-70"
-                />
-              </span>
-            )}
-            {recipe.proteica && (
-              <span
-                title="Proteica"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
-              >
-                <Beef className="h-[18px] w-[18px]" />
-              </span>
-            )}
-            {recipe.vegetarian && (
-              <span
-                title="Vegetariana"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
-              >
-                <Leaf className="h-[18px] w-[18px]" />
-              </span>
-            )}
-            {recipe.sweet && (
-              <span title="Receta dulce" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
-                <CakeSlice className="h-[18px] w-[18px]" />
-              </span>
-            )}
-            {recipe.savory && (
-              <span title="Receta salada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
-                <Utensils className="h-[18px] w-[18px]" />
-              </span>
-            )}
-            {/* Cocinada y Favorita (1 a 4 columnas) */}
-            {recipe.cooked && (
-              <span title="Cocinada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
-                <RecipePreparedIcon className="cooked-ico" style={{ width: 22, height: 22 }} />
-              </span>
-            )}
-            {recipe.featured && (
-              <span title="Favorita" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
-                <Heart className="h-[18px] w-[18px] fill-red-500 text-red-500" />
-              </span>
-            )}
+        {!minimal && activeCardFeatures.length > 0 && (
+          <div className={`flex flex-col items-start gap-2 text-muted-foreground ${oneCol ? "[&_span]:h-9 [&_span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6 [&_.keto-ico]:!h-8 [&_.keto-ico]:!w-8 [&_.cooked-ico]:!h-8 [&_.cooked-ico]:!w-8" : ""}`}>
+            {activeFeatureRows.map((row, rowIndex) => (
+              <div key={rowIndex} className="flex items-center gap-2">
+                {row}
+              </div>
+            ))}
           </div>
         )}
 
