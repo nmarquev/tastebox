@@ -27,6 +27,8 @@ async function loadExistingTags(): Promise<string[]> {
 interface TagAutocompleteInputProps {
   value: string;
   selectedTags: string[];
+  options?: string[];
+  showAddButton?: boolean;
   onValueChange: (value: string) => void;
   onAdd: (tag?: string) => void;
 }
@@ -34,15 +36,20 @@ interface TagAutocompleteInputProps {
 export const TagAutocompleteInput = ({
   value,
   selectedTags,
+  options,
+  showAddButton = true,
   onValueChange,
   onAdd,
 }: TagAutocompleteInputProps) => {
-  const [existingTags, setExistingTags] = useState<string[]>([]);
+  const [loadedTags, setLoadedTags] = useState<string[]>([]);
   const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    loadExistingTags().then(setExistingTags);
-  }, []);
+    if (options) return;
+    loadExistingTags().then(setLoadedTags);
+  }, [options]);
+
+  const existingTags = options || loadedTags;
 
   const suggestions = useMemo(() => {
     const query = value.trim().toLocaleLowerCase('es');
@@ -72,9 +79,11 @@ export const TagAutocompleteInput = ({
             onAdd(suggestions[0] || value);
           }}
         />
-        <Button type="button" onClick={() => onAdd(value)} size="sm">
-          <Plus className="h-4 w-4" />
-        </Button>
+        {showAddButton && (
+          <Button type="button" onClick={() => onAdd(value)} size="sm">
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {focused && suggestions.length > 0 && (

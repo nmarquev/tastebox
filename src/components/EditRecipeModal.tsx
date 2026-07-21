@@ -17,6 +17,7 @@ import { resolveImageUrl } from '@/utils/api';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
 import { CreatableCombobox } from '@/components/CreatableCombobox';
+import { TagAutocompleteInput } from '@/components/TagAutocompleteInput';
 import { Switch } from '@/components/ui/switch';
 import { AvocadoIcon } from '@/components/icons/AvocadoIcon';
 import { RecipePreparedIcon } from '@/components/icons/RecipePreparedIcon';
@@ -552,8 +553,9 @@ export const EditRecipeModal = ({
       api.sources.getAll().catch(() => [] as Array<{ name: string }>),
       api.dishTypes.getAll().catch(() => [] as Array<{ name: string }>),
       api.categories.getAll().catch(() => [] as Array<{ name: string }>),
+      api.tags.getAll().catch(() => [] as Array<{ name: string }>),
     ])
-      .then(([allRecipes, customSources, customDishTypes, customCategories]) => {
+      .then(([allRecipes, customSources, customDishTypes, customCategories, customTags]) => {
         if (cancelled) return;
         const sources = new Set<string>();
         const origins = [...importSourceOptions.map(option => option.label)];
@@ -574,6 +576,7 @@ export const EditRecipeModal = ({
         customSources.forEach(s => { const n = (s.name || '').trim(); if (n) sources.add(n); });
         customDishTypes.forEach(s => { const n = (s.name || '').trim(); if (n) dishTypes.add(n); });
         customCategories.forEach(s => { const n = (s.name || '').trim(); if (n) categories.add(n); });
+        customTags.forEach(s => { const n = (s.name || '').trim(); if (n) tagSet.add(n); });
         setSourceOptions(sortEs(Array.from(sources)));
         setOriginOptions(sortEs(origins));
         setLanguageOptions(sortEs(languages));
@@ -585,9 +588,10 @@ export const EditRecipeModal = ({
     return () => { cancelled = true; };
   }, [isOpen]);
 
-  const handleAddTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setValue('tags', [...tags, newTag.trim()], { shouldDirty: true });
+  const handleAddTag = (tagToAdd = newTag) => {
+    const normalizedTag = tagToAdd.trim();
+    if (normalizedTag && !tags.some(tag => tag.toLocaleLowerCase('es') === normalizedTag.toLocaleLowerCase('es'))) {
+      setValue('tags', [...tags, normalizedTag], { shouldDirty: true });
       setNewTag('');
     }
   };
@@ -1639,13 +1643,17 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       </button>
                     )}
                   </div>
-                  <div className="flex gap-2 mb-2">
-                    <Input
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      placeholder="Agregar etiqueta"
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                    />
+                  <div className="mb-2 flex gap-2">
+                    <div className="min-w-0 flex-1">
+                      <TagAutocompleteInput
+                        value={newTag}
+                        selectedTags={tags}
+                        options={tagOptions}
+                        showAddButton={false}
+                        onValueChange={setNewTag}
+                        onAdd={handleAddTag}
+                      />
+                    </div>
                     <Button type="button" onClick={() => { setNewTag(''); setTagDialogOpen(true); }} size="sm" title="Elegir etiquetas">
                       <Plus className="h-4 w-4" />
                     </Button>

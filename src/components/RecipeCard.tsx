@@ -62,32 +62,6 @@ const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
 ];
 
-const FEATURE_ROW_SIZES: Record<number, number[]> = {
-  1: [1],
-  2: [2],
-  3: [3],
-  4: [4],
-  5: [3, 2],
-  6: [3, 3],
-  7: [4, 3],
-  8: [4, 4],
-  9: [3, 3, 3],
-  10: [4, 3, 3],
-  11: [4, 4, 3],
-  12: [4, 4, 4],
-};
-
-const splitFeaturesIntoRows = (features: JSX.Element[]) => {
-  const rowSizes = FEATURE_ROW_SIZES[features.length] || [features.length];
-  let offset = 0;
-
-  return rowSizes.map((size) => {
-    const row = features.slice(offset, offset + size);
-    offset += size;
-    return row;
-  });
-};
-
 export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   // Edición inline (vista 1 columna) de los campos visibles.
@@ -238,8 +212,6 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
       </span>
     ) : null,
   ].filter((feature): feature is JSX.Element => feature !== null);
-  const activeFeatureRows = splitFeaturesIntoRows(activeCardFeatures);
-
   // Get dynamic image height based on columns
   const getImageHeight = () => {
     switch (columns) {
@@ -547,12 +519,8 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         )}
 
         {!minimal && activeCardFeatures.length > 0 && (
-          <div className={`flex flex-col items-start gap-2 text-muted-foreground ${oneCol ? "[&_span]:h-9 [&_span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6 [&_.keto-ico]:!h-8 [&_.keto-ico]:!w-8 [&_.cooked-ico]:!h-8 [&_.cooked-ico]:!w-8" : ""}`}>
-            {activeFeatureRows.map((row, rowIndex) => (
-              <div key={rowIndex} className="flex items-center gap-2">
-                {row}
-              </div>
-            ))}
+          <div className={`flex flex-wrap items-center gap-2 text-muted-foreground ${oneCol ? "[&>span]:h-9 [&>span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6 [&_.keto-ico]:!h-8 [&_.keto-ico]:!w-8 [&_.cooked-ico]:!h-8 [&_.cooked-ico]:!w-8" : ""}`}>
+            {activeCardFeatures}
           </div>
         )}
 
