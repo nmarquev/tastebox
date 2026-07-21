@@ -571,6 +571,69 @@ router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
+// Actualizar solo las imágenes sin reescribir ingredientes, pasos ni otros datos.
+router.patch('/:id/images', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const images = z.array(z.object({
+      url: z.string(),
+      localPath: z.string().optional().nullable(),
+      order: z.number(),
+      altText: z.string().nullable().optional()
+    })).max(3).parse(req.body?.images);
+
+    const existingRecipe = await prisma.recipe.findFirst({
+      where: { id: req.params.id, userId: req.user!.id }
+    });
+    if (!existingRecipe) {
+      return res.status(404).json({ error: 'Recipe not found' });
+    }
+
+    const normalizedImages = await imageService.normalizeImagesForStorage(images);
+    const recipe = await prisma.recipe.update({
+      where: { id: req.params.id },
+      data: {
+        images: {
+          deleteMany: {},
+          create: normalizedImages.map(image => ({
+            url: image.url,
+            localPath: image.localPath,
+            order: image.order,
+            altText: image.altText
+          }))
+        }
+      },
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        ingredients: { orderBy: { order: 'asc' } },
+        instructions: { orderBy: { step: 'asc' } },
+        tags: {
+          orderBy: { order: 'asc' },
+          include: { tag: true }
+        }
+      }
+    });
+
+    res.json({
+      ...recipe,
+      tags: recipe.tags.map(recipeTag => recipeTag.tag.name),
+      instructions: recipe.instructions.map(instruction => ({
+        ...instruction,
+        thermomixSettings: {
+          time: instruction.time,
+          temperature: instruction.temperature,
+          speed: instruction.speed
+        }
+      }))
+    });
+  } catch (error) {
+    console.error('Update recipe images error:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Update recipe
 router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
   try {

@@ -39,75 +39,101 @@ const imageService = new ImageService();
 const cookidooService = new CookidooService();
 const fooditService = new FooditService();
 
-const normalizeTextIngredient = (ingredient: unknown, index: number) => {
+const getLiteralIngredientText = (ingredient: unknown) => {
   if (typeof ingredient === 'string') {
-    return {
-      name: ingredient.trim(),
-      amount: '',
-      unit: '',
-      order: index + 1,
-      section: null
-    };
+    return ingredient.trim();
   }
 
-  const item = ingredient as { name?: unknown; amount?: unknown; unit?: unknown; section?: unknown };
-  return {
-    name: String(item?.name || '').trim(),
-    amount: String(item?.amount || '').trim(),
-    unit: item?.unit ? String(item.unit).trim() : '',
-    order: index + 1,
-    section: item?.section ? String(item.section).trim() : null
-  };
+  const item = ingredient as { sourceText?: unknown; name?: unknown; amount?: unknown; unit?: unknown };
+  const sourceText = String(item?.sourceText || '').trim();
+  if (sourceText) return sourceText;
+
+  return [item?.amount, item?.unit, item?.name]
+    .map(value => String(value || '').trim())
+    .filter(Boolean)
+    .join(' ');
 };
 
-const normalizeTextInstruction = (instruction: unknown, index: number) => {
+const getLiteralInstructionText = (instruction: unknown) => {
   if (typeof instruction === 'string') {
-    return {
-      step: index + 1,
-      description: instruction.trim(),
-      time: undefined,
-      temperature: undefined,
-      speed: undefined,
-      function: null,
-      section: null
-    };
+    return instruction.trim();
   }
 
-  const item = instruction as {
-    step?: unknown;
-    description?: unknown;
-    time?: unknown;
-    temperature?: unknown;
-    speed?: unknown;
-    function?: unknown;
-    section?: unknown;
-  };
+  const item = instruction as { sourceText?: unknown; description?: unknown };
+  return String(item?.sourceText || item?.description || '').trim();
+};
 
+const findExactSourceFragment = (candidate: string, sourceText: string) => {
+  const trimmedCandidate = candidate.trim();
+  if (!trimmedCandidate) return null;
+
+  const exactIndex = sourceText.indexOf(trimmedCandidate);
+  if (exactIndex >= 0) {
+    return sourceText.slice(exactIndex, exactIndex + trimmedCandidate.length);
+  }
+
+  // Tolera solamente diferencias de espacios o saltos de linea introducidas al
+  // serializar el JSON. El valor devuelto siempre se toma del texto original.
+  const whitespaceFlexiblePattern = trimmedCandidate
+    .split(/\s+/)
+    .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('\\s+');
+  const match = sourceText.match(new RegExp(whitespaceFlexiblePattern));
+  return match?.[0]?.trim() || null;
+};
+
+const normalizeTextIngredient = (ingredient: unknown, index: number, sourceText: string) => {
+  const literalText = findExactSourceFragment(getLiteralIngredientText(ingredient), sourceText);
+  if (!literalText) return null;
+
+  // En una importacion desde texto se conserva la linea original completa. Separar
+  // cantidad, unidad y nombre permitiria que el modelo reformule el contenido.
   return {
-    step: typeof item?.step === 'number' ? item.step : index + 1,
-    description: String(item?.description || '').trim(),
-    time: item?.time ? String(item.time) : undefined,
-    temperature: item?.temperature ? String(item.temperature) : undefined,
-    speed: item?.speed ? String(item.speed) : undefined,
-    function: item?.function ? String(item.function) : null,
-    section: item?.section ? String(item.section).trim() : null
+    name: literalText,
+    amount: '',
+    unit: '',
+    order: index + 1,
+    section: null
   };
 };
 
-const buildTextImportRecipeResponse = (recipeData: any) => {
+const normalizeTextInstruction = (instruction: unknown, index: number, sourceText: string) => {
+  const literalText = findExactSourceFragment(getLiteralInstructionText(instruction), sourceText);
+  if (!literalText) return null;
+
+  return {
+    step: index + 1,
+    description: literalText,
+    time: undefined,
+    temperature: undefined,
+    speed: undefined,
+    function: null,
+    section: null
+  };
+};
+
+/*
+ * Esta respuesta se usa exclusivamente para texto pegado. Ingredientes y pasos
+ * quedan respaldados por una coincidencia literal con el texto de entrada.
+ */
+const buildTextImportRecipeResponse = (recipeData: any, sourceText: string) => {
   const ingredients = (recipeData.ingredients || [])
-    .map(normalizeTextIngredient)
-    .filter((ingredient: { name: string }) => {
+    .map((ingredient: unknown, index: number) => normalizeTextIngredient(ingredient, index, sourceText))
+    .filter((ingredient: { name: string } | null): ingredient is { name: string; amount: string; unit: string; order: number; section: null } => {
+      if (!ingredient) return false;
       const name = ingredient.name.trim().toLowerCase();
       return name && name !== 'ingredientes no especificados' && name !== 'ingrediente';
-    });
+    })
+    .map((ingredient, index) => ({ ...ingredient, order: index + 1 }));
 
   const instructions = (recipeData.instructions || [])
-    .map(normalizeTextInstruction)
-    .filter((instruction: { description: string }) => {
+    .map((instruction: unknown, index: number) => normalizeTextInstruction(instruction, index, sourceText))
+    .filter((instruction: { description: string } | null): instruction is { step: number; description: string; time: undefined; temperature: undefined; speed: undefined; function: null; section: null } => {
+      if (!instruction) return false;
       const description = instruction.description.trim().toLowerCase();
-      return description && description !== 'preparar segun la receta original' && description !== 'preparar según la receta original';
-    });
+      return description && description !== 'preparar segun la receta original' && description !== 'preparar segÃºn la receta original';
+    })
+    .map((instruction, index) => ({ ...instruction, step: index + 1 }));
 
   return {
     title: String(recipeData.title || '').trim(),
@@ -357,7 +383,7 @@ router.post('/text', authenticateToken, async (req: AuthRequest, res) => {
       }
 
       const recipes = extraction.recipes
-        .map(buildTextImportRecipeResponse)
+        .map(recipe => buildTextImportRecipeResponse(recipe, text))
         .filter(recipe => recipe.title && recipe.ingredients.length > 0 && recipe.instructions.length > 0);
 
       if (recipes.length === 0) {
@@ -379,7 +405,7 @@ router.post('/text', authenticateToken, async (req: AuthRequest, res) => {
       context: 'texto pegado manualmente'
     });
 
-    const responseData = buildTextImportRecipeResponse(recipeData);
+    const responseData = buildTextImportRecipeResponse(recipeData, text);
 
     if (!responseData.title || responseData.ingredients.length === 0 || responseData.instructions.length === 0) {
       return res.status(422).json({

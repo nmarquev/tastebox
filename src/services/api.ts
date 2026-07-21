@@ -251,6 +251,20 @@ export const api = {
       return response.json();
     },
 
+    updateImages: async (id: string, images: Recipe['images']): Promise<Recipe> => {
+      const response = await authFetch(`/recipes/${id}/images`, {
+        method: 'PATCH',
+        body: JSON.stringify({ images }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'No se pudo actualizar la imagen de la receta');
+      }
+
+      return response.json();
+    },
+
     // Chequea si ya existe una receta con esa URL (para evitar duplicados al importar).
     checkUrl: async (url: string): Promise<{ exists: boolean; recipe?: { id: string; title: string } }> => {
       try {

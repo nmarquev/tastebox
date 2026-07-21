@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Recipe } from "@/types/recipe";
-import { Beef, CakeSlice, CandyOff, Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2, Utensils, MoreVertical } from "lucide-react";
+import { Beef, CakeSlice, CandyOff, Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2, Utensils, MoreVertical, Upload } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { resolveImageUrl } from "@/utils/api";
 import { getSourceFromUrl, isValidUrl, getRecipeSource } from "@/utils/siteUtils";
@@ -261,6 +261,9 @@ export const RecipeModal = ({
   });
   const [localRecipe, setLocalRecipe] = useState<Recipe | null>(recipe);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isDraggingEmptyImage, setIsDraggingEmptyImage] = useState(false);
+  const [isUploadingEmptyImage, setIsUploadingEmptyImage] = useState(false);
+  const emptyImageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { applySettingsToUtterance } = useVoiceSettings();
   const { isCalculating, calculateNutrition, setNutrition } = useNutritionCalculator();
@@ -275,6 +278,8 @@ export const RecipeModal = ({
     setIsGeneratingScript(false);
     setLocalRecipe(recipe);
     setCurrentImageIndex(0); // Reset image index when recipe changes
+    setIsDraggingEmptyImage(false);
+    setIsUploadingEmptyImage(false);
 
     // Set existing nutrition data if available
     if (recipe && recipe.calories !== undefined) {
@@ -807,6 +812,71 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
   const currentImage = localRecipe.images?.[currentImageIndex];
 
+  const addImageToCurrentRecipe = async (source: File | string) => {
+    if (!localRecipe || (localRecipe.images?.length ?? 0) > 0 || isUploadingEmptyImage) return;
+    if (source instanceof File && !source.type.startsWith('image/')) {
+      toast({ title: 'El archivo seleccionado no es una imagen', variant: 'destructive' });
+      return;
+    }
+
+    setIsUploadingEmptyImage(true);
+    try {
+      const uploadedImage = source instanceof File
+        ? (await api.upload.images([source])).images?.[0]
+        : (await api.upload.fromUrl(source)).image;
+      if (!uploadedImage?.url) throw new Error('No se pudo procesar la imagen');
+
+      const savedRecipe = await api.recipes.updateImages(localRecipe.id, [{
+        url: uploadedImage.url,
+        localPath: uploadedImage.localPath,
+        order: 1,
+        altText: uploadedImage.altText || localRecipe.title,
+      }]);
+      setLocalRecipe(savedRecipe);
+      setCurrentImageIndex(0);
+      onRecipeUpdate?.(savedRecipe);
+      toast({ title: 'Imagen agregada a la receta' });
+    } catch (error) {
+      toast({
+        title: 'No se pudo agregar la imagen',
+        description: error instanceof Error ? error.message : 'Intentá nuevamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploadingEmptyImage(false);
+      if (emptyImageInputRef.current) emptyImageInputRef.current.value = '';
+    }
+  };
+
+  const handleEmptyImageDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingEmptyImage(false);
+    const imageFile = Array.from(event.dataTransfer.files || [])
+      .find(file => file.type.startsWith('image/'));
+    if (imageFile) {
+      await addImageToCurrentRecipe(imageFile);
+      return;
+    }
+
+    const html = event.dataTransfer.getData('text/html');
+    const htmlSource = html?.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || '';
+    const imageUrl = (
+      event.dataTransfer.getData('text/uri-list')
+      || htmlSource
+      || event.dataTransfer.getData('text/plain')
+    ).trim();
+    if (/^https?:\/\//i.test(imageUrl)) {
+      await addImageToCurrentRecipe(imageUrl);
+      return;
+    }
+
+    toast({
+      title: 'No se reconoció una imagen',
+      description: 'Arrastrá un archivo de imagen desde tu PC o desde una página web.',
+      variant: 'destructive',
+    });
+  };
+
   const handleModalClose = () => {
     // Cleanup and reset states before closing
     if ('speechSynthesis' in window) {
@@ -1176,7 +1246,45 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               )}
             </div>
           ) : (
-            <div className="relative aspect-square w-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
+            <div
+              className={`relative flex aspect-square w-full items-center justify-center rounded-lg border-2 border-dashed bg-gradient-to-br from-gray-100 to-gray-200 transition-colors ${
+                isDraggingEmptyImage ? 'border-primary bg-primary/10' : 'border-transparent'
+              } ${isUploadingEmptyImage ? 'cursor-wait' : 'cursor-copy'}`}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                if (!isUploadingEmptyImage) setIsDraggingEmptyImage(true);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (!isUploadingEmptyImage) setIsDraggingEmptyImage(true);
+              }}
+              onDragLeave={() => setIsDraggingEmptyImage(false)}
+              onDrop={handleEmptyImageDrop}
+              onDoubleClick={(event) => {
+                if ((event.target as HTMLElement).closest('button') || isUploadingEmptyImage) return;
+                emptyImageInputRef.current?.click();
+              }}
+              onKeyDown={(event) => {
+                if ((event.key === 'Enter' || event.key === ' ') && !isUploadingEmptyImage) {
+                  event.preventDefault();
+                  emptyImageInputRef.current?.click();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              title="Arrastrá una imagen o hacé doble clic para buscarla"
+              aria-label="Agregar imagen a la receta"
+            >
+              <input
+                ref={emptyImageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void addImageToCurrentRecipe(file);
+                }}
+              />
               {imageActionButtons}
               <div className="hidden">
                 {onToggleFavorite && (
@@ -1226,9 +1334,26 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   </Button>
                 )}
               </div>
-              <div className="text-center">
-                <ChefHat className="h-16 w-16 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">Sin imagen</p>
+              <div className="pointer-events-none px-6 text-center">
+                {isUploadingEmptyImage ? (
+                  <Loader2 className="mx-auto mb-3 h-14 w-14 animate-spin text-primary" />
+                ) : isDraggingEmptyImage ? (
+                  <Upload className="mx-auto mb-3 h-14 w-14 text-primary" />
+                ) : (
+                  <ChefHat className="mx-auto mb-2 h-16 w-16 text-gray-400" />
+                )}
+                <p className="font-medium text-gray-600">
+                  {isUploadingEmptyImage
+                    ? 'Cargando imagen...'
+                    : isDraggingEmptyImage
+                      ? 'Soltá la imagen aquí'
+                      : 'Sin imagen'}
+                </p>
+                {!isUploadingEmptyImage && !isDraggingEmptyImage && (
+                  <p className="mt-2 text-sm text-gray-500">
+                    Arrastrá una imagen o hacé doble clic para buscarla
+                  </p>
+                )}
               </div>
             </div>
           )}

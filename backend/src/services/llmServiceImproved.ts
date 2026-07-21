@@ -256,6 +256,82 @@ type ExtractedIngredient = {
   section?: string;
 };
 
+type LiteralIngredientCandidate = {
+  sourceText?: string;
+  name?: string;
+  amount?: string;
+  unit?: string;
+  section?: string;
+};
+
+type LiteralInstructionCandidate = {
+  sourceText?: string;
+  step?: number;
+  description?: string;
+  function?: string;
+  time?: string;
+  temperature?: string;
+  speed?: string;
+  section?: string;
+};
+
+function findExactSourceFragment(candidate: string, sourceContent: string): string | undefined {
+  const trimmedCandidate = candidate.trim();
+  if (!trimmedCandidate) return undefined;
+
+  const exactIndex = sourceContent.indexOf(trimmedCandidate);
+  if (exactIndex >= 0) {
+    return sourceContent.slice(exactIndex, exactIndex + trimmedCandidate.length);
+  }
+
+  const whitespaceFlexiblePattern = trimmedCandidate
+    .split(/\s+/)
+    .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('\\s+');
+  const match = sourceContent.match(new RegExp(whitespaceFlexiblePattern));
+  return match?.[0]?.trim() || undefined;
+}
+
+function groundLiteralIngredients(
+  ingredients: LiteralIngredientCandidate[],
+  sourceContent: string
+): ExtractedIngredient[] {
+  return ingredients.flatMap(ingredient => {
+    const candidate = ingredient.sourceText?.trim()
+      || [ingredient.amount, ingredient.unit, ingredient.name].filter(Boolean).join(' ').trim();
+    const literalText = findExactSourceFragment(candidate, sourceContent);
+    if (!literalText) return [];
+
+    return [{
+      name: literalText,
+      amount: '',
+      unit: undefined,
+      section: undefined
+    }];
+  });
+}
+
+function groundLiteralInstructions(
+  instructions: LiteralInstructionCandidate[],
+  sourceContent: string
+): LiteralInstructionCandidate[] {
+  return instructions.flatMap((instruction, index) => {
+    const candidate = instruction.sourceText?.trim() || instruction.description?.trim() || '';
+    const literalText = findExactSourceFragment(candidate, sourceContent);
+    if (!literalText) return [];
+
+    return [{
+      step: index + 1,
+      description: literalText,
+      function: undefined,
+      time: undefined,
+      temperature: undefined,
+      speed: undefined,
+      section: undefined
+    }];
+  });
+}
+
 type CookidooAlternative = {
   primary: string;
   alternative: string;
@@ -806,6 +882,7 @@ const llmResponseSchema = z.object({
     order: z.number().min(1).max(3).catch(1) // orden inválido se convierte en 1
   })).max(3).optional().catch([]).transform(val => val || []), // hacer imágenes completamente opcionales con fallback
   ingredients: z.array(z.object({
+    sourceText: z.string().optional(),
     name: z.string().min(1).catch('Ingrediente'), // nombre de ingrediente por defecto
     amount: z.string().min(0).transform(val => val?.trim() === '' ? 'al gusto' : (val || 'al gusto')),
     unit: z.string().optional().nullable().transform(val => val || undefined),
@@ -814,6 +891,7 @@ const llmResponseSchema = z.object({
     .transform(ingredients => ingredients.filter(ing => ing.name && ing.name.trim() !== '' && ing.name !== 'Ingrediente')) // filtrar nombres vacíos y fallback
     .transform(ingredients => ingredients.length > 0 ? ingredients : [{name: 'Ingredientes no especificados', amount: 'al gusto', unit: undefined, section: undefined}]), // asegurar al menos 1 ingrediente
   instructions: z.array(z.object({
+    sourceText: z.string().optional(),
     step: z.number().min(1).catch(1), // números de paso inválidos se convierten en 1
     description: z.string().min(1).transform(val => cleanHtmlFromText(val)).catch('Paso de preparación'), // Limpiar HTML y descripción fallback
     function: z.string().optional().nullable().transform(val => val || undefined), // Función Thermomix
@@ -1383,7 +1461,7 @@ export class LLMServiceImproved {
         // If we can't extract specific data, create a basic recipe from URL info
         const urlParts = url.split('/');
         const reelId = urlParts[urlParts.length - 1] || urlParts[urlParts.length - 2];
-        content = `Instagram Reel ID: ${reelId}\nURL: ${url}\nNote: Limited content extraction from Instagram. Creating basic recipe from available information.`;
+        content = `Instagram Reel ID: ${reelId}\nURL: ${url}\nNote: Recipe caption and comments are unavailable.`;
       }
 
       console.log('📱 Contenido de Instagram extracted:', content.length, 'characters');
@@ -1393,7 +1471,7 @@ export class LLMServiceImproved {
       console.error('Error al extraer contenido de Instagram:', error);
       // Return a fallback content instead of throwing
       return {
-        content: `Instagram Video URL: ${url}\nNote: Could not extract detailed content. Creating basic recipe from URL information.`,
+        content: `Instagram Video URL: ${url}\nNote: Recipe caption and comments are unavailable.`,
         username: undefined,
         canonicalUrl: undefined,
         commentsFound: false,
@@ -1558,6 +1636,8 @@ BUSCA información sobre:
 - Dificultad (si se menciona)
 
 IMPORTANTE para videos:
+- Para cada ingrediente y paso, devuelve "sourceText" como una copia literal y continua del contenido recibido.
+- No corrijas, dividas, unas, resumas ni reformules el texto de ingredientes o preparacion.
 - En videos de TikTok/Instagram/YouTube, los ingredientes y/o los pasos pueden estar en la DESCRIPCIÓN o en los COMENTARIOS públicos: si están ahí, usalos como fuente PRINCIPAL.
 - Para TikTok/Instagram/YouTube no infieras ingredientes ni pasos: si no aparecen explícitamente, devuelve los arrays vacíos y marca la disponibilidad en false.
 - En otras plataformas, para ingredientes sin cantidades específicas, usa "al gusto".
@@ -1619,7 +1699,17 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
           .map(suggestionKey)
           .filter(Boolean)
       );
-      const instructions = (sourceHasInstructions ? validatedData.instructions || [] : [])
+      const sourceEvidence = [
+        content,
+        cleanHtmlFromText(decodeNumericHtmlEntities(content))
+      ].filter(Boolean).join('\n');
+      const literalIngredients = sourceHasIngredients
+        ? groundLiteralIngredients(validatedData.ingredients || [], sourceEvidence)
+        : [];
+      const literalInstructions = sourceHasInstructions
+        ? groundLiteralInstructions(validatedData.instructions || [], sourceEvidence)
+        : [];
+      const instructions = literalInstructions
         .filter(inst => inst.description && typeof inst.step === 'number')
         .filter(inst => !suggestionKeys.has(suggestionKey(inst.description)))
         .map((inst, index) => ({ ...inst, step: index + 1 }));
@@ -1634,8 +1724,7 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
         difficulty: validatedData.difficulty,
         recipeType: validatedData.recipeType,
         images: (validatedData.images || []).filter(img => img.url && typeof img.order === 'number') as any[],
-        ingredients: (sourceHasIngredients ? validatedData.ingredients || [] : [])
-          .filter(ing => ing.name && ing.amount) as any[],
+        ingredients: literalIngredients as any[],
         instructions: instructions as any[],
         tags: validatedData.tags || []
       };
@@ -1653,6 +1742,7 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
     const strictVideoRules = /instagram\.com|tiktok\.com/i.test(sourceUrl)
       ? `
 REGLAS OBLIGATORIAS PARA INSTAGRAM/TIKTOK:
+- Copia cada ingrediente y paso completo en "sourceText" exactamente como figura en el caption o comentario.
 - Revisa únicamente el caption y los primeros 5 comentarios públicos incluidos, respetando su orden original.
 - No inventes, completes ni infieras ingredientes o pasos que no aparezcan explícitamente.
 - "sourceHasIngredients" debe ser true sólo si el contenido incluye ingredientes reales; si no, usa false y devuelve "ingredients": [].
@@ -1703,10 +1793,10 @@ Formato JSON requerido:
     }
   ],
   "ingredients": [
-    {"name": "ingrediente", "amount": "cantidad_o_al_gusto", "unit": "unidad_si_aplica"}
+    {"sourceText": "linea literal completa del ingrediente", "name": "ingrediente", "amount": "cantidad", "unit": "unidad_si_aplica"}
   ],
   "instructions": [
-    {"step": 1, "description": "paso_de_preparación_detallado"}
+    {"sourceText": "texto literal completo del paso", "step": 1, "description": "texto literal completo del paso"}
   ],
   "prepTime": tiempo_estimado_en_minutos,
   "cookTime": tiempo_cocción_si_aplica,
@@ -1900,6 +1990,8 @@ BUSCA cualquier contenido que contenga:
 - Cualquier información culinaria estructurada
 
 EXTRAE los datos EXACTAMENTE como aparecen:
+- Cada ingrediente y cada paso debe incluir "sourceText" con una copia literal y continua del contenido recibido
+- No completes, deduzcas, resumas, dividas, unas ni reformules ingredientes o pasos
 - Cantidades: tal como están escritas ("200g", "1 taza", "un poquito")
 - Ingredientes: nombres completos, no omitas ninguno
 - Instrucciones: copia el texto exacto
@@ -1946,7 +2038,6 @@ EXTRAE los datos EXACTAMENTE como aparecen:
 ⚠️ INSTRUCCIONES - REGLAS CRÍTICAS:
 - Si ves pasos numerados (1., 2., 3...) incluye TODOS sin excepción
 - Si ves bullets o guiones (-, *, •) incluye TODOS los puntos
-- Si hay párrafos largos, divídelos en pasos lógicos
 - NUNCA generes comentarios como "instrucciones no visibles" o "preparación típica basada en..."
 - SOLO incluye pasos de cocina reales: "Mezclar", "Hornear", "Añadir", etc.
 - 🚫 NUNCA inventes pasos: si no hay instrucciones visibles en el contenido, devuelve "instructions": [] (vacío). Es preferible vacío a inventado.
@@ -2007,6 +2098,18 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
       // Validate with schema
       console.log('🛡️ Validating response with Zod schema...');
       const validatedData = llmResponseSchema.parse(parsedResponse);
+      const sourceEvidence = [extractRecipeJsonLd(html), htmlToReadableText(html)]
+        .filter(Boolean)
+        .map(value => decodeNumericHtmlEntities(String(value)))
+        .join('\n');
+      validatedData.ingredients = groundLiteralIngredients(
+        validatedData.ingredients,
+        sourceEvidence
+      ) as typeof validatedData.ingredients;
+      validatedData.instructions = groundLiteralInstructions(
+        validatedData.instructions,
+        sourceEvidence
+      ) as typeof validatedData.instructions;
       console.log('✅ Schema validation passed successfully');
 
       console.log('📊 Extracted recipe summary:');
@@ -2152,15 +2255,7 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
       ].filter(Boolean).join(' ');
       const airFryer = /\b(?:freidora\s+de\s+aire|freidora\s+sin\s+aceite|air[\s-]?fryer)\b/i.test(airFryerEvidence);
 
-      const ingredients = isCookidooSource
-        ? mergeCookidooAlternativeIngredients(
-            mergeCookidooIngredientDescriptions(
-              validatedData.ingredients.filter(ing => ing.name && ing.amount) as ExtractedIngredient[],
-              html
-            ),
-            html
-          )
-        : validatedData.ingredients.filter(ing => ing.name && ing.amount);
+      const ingredients = validatedData.ingredients.filter(ing => ing.name);
       const suggestions = mergeSuggestions(
         extractSuggestionsFromHtml(html),
         validatedData.suggestions
@@ -2266,6 +2361,13 @@ ${imageUrls.map((u, i) => `${i + 1}. ${u}`).join('\n')}\n`
     const isCookidoo = sourceUrl?.includes('cookidoo.international') || false;
 
     return `Analiza esta página web y busca CUALQUIER contenido relacionado con recetas de cocina.
+
+REGLAS DE FIDELIDAD LITERAL:
+- Usa exclusivamente ingredientes y pasos escritos en el contenido entregado.
+- Copia cada ingrediente y cada paso completo en "sourceText" sin corregir ni reformular nada.
+- No completes cantidades, unidades, ingredientes, acciones ni detalles ausentes.
+- No dividas un parrafo en pasos nuevos ni unas elementos separados.
+- Si algo no aparece literalmente, no lo incluyas.
 
 🔍 SÉ MUY FLEXIBLE EN LA DETECCIÓN - BUSCA:
 - Listas de ingredientes (formales o informales)
@@ -2431,12 +2533,13 @@ Extrae en formato JSON exacto:
     }
   ],
   "ingredients": [
-    {"name": "nombre", "amount": "cantidad", "unit": "unidad", "section": "Componente 1"},
-    {"name": "nombre", "amount": "cantidad", "unit": "", "section": null}
+    {"sourceText": "linea literal completa del ingrediente", "name": "nombre", "amount": "cantidad", "unit": "unidad", "section": "Componente 1"},
+    {"sourceText": "otra linea literal completa", "name": "nombre", "amount": "cantidad", "unit": "", "section": null}
   ],
   "instructions": [
     {
       "step": 1,
+      "sourceText": "texto literal completo del paso",
       "description": "Colocar ingredientes en el vaso (sin configuraciones Thermomix en el texto)",
       "function": "Picar",
       "time": "15 seg",
@@ -2446,6 +2549,7 @@ Extrae en formato JSON exacto:
     },
     {
       "step": 2,
+      "sourceText": "texto literal completo del segundo paso",
       "description": "Otro paso (texto limpio sin configuraciones)",
       "function": null,
       "time": "2 min",
@@ -2796,6 +2900,9 @@ ${documentText}
 TAREA: Extraer UNA receta completa del texto proporcionado.
 
 REGLAS ESTRICTAS:
+- Trabaja como extractor cerrado: no completes, deduzcas, resumas ni reformules ingredientes o pasos
+- Cada sourceText debe ser una copia textual continua del texto recibido; si no aparece literalmente, no lo incluyas
+- Si falta un ingrediente o un paso, omitelo; nunca uses valores genericos para completar la receta
 - Extrae datos EXACTAMENTE como aparecen, sin modificaciones
 - Si encuentras múltiples recetas en el texto, extrae solo la PRIMERA completa
 - Cantidades: mantén formato original ("200g", "1 cucharada", "al gusto")
@@ -2982,6 +3089,12 @@ Si encuentras varias recetas, extrae solo la PRIMERA receta completa que encuent
     return `Extrae UNA receta completa del siguiente texto.
 ${contextHint}${titleHint}
 
+REGLAS DE FIDELIDAD LITERAL:
+- Usa EXCLUSIVAMENTE informacion escrita en el texto. No agregues ingredientes, acciones ni explicaciones por conocimiento culinario
+- Para cada ingrediente y paso, copia en "sourceText" un fragmento literal y continuo del texto original
+- No corrijas ortografia, puntuacion, unidades o redaccion dentro de "sourceText"
+- Si un ingrediente o paso no figura de forma literal, NO lo incluyas
+
 📋 INSTRUCCIONES DE EXTRACCIÓN:
 - Busca patrones típicos: título, ingredientes, preparación/instrucciones
 - Extrae cantidades EXACTAS como aparecen ("200g", "1 cucharada", "al gusto")
@@ -2999,11 +3112,11 @@ ${contextHint}${titleHint}
   "description": "Descripción breve si está disponible",
   "images": [],
   "ingredients": [
-    {"name": "nombre_exacto_ingrediente", "amount": "cantidad_exacta", "unit": "unidad_si_separada"}
+    {"sourceText": "linea literal completa del ingrediente", "name": "nombre_exacto_ingrediente", "amount": "cantidad_exacta", "unit": "unidad_si_separada"}
   ],
   "instructions": [
-    {"step": 1, "description": "primer_paso_completo_exacto"},
-    {"step": 2, "description": "segundo_paso_sin_modificar"}
+    {"sourceText": "texto literal completo del primer paso", "step": 1, "description": "texto literal completo del primer paso"},
+    {"sourceText": "texto literal completo del segundo paso", "step": 2, "description": "texto literal completo del segundo paso"}
   ],
   "prepTime": tiempo_preparacion_minutos_numero,
   "cookTime": tiempo_coccion_minutos_numero_o_null,

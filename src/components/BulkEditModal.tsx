@@ -315,9 +315,30 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
                 const ids = next.map(name => collections.find(c => c.name === name)?.id).filter(Boolean) as string[];
                 setCollectionIds(ids);
               }}
+              onCreate={async (name) => {
+                try {
+                  const created = await api.collections.create(name);
+                  setCollections(prev => [...prev, created].sort((a, b) =>
+                    a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+                  ));
+                  setCollectionIds(prev => prev.includes(created.id) ? prev : [...prev, created.id]);
+                  toast({
+                    title: 'Colección creada',
+                    description: `Se creó "${created.name}" y quedó seleccionada.`,
+                  });
+                } catch (error) {
+                  toast({
+                    title: 'No se pudo crear la colección',
+                    description: error instanceof Error ? error.message : 'Intentá nuevamente',
+                    variant: 'destructive',
+                  });
+                }
+              }}
               placeholder="Agregar a una o más colecciones"
-              searchPlaceholder="Buscar colección..."
+              searchPlaceholder="Buscar o crear colección..."
               closeOnSelect
+              allowCreate
+              createLabel="Crear colección"
             />
           </div>
           <div>
