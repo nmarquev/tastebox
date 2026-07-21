@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, type MouseEvent as ReactMouseEvent } from 'react';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -172,6 +173,8 @@ export const EditRecipeModal = ({
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [tagOptions, setTagOptions] = useState<string[]>([]);
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
+  const [tagDeleteTarget, setTagDeleteTarget] = useState<string | null>(null);
+  const [isDeletingTag, setIsDeletingTag] = useState(false);
   const [bulkEditingIngredients, setBulkEditingIngredients] = useState(false);
   const [selectedIngredientIndexes, setSelectedIngredientIndexes] = useState<Set<number>>(new Set());
   const [bulkIngredientSection, setBulkIngredientSection] = useState('__none__');
@@ -614,6 +617,31 @@ export const EditRecipeModal = ({
     if (!tags.includes(t)) setValue('tags', [...tags, t], { shouldDirty: true });
     setTagOptions(prev => prev.includes(t) ? prev : [...prev, t].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })));
     setNewTag('');
+  };
+
+  const handleDeleteTagOption = async () => {
+    if (!tagDeleteTarget || isDeletingTag) return;
+    const tagToDelete = tagDeleteTarget;
+    setIsDeletingTag(true);
+    try {
+      await api.tags.remove(tagToDelete);
+      setTagOptions(prev => prev.filter(option => option !== tagToDelete));
+      const normalizedTag = tagToDelete.toLocaleLowerCase('es');
+      setValue('tags', tags.filter(tag => tag.toLocaleLowerCase('es') !== normalizedTag), { shouldDirty: true });
+      setTagDeleteTarget(null);
+      toast({
+        title: 'Etiqueta eliminada',
+        description: `“${tagToDelete}” se quitó de la lista y de las recetas donde estaba aplicada.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'No se pudo eliminar la etiqueta',
+        description: error instanceof Error ? error.message : 'Intenta nuevamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeletingTag(false);
+    }
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -2293,7 +2321,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               <button
                 type="button"
                 onClick={scrollFormToTop}
-                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-foreground shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
+                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
                 title="Ir al principio"
                 aria-label="Ir al principio"
               >
@@ -2302,7 +2330,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               <button
                 type="button"
                 onClick={scrollFormToBottom}
-                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-foreground shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
+                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
                 title="Ir al final"
                 aria-label="Ir al final"
               >
@@ -2402,19 +2430,13 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
-                      setTagOptions(prev => prev.filter(option => option !== tag));
-                      if (tags.includes(tag)) {
-                        setValue('tags', tags.filter(value => value !== tag), { shouldDirty: true });
-                      }
+                      setTagDeleteTarget(tag);
                     }}
                     onKeyDown={(event) => {
                       if (event.key !== 'Enter' && event.key !== ' ') return;
                       event.preventDefault();
                       event.stopPropagation();
-                      setTagOptions(prev => prev.filter(option => option !== tag));
-                      if (tags.includes(tag)) {
-                        setValue('tags', tags.filter(value => value !== tag), { shouldDirty: true });
-                      }
+                      setTagDeleteTarget(tag);
                     }}
                     className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     aria-label={`Eliminar ${tag}`}
@@ -2448,6 +2470,31 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         </div>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={!!tagDeleteTarget} onOpenChange={(open) => { if (!open && !isDeletingTag) setTagDeleteTarget(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Eliminar etiqueta</AlertDialogTitle>
+          <AlertDialogDescription>
+            ¿Seguro que querés eliminar “{tagDeleteTarget}”? Se quitará de la lista y de todas las recetas donde esté aplicada. Las recetas no se eliminarán.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeletingTag}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            disabled={isDeletingTag}
+            onClick={(event) => {
+              event.preventDefault();
+              void handleDeleteTagOption();
+            }}
+          >
+            {isDeletingTag ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+            Eliminar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 };

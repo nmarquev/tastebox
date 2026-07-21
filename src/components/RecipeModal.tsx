@@ -1817,7 +1817,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <button
             type="button"
             onClick={scrollToTop}
-            className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-foreground shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
+            className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
             title="Ir al principio"
             aria-label="Ir al principio"
           >
@@ -1826,7 +1826,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <button
             type="button"
             onClick={scrollToBottom}
-            className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-foreground shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
+            className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
             title="Ir al final"
             aria-label="Ir al final"
           >
