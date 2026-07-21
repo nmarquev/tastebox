@@ -70,11 +70,14 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
   const [editDishType, setEditDishType] = useState<string[]>([]);
   const [editCategories, setEditCategories] = useState<string[]>([]);
   const [editCollections, setEditCollections] = useState<string[]>([]); // nombres
+  const [editSource, setEditSource] = useState<string[]>([]);
 
   const startInlineEdit = () => {
     setEditDishType((recipe.dishType || '').split(',').map(s => s.trim()).filter(Boolean));
     setEditCategories(parseCategories(recipe.recipeType));
     setEditCollections(collectionNames);
+    const currentSource = getRecipeSource(recipe);
+    setEditSource(currentSource ? [currentSource] : []);
     setInlineEditing(true);
   };
 
@@ -86,6 +89,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         .map(name => allCollections.find(c => c.name === name)?.id)
         .filter(Boolean) as string[];
       await onInlineSave(recipe.id, {
+        source: editSource[0] || '',
         dishType: editDishType.join(', '),
         recipeType: editCategories.join(', '),
         collectionIds,
