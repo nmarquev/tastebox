@@ -3126,19 +3126,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       }}
       onShowSources={() => { setShowHero(false); setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowSourcesGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
       onCreateSource={handleCreateSource}
-      tags={tagList}
-      activeTag={filters.tags?.length === 1 ? filters.tags[0] : undefined}
-      onSelectTag={(name) => {
-        setShowCollectionsGallery(false);
-        setShowCategoriesGallery(false);
-        setShowSourcesGallery(false);
-        setShowTagsGallery(false);
-        setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false);
-        const isActive = filters.tags?.length === 1 && filters.tags[0] === name;
-        handleFiltersChange({ ...filters, tags: isActive ? [] : [name], collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] });
-      }}
-      onShowTags={() => { setShowHero(false); setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowTagsGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [], tags: [] }); }}
-      onCreateTag={handleCreateTag}
       dishTypes={dishTypeList}
       activeDishType={filters.dishType}
       onSelectDishType={(name) => {

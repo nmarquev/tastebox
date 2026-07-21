@@ -296,11 +296,12 @@ export const CollectionsSidebar = ({
         </span>
       </button>
 
+      <div className="flex flex-col">
       {/* Encabezado colapsable de colecciones (fijo arriba al desplazarse) */}
       <button
         type="button"
         onClick={() => { setCategoriesOpen(false); setSourcesOpen(false); setDishTypesOpen(false); setAuthorsOpen(false); setTagsOpen(false); setCollectionsOpen((v) => !v); onShowCollections?.(); }}
-        className={`sticky top-0 z-10 flex w-full items-center justify-between border-t border-border/60 h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
+        className={`order-2 sticky top-0 z-10 flex w-full items-center justify-between border-t border-border/60 h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
           collectionsOpen ? "bg-accent text-accent-foreground" : "bg-card text-muted-foreground hover:text-foreground"
         }`}
         aria-expanded={collectionsOpen}
@@ -310,7 +311,7 @@ export const CollectionsSidebar = ({
       </button>
 
       {collectionsOpen && (
-        <div className="pb-2">
+        <div className="order-2 pb-2">
           {collections.length === 0 ? (
             <p className="px-4 py-3 text-sm text-muted-foreground">Todavía no tenés colecciones.</p>
           ) : (
@@ -388,7 +389,7 @@ export const CollectionsSidebar = ({
           <button
             type="button"
             onClick={() => { setCollectionsOpen(false); setCategoriesOpen(false); setSourcesOpen(false); setAuthorsOpen(false); setTagsOpen(false); setDishTypesOpen((v) => !v); onShowDishTypes?.(); }}
-            className={`sticky top-0 z-10 flex w-full items-center justify-between border-t border-border/60 h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
+            className={`order-1 sticky top-0 z-10 flex w-full items-center justify-between border-t border-border/60 h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
               dishTypesOpen ? "bg-accent text-accent-foreground" : "bg-card text-muted-foreground hover:text-foreground"
             }`}
             aria-expanded={dishTypesOpen}
@@ -397,7 +398,7 @@ export const CollectionsSidebar = ({
             <ChevronDown className={`h-4 w-4 transition-transform ${dishTypesOpen ? "" : "-rotate-90"}`} />
           </button>
           {dishTypesOpen && (
-            <div className="pb-2">
+            <div className="order-1 pb-2">
               {dishTypes?.map((dt) => (
                 <button
                   key={dt.name}
@@ -468,7 +469,7 @@ export const CollectionsSidebar = ({
           <button
             type="button"
             onClick={() => { setCollectionsOpen(false); setSourcesOpen(false); setDishTypesOpen(false); setAuthorsOpen(false); setTagsOpen(false); setCategoriesOpen((v) => !v); onShowCategories?.(); }}
-            className={`sticky top-0 z-10 flex w-full items-center justify-between border-t border-border/60 h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
+            className={`order-3 sticky top-0 z-10 flex w-full items-center justify-between border-t border-border/60 h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
               categoriesOpen ? "bg-accent text-accent-foreground" : "bg-card text-muted-foreground hover:text-foreground"
             }`}
             aria-expanded={categoriesOpen}
@@ -477,7 +478,7 @@ export const CollectionsSidebar = ({
             <ChevronDown className={`h-4 w-4 transition-transform ${categoriesOpen ? "" : "-rotate-90"}`} />
           </button>
           {categoriesOpen && (
-          <div className="pb-2">
+          <div className="order-3 pb-2">
             {categories?.map((category) => (
               <button
                 key={category.name}
@@ -542,6 +543,8 @@ export const CollectionsSidebar = ({
           )}
         </>
       )}
+
+      </div>
 
       {/* Encabezado colapsable de fuentes */}
       {((sources && sources.length > 0) || onCreateSource) && (
