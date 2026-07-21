@@ -107,6 +107,7 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
     ]).then(([allRecipes, srcs, dts, cats, tgs, cols]) => {
       if (cancelled) return;
       const sources = new Set<string>();
+      const origins = [...importSourceOptions.map(option => option.label)];
       const languages = [...DEFAULT_LANGUAGES];
       const countries = [...DEFAULT_COUNTRIES];
       const dishTypes = new Set<string>();
@@ -114,6 +115,7 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
       const tagSet = new Set<string>();
       allRecipes.forEach(r => {
         const s = getRecipeSource(r); if (s) sources.add(s);
+        if (r.importedFrom?.trim()) origins.push(getImportSourceLabel(r.importedFrom.trim()));
         if (r.language?.trim()) languages.push(r.language.trim());
         if (r.country?.trim()) countries.push(r.country.trim());
         if (r.dishType?.trim()) r.dishType.split(',').map(c => c.trim()).filter(Boolean).forEach(c => dishTypes.add(c));
@@ -125,6 +127,7 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
       cats.forEach(s => { const n = (s.name || '').trim(); if (n) categories.add(n); });
       tgs.forEach(s => { const n = (s.name || '').trim(); if (n) tagSet.add(n); });
       setSourceOptions(sortEs(Array.from(sources)));
+      setOriginOptions(sortEs(origins));
       setLanguageOptions(sortEs(languages));
       setCountryOptions(sortEs(countries));
       setDishTypeOptions(sortEs(Array.from(dishTypes)));

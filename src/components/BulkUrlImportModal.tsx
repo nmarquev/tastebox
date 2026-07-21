@@ -118,12 +118,14 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
     ]).then(([recipes, srcs, dts, cats, cols]) => {
       if (cancelled) return;
       const sources = new Set<string>();
+      const origins = [...importSourceOptions.map(option => option.label)];
       const languages = [...DEFAULT_LANGUAGES];
       const countries = [...DEFAULT_COUNTRIES];
       const dishTypes = new Set<string>();
       const categories = new Set<string>();
       recipes.forEach(r => {
         const s = getRecipeSource(r); if (s) sources.add(s);
+        if (r.importedFrom?.trim()) origins.push(getImportSourceLabel(r.importedFrom.trim()));
         if (r.language?.trim()) languages.push(r.language.trim());
         if (r.country?.trim()) countries.push(r.country.trim());
         if (r.dishType?.trim()) dishTypes.add(r.dishType.trim());
@@ -133,6 +135,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
       dts.forEach(s => { const n = (s.name || '').trim(); if (n) dishTypes.add(n); });
       cats.forEach(s => { const n = (s.name || '').trim(); if (n) categories.add(n); });
       setSourceOptions(sortEs(Array.from(sources)));
+      setOriginOptions(sortEs(origins));
       setLanguageOptions(sortEs(languages));
       setCountryOptions(sortEs(countries));
       setDishTypeOptions(sortEs(Array.from(dishTypes)));

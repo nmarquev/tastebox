@@ -556,6 +556,7 @@ export const EditRecipeModal = ({
       .then(([allRecipes, customSources, customDishTypes, customCategories]) => {
         if (cancelled) return;
         const sources = new Set<string>();
+        const origins = [...importSourceOptions.map(option => option.label)];
         const languages: string[] = [...DEFAULT_LANGUAGES];
         const countries: string[] = [...DEFAULT_COUNTRIES];
         const dishTypes = new Set<string>();
@@ -563,6 +564,7 @@ export const EditRecipeModal = ({
         const tagSet = new Set<string>();
         allRecipes.forEach(r => {
           const s = getRecipeSource(r); if (s) sources.add(s);
+          if (r.importedFrom?.trim()) origins.push(getImportSourceLabel(r.importedFrom.trim()));
           if (r.language?.trim()) languages.push(r.language.trim());
           if (r.country?.trim()) countries.push(r.country.trim());
           if (r.dishType?.trim()) r.dishType.split(',').map(c => c.trim()).filter(Boolean).forEach(c => dishTypes.add(c));
@@ -573,6 +575,7 @@ export const EditRecipeModal = ({
         customDishTypes.forEach(s => { const n = (s.name || '').trim(); if (n) dishTypes.add(n); });
         customCategories.forEach(s => { const n = (s.name || '').trim(); if (n) categories.add(n); });
         setSourceOptions(sortEs(Array.from(sources)));
+        setOriginOptions(sortEs(origins));
         setLanguageOptions(sortEs(languages));
         setCountryOptions(sortEs(countries));
         setDishTypeOptions(sortEs(Array.from(dishTypes)));

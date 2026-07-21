@@ -5908,6 +5908,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 const ingSelected = selectedRecipeIds.has(recipe.id);
                 const ingSource = getRecipeSource(recipe);
                 const ingCategories = recipe.recipeType ? recipe.recipeType.split(',').map(c => c.trim()).filter(Boolean) : [];
+                const ingCollections = collections
+                  .filter(collection => collection.recipeIds.includes(recipe.id))
+                  .map(collection => collection.name)
+                  .filter(Boolean);
                 return (
                   <button
                     key={recipe.id}
@@ -5996,6 +6000,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       <span className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                         {recipe.dishType?.trim() && (
                           <span><span className="font-semibold text-foreground">Tipo de comida:</span> {recipe.dishType}</span>
+                        )}
+                        {ingCollections.length > 0 && (
+                          <span><span className="font-semibold text-foreground">Coleccion:</span> {ingCollections.join(', ')}</span>
                         )}
                         {ingCategories.length > 0 && (
                           <span><span className="font-semibold text-foreground">Categoria:</span> {ingCategories.join(', ')}</span>
