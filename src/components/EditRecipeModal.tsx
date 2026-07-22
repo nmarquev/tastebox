@@ -1681,6 +1681,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                         showAddButton={false}
                         onValueChange={setNewTag}
                         onAdd={handleAddTag}
+                        onDeleteOption={setTagDeleteTarget}
                       />
                     </div>
                     <Button type="button" onClick={() => { setNewTag(''); setTagDialogOpen(true); }} size="sm" title="Elegir etiquetas">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/services/api';
@@ -31,6 +31,7 @@ interface TagAutocompleteInputProps {
   showAddButton?: boolean;
   onValueChange: (value: string) => void;
   onAdd: (tag?: string) => void;
+  onDeleteOption?: (tag: string) => void;
 }
 
 export const TagAutocompleteInput = ({
@@ -40,6 +41,7 @@ export const TagAutocompleteInput = ({
   showAddButton = true,
   onValueChange,
   onAdd,
+  onDeleteOption,
 }: TagAutocompleteInputProps) => {
   const [loadedTags, setLoadedTags] = useState<string[]>([]);
   const [focused, setFocused] = useState(false);
@@ -89,15 +91,28 @@ export const TagAutocompleteInput = ({
       {focused && suggestions.length > 0 && (
         <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
           {suggestions.map(tag => (
-            <button
-              key={tag}
-              type="button"
-              className="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => onAdd(tag)}
-            >
-              {tag}
-            </button>
+            <div key={tag} className="flex items-center rounded-sm hover:bg-accent hover:text-accent-foreground">
+              <button
+                type="button"
+                className="min-w-0 flex-1 px-2 py-1.5 text-left text-sm"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => onAdd(tag)}
+              >
+                <span className="block truncate">{tag}</span>
+              </button>
+              {onDeleteOption && (
+                <button
+                  type="button"
+                  className="mr-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => onDeleteOption(tag)}
+                  title={`Eliminar ${tag} de la lista`}
+                  aria-label={`Eliminar ${tag} de la lista`}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}
