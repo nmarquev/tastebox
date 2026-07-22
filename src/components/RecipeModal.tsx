@@ -86,7 +86,7 @@ const ModalShell = ({
   if (isPage) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">{header}{children}</div>
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">{header}{children}</div>
       </div>
     );
   }
@@ -95,7 +95,7 @@ const ModalShell = ({
       <DialogContent
         hideCloseButton
         style={contentStyle}
-        className="flex max-h-[90vh] max-w-4xl flex-col gap-0 overflow-hidden p-0"
+        className="flex max-h-[90vh] max-w-5xl flex-col gap-0 overflow-hidden p-0"
       >
         {/* Header fijo (no scrollea); se puede arrastrar para mover el modal */}
         <div className="flex-shrink-0 border-b bg-background px-6 pb-3 pt-6" {...headerDragProps}>{header}</div>
@@ -1168,13 +1168,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
         <div className="space-y-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-          <div className="space-y-3 sm:w-96 sm:flex-shrink-0">
+          <div className="space-y-3 sm:w-[30rem] sm:flex-shrink-0">
           {currentImage ? (
             <div className="relative">
               <img
                 src={resolveImageUrl(currentImage.url)}
                 alt={currentImage.altText || localRecipe.title}
-                className={`aspect-square w-full object-cover rounded-lg ${localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) ? 'cursor-pointer' : ''}`}
+                className={`aspect-[4/3] w-full rounded-lg object-cover ${localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) ? 'cursor-pointer' : ''}`}
                 crossOrigin="anonymous"
                 loading="lazy"
                 onClick={() => {
@@ -1270,7 +1270,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
           ) : (
             <div
-              className={`relative flex aspect-square w-full items-center justify-center rounded-lg border-2 border-dashed bg-gradient-to-br from-gray-100 to-gray-200 transition-colors ${
+              className={`relative flex aspect-[4/3] w-full items-center justify-center rounded-lg border-2 border-dashed bg-gradient-to-br from-gray-100 to-gray-200 transition-colors ${
                 isDraggingEmptyImage ? 'border-primary bg-primary/10' : 'border-transparent'
               } ${isUploadingEmptyImage ? 'cursor-wait' : 'cursor-copy'}`}
               onDragEnter={(event) => {

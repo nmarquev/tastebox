@@ -15,6 +15,7 @@ import { StepDescription, hasInlineThermomix } from '@/components/StepDescriptio
 import { EditRecipeModal } from '@/components/EditRecipeModal';
 import { useDraggableDialog } from '@/hooks/useDraggableDialog';
 import { SINGLE_IMPORT_ERROR_TOAST_DURATION_MS } from '@/constants/toastDurations';
+import { normalizeIngredient } from '@/utils/ingredientText';
 
 interface ImportRecipeModalProps {
   isOpen: boolean;
@@ -85,6 +86,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
 
       if (response.success && response.recipe) {
         const recipe = response.recipe;
+        const normalizedIngredients = (recipe.ingredients || []).map(normalizeIngredient);
         const savedRecipe = await api.recipes.create({
           title: recipe.title,
           description: recipe.description,
@@ -96,7 +98,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           // Dificultad: no autocompletar con lo que adivina la IA.
           difficulty: undefined,
           tags: recipe.tags,
-          ingredients: recipe.ingredients,
+          ingredients: normalizedIngredients,
           instructions: recipe.instructions,
           sourceUrl: recipe.sourceUrl,
           author: recipe.author,

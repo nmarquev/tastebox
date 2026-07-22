@@ -16,6 +16,7 @@ import { Recipe } from '@/types/recipe';
 import { Beef, CakeSlice, CandyOff, Loader2, Plus, X, Upload, Edit, Calculator, Globe, Check, ClipboardList, ClipboardPaste, Heart, WheatOff, Leaf, Utensils, ChevronUp, ChevronDown, AudioLines, Trash2 } from 'lucide-react';
 import { resolveImageUrl } from '@/utils/api';
 import { getRecipeSource } from '@/utils/siteUtils';
+import { normalizeIngredientText } from '@/utils/ingredientText';
 import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
 import { CreatableCombobox } from '@/components/CreatableCombobox';
 import { TagAutocompleteInput } from '@/components/TagAutocompleteInput';
@@ -500,10 +501,10 @@ export const EditRecipeModal = ({
         sugar: recipe.sugar || undefined,
         sodium: recipe.sodium || undefined,
         ingredients: recipe.ingredients?.map(ing => ({
-          name: ing.name,
-          amount: ing.amount,
-          unit: ing.unit || '',
-          section: ing.section || ''
+          name: normalizeIngredientText(ing.name),
+          amount: normalizeIngredientText(ing.amount),
+          unit: normalizeIngredientText(ing.unit),
+          section: normalizeIngredientText(ing.section)
         })) || [{ name: '', amount: '', unit: '', section: '' }],
         instructions: recipe.instructions?.map(inst => ({
           description: inst.description,
@@ -1033,10 +1034,10 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         ingredients: data.ingredients
           .filter(ing => (ing.name || '').trim())
           .map((ing, index) => ({
-            name: ing.pasted || (!ing.amount && !ing.unit && ing.name.includes('\n')) ? ing.name : ing.name.trim(),
-            amount: ing.amount || '',
-            unit: ing.unit,
-            section: ing.section || undefined,
+            name: normalizeIngredientText(ing.name),
+            amount: normalizeIngredientText(ing.amount),
+            unit: normalizeIngredientText(ing.unit),
+            section: normalizeIngredientText(ing.section) || undefined,
             order: index + 1
           })),
         instructions: data.instructions
