@@ -148,7 +148,7 @@ const buildTextImportRecipeResponse = (recipeData: any, sourceText: string) => {
     language: recipeData.language || undefined,
     sourceUrl: undefined,
     author: undefined,
-    importedFrom: 'Texto pegado',
+    importedFrom: 'recetario',
     thermomix: recipeData.thermomix ?? false,
     airFryer: recipeData.airFryer ?? false,
     glutenFree: recipeData.glutenFree === true || mentionsGlutenFree(recipeData),

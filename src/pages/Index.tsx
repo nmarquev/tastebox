@@ -6147,7 +6147,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   key={recipe.id}
                   recipe={recipe}
                   columns={gridColumns}
-                  collectionNames={gridColumns === 1 ? collections.filter(c => c.recipeIds.includes(recipe.id)).map(c => c.name) : undefined}
+                  collectionNames={gridColumns <= 4 ? collections.filter(c => c.recipeIds.includes(recipe.id)).map(c => c.name) : undefined}
                   dishTypeOptions={gridColumns === 1 ? dishTypeList.map(d => d.name) : undefined}
                   categoryOptions={gridColumns === 1 ? categoryList.map(c => c.name) : undefined}
                   sourceOptions={gridColumns === 1 ? sourceList.map(s => s.name) : undefined}
@@ -6162,15 +6162,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   onPlayTTS={handlePlayTTS}
                   onShowNutrition={handleShowNutrition}
                   onSaveToCollection={setCollectionRecipe}
-                  onCategoryClick={(category) => {
-                    handleFiltersChange({
-                      ...filters,
-                      recipeTypes: [category],
-                    });
-                    setShowFilters(true);
-                    setShowHero(false);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
                   isInCollection={collectionRecipeIds.has(recipe.id)}
                   isPlayingTTS={playingRecipeId === recipe.id}
                   isGeneratingScript={generatingScript === recipe.id}

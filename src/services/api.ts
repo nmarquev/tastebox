@@ -265,6 +265,19 @@ export const api = {
       return response.json();
     },
 
+    removeTag: async (id: string, tagName: string): Promise<Recipe> => {
+      const response = await authFetch(`/recipes/${id}/tags/${encodeURIComponent(tagName)}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'No se pudo quitar la etiqueta de la receta');
+      }
+
+      return response.json();
+    },
+
     // Chequea si ya existe una receta con esa URL (para evitar duplicados al importar).
     checkUrl: async (url: string): Promise<{ exists: boolean; recipe?: { id: string; title: string } }> => {
       try {

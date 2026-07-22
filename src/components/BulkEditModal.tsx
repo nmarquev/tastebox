@@ -23,6 +23,7 @@ interface BulkEditModalProps {
 type Tri = 'keep' | 'yes' | 'no';
 
 const importSourceOptions = [
+  { value: 'recetario', label: 'Recetario' },
   { value: 'www', label: 'Pagina web' },
   { value: 'instagram', label: 'Instagram' },
   { value: 'youtube', label: 'YouTube' },

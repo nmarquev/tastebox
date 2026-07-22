@@ -51,7 +51,7 @@ export const TextImportModal = ({ isOpen, onClose, onRecipeSaved }: TextImportMo
       sourceUrl: recipe.sourceUrl,
       source: recipe.source,
       author: recipe.author,
-      importedFrom: recipe.importedFrom || 'Texto pegado',
+      importedFrom: recipe.importedFrom || 'recetario',
       recipeType: undefined,
       country: undefined,
       language: recipe.language,

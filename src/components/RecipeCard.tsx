@@ -27,7 +27,6 @@ interface RecipeCardProps {
   onPlayTTS?: (recipe: Recipe) => void;
   onShowNutrition?: (recipe: Recipe) => void;
   onSaveToCollection?: (recipe: Recipe) => void;
-  onCategoryClick?: (category: string) => void;
   isInCollection?: boolean;
   columns?: 1 | 2 | 3 | 4 | 5;
   collectionNames?: string[];
@@ -62,7 +61,7 @@ const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
 ];
 
-export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onCategoryClick, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   // Edición inline (vista 1 columna) de los campos visibles.
   const [inlineEditing, setInlineEditing] = useState(false);
@@ -136,11 +135,11 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
   const categories = parseCategories(recipe.recipeType);
   const sourceName = getRecipeSource(recipe) || 'Receta propia';
   // Autor sin el "@" inicial (p. ej. usuarios de Instagram).
-  const categoryCharacters = categories.reduce((total, category) => total + category.length, 0);
+  const collectionCharacters = collectionNames.reduce((total, collection) => total + collection.length, 0);
   // Las categorías ahora hacen wrap a varias filas, así que no necesitamos achicar
   // la fuente de forma agresiva para encajarlas en un renglón: la mantenemos legible.
-  const categoryFontSize = categoryCharacters > 65 ? 10 : categoryCharacters > 42 ? 11 : 12;
-  const compactCategories = categoryCharacters > 42;
+  const collectionFontSize = collectionCharacters > 65 ? 10 : collectionCharacters > 42 ? 11 : 12;
+  const compactCollections = collectionCharacters > 42;
   // En 4 columnas las tarjetas son angostas: achicamos tiempos/porciones para que entren en una línea.
   const compact = columns >= 4;
   // En 5 columnas mostramos una tarjeta mínima: imagen, título, fuente y la línea
@@ -524,32 +523,20 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           </div>
         )}
 
-        {!minimal && categories.length > 0 && (
+        {!minimal && collectionNames.length > 0 && (
         <div className="mt-auto flex items-end gap-2 border-t border-border/60 pt-3">
-          {categories.length > 0 && (
+          {collectionNames.length > 0 && (
             <div className="flex min-w-0 flex-1 flex-wrap content-end gap-x-0.5 gap-y-1">
-              {categories.map((cat) => (
+              {collectionNames.map((collection) => (
                 <Badge
-                  key={cat}
-                  role="button"
-                  tabIndex={0}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onCategoryClick?.(cat);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key !== 'Enter' && event.key !== ' ') return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    onCategoryClick?.(cat);
-                  }}
-                  className={`shrink-0 cursor-pointer whitespace-nowrap border-transparent bg-primary/75 text-primary-foreground shadow-sm transition-colors hover:bg-primary ${
-                    compactCategories ? 'px-1.5 py-0' : ''
+                  key={collection}
+                  className={`shrink-0 whitespace-nowrap border-transparent bg-primary/75 text-primary-foreground shadow-sm ${
+                    compactCollections ? 'px-1.5 py-0' : ''
                   }`}
-                  style={{ fontSize: `${categoryFontSize}px` }}
-                  title={`Filtrar por ${cat}`}
+                  style={{ fontSize: `${collectionFontSize}px` }}
+                  title={`Colección: ${collection}`}
                 >
-                  {cat}
+                  {collection}
                 </Badge>
               ))}
             </div>

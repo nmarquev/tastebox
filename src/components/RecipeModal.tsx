@@ -263,10 +263,33 @@ export const RecipeModal = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [isDraggingEmptyImage, setIsDraggingEmptyImage] = useState(false);
   const [isUploadingEmptyImage, setIsUploadingEmptyImage] = useState(false);
+  const [removingTag, setRemovingTag] = useState<string | null>(null);
   const emptyImageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { applySettingsToUtterance } = useVoiceSettings();
   const { isCalculating, calculateNutrition, setNutrition } = useNutritionCalculator();
+
+  const handleRemoveRecipeTag = async (tagName: string) => {
+    if (!localRecipe || removingTag) return;
+    setRemovingTag(tagName);
+    try {
+      const updatedRecipe = await api.recipes.removeTag(localRecipe.id, tagName);
+      setLocalRecipe(updatedRecipe);
+      onRecipeUpdate?.(updatedRecipe);
+      toast({
+        title: 'Etiqueta quitada',
+        description: `“${tagName}” se quitó de esta receta.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'No se pudo quitar la etiqueta',
+        description: error instanceof Error ? error.message : 'Intenta nuevamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setRemovingTag(null);
+    }
+  };
 
   // Update local recipe when prop changes
   useEffect(() => {
@@ -1664,7 +1687,21 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     const tagValue = typeof tag === 'string' ? tag : tag.tag || tag.name || String(tag);
                     const tagKey = typeof tag === 'string' ? tag : `${tag.tagId || tag.id || index}-${tagValue}`;
                     return (
-                      <Badge key={tagKey}>{tagValue}</Badge>
+                      <Badge key={tagKey} className="flex items-center gap-1 pr-1">
+                        <span>{tagValue}</span>
+                        <button
+                          type="button"
+                          onClick={() => void handleRemoveRecipeTag(tagValue)}
+                          disabled={removingTag === tagValue}
+                          className="inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-black/10 disabled:cursor-wait disabled:opacity-60"
+                          title={`Quitar ${tagValue} de esta receta`}
+                          aria-label={`Quitar ${tagValue} de esta receta`}
+                        >
+                          {removingTag === tagValue
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <X className="h-3 w-3" />}
+                        </button>
+                      </Badge>
                     );
                   })}
                 </div>

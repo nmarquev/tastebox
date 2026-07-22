@@ -813,6 +813,69 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
+// Quitar una etiqueta solamente de una receta, sin eliminarla de otras recetas ni de la lista global.
+router.delete('/:id/tags/:tagName', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const recipe = await prisma.recipe.findFirst({
+      where: { id: req.params.id, userId: req.user!.id },
+      select: { id: true },
+    });
+
+    if (!recipe) {
+      return res.status(404).json({ error: 'Recipe not found' });
+    }
+
+    const tagName = decodeURIComponent(req.params.tagName).trim().toLocaleLowerCase('es');
+    if (!tagName) {
+      return res.status(400).json({ error: 'Nombre de etiqueta inválido' });
+    }
+
+    const recipeTags = await prisma.recipeTag.findMany({
+      where: { recipeId: recipe.id },
+      include: { tag: true },
+    });
+    const tagIds = recipeTags
+      .filter(item => item.tag.name.trim().toLocaleLowerCase('es') === tagName)
+      .map(item => item.tagId);
+
+    if (tagIds.length > 0) {
+      await prisma.recipeTag.deleteMany({
+        where: { recipeId: recipe.id, tagId: { in: tagIds } },
+      });
+    }
+
+    const updatedRecipe = await prisma.recipe.findUnique({
+      where: { id: recipe.id },
+      include: {
+        images: true,
+        ingredients: true,
+        instructions: true,
+        tags: { orderBy: { order: 'asc' }, include: { tag: true } },
+      },
+    });
+
+    if (!updatedRecipe) {
+      return res.status(404).json({ error: 'Recipe not found' });
+    }
+
+    res.json({
+      ...updatedRecipe,
+      tags: updatedRecipe.tags.map(item => item.tag.name),
+      instructions: updatedRecipe.instructions.map(instruction => ({
+        ...instruction,
+        thermomixSettings: {
+          time: instruction.time,
+          temperature: instruction.temperature,
+          speed: instruction.speed,
+        },
+      })),
+    });
+  } catch (error) {
+    console.error('Remove recipe tag error:', error);
+    res.status(500).json({ error: 'No se pudo quitar la etiqueta de la receta' });
+  }
+});
+
 // Delete recipe
 router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
   try {
