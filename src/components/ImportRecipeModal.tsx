@@ -650,7 +650,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                 <button
                   type="button"
                   onClick={scrollToTop}
-                  className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
+                  className="scroll-navigation-arrow pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
                   title="Ir al principio"
                   aria-label="Ir al principio"
                 >
@@ -659,7 +659,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                 <button
                   type="button"
                   onClick={scrollToBottom}
-                  className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
+                  className="scroll-navigation-arrow pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
                   title="Ir al final"
                   aria-label="Ir al final"
                 >

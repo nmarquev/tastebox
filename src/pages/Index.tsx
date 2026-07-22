@@ -7274,7 +7274,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-[0_3px_10px_rgba(0,0,0,0.22)] backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80 hover:shadow-[0_5px_14px_rgba(0,0,0,0.28)]"
+            className="scroll-navigation-arrow flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-[0_3px_10px_rgba(0,0,0,0.22)] backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80 hover:shadow-[0_5px_14px_rgba(0,0,0,0.28)]"
             aria-label="Ir a la primera receta"
             title="Ir a la primera receta"
           >
@@ -7284,7 +7284,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         <button
           type="button"
           onClick={() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-[0_3px_10px_rgba(0,0,0,0.22)] backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80 hover:shadow-[0_5px_14px_rgba(0,0,0,0.28)]"
+          className="scroll-navigation-arrow flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-[0_3px_10px_rgba(0,0,0,0.22)] backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80 hover:shadow-[0_5px_14px_rgba(0,0,0,0.28)]"
           aria-label="Ir a la ultima receta"
           title="Ir a la ultima receta"
         >

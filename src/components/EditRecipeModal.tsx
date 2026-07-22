@@ -2321,7 +2321,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               <button
                 type="button"
                 onClick={scrollFormToTop}
-                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
+                className="scroll-navigation-arrow pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
                 title="Ir al principio"
                 aria-label="Ir al principio"
               >
@@ -2330,7 +2330,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               <button
                 type="button"
                 onClick={scrollFormToBottom}
-                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
+                className="scroll-navigation-arrow pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary/65 text-white shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:bg-primary/80"
                 title="Ir al final"
                 aria-label="Ir al final"
               >

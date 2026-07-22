@@ -632,6 +632,13 @@ All colors MUST be HSL.
   [data-theme="pasteles"] .recipe-source-link:hover {
     color: #a2dee8 !important;
   }
+
+  /* En los temas claros, las flechas recuperan el gris anterior para conservar contraste. */
+  [data-theme="aguamarina"] .scroll-navigation-arrow,
+  [data-theme="pasteles"] .scroll-navigation-arrow,
+  [data-theme="tierra"] .scroll-navigation-arrow {
+    color: hsl(var(--foreground));
+  }
 }
 
 @layer base {
