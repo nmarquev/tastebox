@@ -88,6 +88,15 @@ const SORT_LABELS: Partial<Record<RecipeSort, string>> = {
   dishType: 'Tipo de comida',
 };
 
+const uniqueRecipesById = (recipes: Recipe[]): Recipe[] => {
+  const seenIds = new Set<string>();
+  return recipes.filter(recipe => {
+    if (seenIds.has(recipe.id)) return false;
+    seenIds.add(recipe.id);
+    return true;
+  });
+};
+
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -757,7 +766,7 @@ const Index = () => {
         api.recipes.getAll(),
         api.collections.getAll(),
       ]);
-      setRecipes(userRecipes);
+      setRecipes(uniqueRecipesById(userRecipes));
       setCollections(collections);
       setCollectionRecipeIds(new Set(collections.flatMap(collection => collection.recipeIds)));
     } catch (error) {
@@ -852,7 +861,7 @@ const Index = () => {
 
   const handleImportSuccess = (recipe: Recipe) => {
     // Add the imported recipe to the local state
-    setRecipes(prev => [recipe, ...prev]);
+    setRecipes(prev => uniqueRecipesById([recipe, ...prev]));
     // Hide hero to show the recipes list
     setShowHero(false);
     // Clear any active filters to show all recipes including the new one
@@ -876,7 +885,7 @@ const Index = () => {
     // Add the new recipe to the local state
     setRecipes(prev => {
       console.log('Adding new recipe to recipes list');
-      return [recipe, ...prev];
+      return uniqueRecipesById([recipe, ...prev]);
     });
     // Hide hero to show the recipes list
     console.log('Hiding hero to show recipes list');
