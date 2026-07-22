@@ -39,6 +39,45 @@ const imageService = new ImageService();
 const cookidooService = new CookidooService();
 const fooditService = new FooditService();
 
+const INGREDIENT_UNITS = new Set([
+  'g', 'gr', 'gramo', 'gramos', 'kg', 'kilo', 'kilos',
+  'ml', 'l', 'litro', 'litros', 'cc',
+  'cdita', 'cditas', 'cdta', 'cdtas', 'cucharadita', 'cucharaditas',
+  'cda', 'cdas', 'cucharada', 'cucharadas',
+  'taza', 'tazas', 'pizca', 'pizcas',
+  'unidad', 'unidades', 'diente', 'dientes', 'hoja', 'hojas',
+  'rama', 'ramas', 'paquete', 'paquetes', 'sobre', 'sobres',
+]);
+
+const normalizeIngredientLineText = (value: unknown) =>
+  String(value || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/\s*\n+\s*/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+
+const FRACTION_AMOUNT = '(?:\\d+\\s+)?(?:\\d+[.,]?\\d*|\\d+\\/\\d+|[¼½¾⅓⅔⅛⅜⅝⅞])(?:\\s*(?:-|a|–|—)\\s*(?:\\d+[.,]?\\d*|\\d+\\/\\d+|[¼½¾⅓⅔⅛⅜⅝⅞]))?';
+
+const splitIngredientAmount = <T extends { name?: unknown; amount?: unknown; unit?: unknown }>(ingredient: T) => {
+  const name = normalizeIngredientLineText(ingredient.name);
+  const amount = normalizeIngredientLineText(ingredient.amount);
+  const unit = normalizeIngredientLineText(ingredient.unit);
+  if (amount || unit || !name) return { name, amount, unit };
+
+  const match = name.match(new RegExp(`^(${FRACTION_AMOUNT})\\s+(.+)$`, 'i'));
+  if (!match) return { name, amount, unit };
+
+  const parsedAmount = normalizeIngredientLineText(match[1]);
+  let rest = normalizeIngredientLineText(match[2]);
+  const [firstToken = '', ...remainingTokens] = rest.split(/\s+/);
+  if (INGREDIENT_UNITS.has(firstToken.toLocaleLowerCase('es')) && remainingTokens.length) {
+    rest = remainingTokens.join(' ').replace(/^de\s+/i, '').trim();
+    return { name: rest, amount: parsedAmount, unit: firstToken };
+  }
+
+  return { name: rest.replace(/^de\s+/i, '').trim(), amount: parsedAmount, unit: '' };
+};
+
 const getLiteralIngredientText = (ingredient: unknown) => {
   if (typeof ingredient === 'string') {
     return ingredient.trim();
@@ -312,11 +351,15 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         order: img.order,
         altText: img.altText
       })),
-      ingredients: recipeData.ingredients.map((ingredient, index) => ({
-        ...ingredient,
-        order: index + 1,
-        section: ingredient.section || null
-      })),
+      ingredients: recipeData.ingredients.map((ingredient, index) => {
+        const parsed = splitIngredientAmount(ingredient);
+        return {
+          ...ingredient,
+          ...parsed,
+          order: index + 1,
+          section: ingredient.section || null
+        };
+      }),
       instructions: recipeData.instructions.map(inst => ({
         step: inst.step,
         description: inst.description,

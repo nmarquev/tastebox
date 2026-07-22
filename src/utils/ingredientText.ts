@@ -5,10 +5,75 @@ export const normalizeIngredientText = (value?: string | null) =>
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
 
+const UNITS = new Set([
+  'g',
+  'gr',
+  'gramo',
+  'gramos',
+  'kg',
+  'kilo',
+  'kilos',
+  'ml',
+  'l',
+  'litro',
+  'litros',
+  'cc',
+  'cdita',
+  'cditas',
+  'cdta',
+  'cdtas',
+  'cucharadita',
+  'cucharaditas',
+  'cda',
+  'cdas',
+  'cucharada',
+  'cucharadas',
+  'taza',
+  'tazas',
+  'pizca',
+  'pizcas',
+  'unidad',
+  'unidades',
+  'diente',
+  'dientes',
+  'hoja',
+  'hojas',
+  'rama',
+  'ramas',
+  'paquete',
+  'paquetes',
+  'sobre',
+  'sobres',
+]);
+
+const FRACTION_AMOUNT = '(?:\\d+\\s+)?(?:\\d+[.,]?\\d*|\\d+\\/\\d+|[¼½¾⅓⅔⅛⅜⅝⅞])(?:\\s*(?:-|a|–|—)\\s*(?:\\d+[.,]?\\d*|\\d+\\/\\d+|[¼½¾⅓⅔⅛⅜⅝⅞]))?';
+
+const parseIngredientLine = (line: string) => {
+  const match = line.match(new RegExp(`^(${FRACTION_AMOUNT})\\s+(.+)$`, 'i'));
+  if (!match) return null;
+
+  const amount = normalizeIngredientText(match[1]);
+  let rest = normalizeIngredientText(match[2]);
+  if (!amount || !rest) return null;
+
+  const [firstToken = '', ...remainingTokens] = rest.split(/\s+/);
+  const normalizedUnit = firstToken.toLocaleLowerCase('es');
+  if (UNITS.has(normalizedUnit) && remainingTokens.length) {
+    rest = remainingTokens.join(' ').replace(/^de\s+/i, '').trim();
+    return { amount, unit: firstToken, name: rest };
+  }
+
+  return { amount, unit: '', name: rest.replace(/^de\s+/i, '').trim() };
+};
+
 export const normalizeIngredient = <T extends { name?: string; amount?: string; unit?: string; section?: string }>(ingredient: T) => ({
   ...ingredient,
-  name: normalizeIngredientText(ingredient.name),
-  amount: normalizeIngredientText(ingredient.amount),
-  unit: normalizeIngredientText(ingredient.unit),
+  ...(() => {
+    const name = normalizeIngredientText(ingredient.name);
+    const amount = normalizeIngredientText(ingredient.amount);
+    const unit = normalizeIngredientText(ingredient.unit);
+    const parsed = !amount && !unit ? parseIngredientLine(name) : null;
+    return parsed || { name, amount, unit };
+  })(),
   section: normalizeIngredientText(ingredient.section),
 });
