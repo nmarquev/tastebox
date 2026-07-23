@@ -31,11 +31,31 @@ export const RECIPE_DISH_TYPES = [
   "Snack",
 ];
 
-// Una receta puede tener varias categorías; se guardan en el campo recipeType
-// separadas por "|" (no coma, porque varias categorías contienen comas).
+// Una receta puede tener varias categorías; se guardan separadas por "|".
+// También leemos listas viejas con coma sin romper categorías que contienen coma.
 export const CATEGORY_SEPARATOR = '|';
-export const parseCategories = (recipeType?: string | null): string[] =>
-  (recipeType || '').split(CATEGORY_SEPARATOR).map(s => s.trim()).filter(Boolean);
+export const parseCategories = (recipeType?: string | null): string[] => {
+  const value = (recipeType || '').trim();
+  if (!value) return [];
+  if (value.includes(CATEGORY_SEPARATOR)) {
+    return value.split(CATEGORY_SEPARATOR).map(s => s.trim()).filter(Boolean);
+  }
+  if (RECIPE_CATEGORIES.includes(value)) return [value];
+
+  const parts = value.split(',').map(s => s.trim()).filter(Boolean);
+  const categories: string[] = [];
+  for (let i = 0; i < parts.length; i += 1) {
+    let current = parts[i];
+    while (i + 1 < parts.length && !RECIPE_CATEGORIES.includes(current)) {
+      const candidate = `${current}, ${parts[i + 1]}`;
+      if (!RECIPE_CATEGORIES.some(category => category.startsWith(candidate))) break;
+      current = candidate;
+      i += 1;
+    }
+    categories.push(current);
+  }
+  return categories;
+};
 export const joinCategories = (cats: string[]): string => cats.join(CATEGORY_SEPARATOR);
 
 // Categorías disponibles para clasificar las recetas (campo recipeType).

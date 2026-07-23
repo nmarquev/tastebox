@@ -1,5 +1,19 @@
+const decodeIngredientHtmlEntities = (value: string) =>
+  value
+    .replace(/&frac14;/gi, '¼')
+    .replace(/&frac12;/gi, '½')
+    .replace(/&frac34;/gi, '¾')
+    .replace(/&frac13;/gi, '⅓')
+    .replace(/&frac23;/gi, '⅔')
+    .replace(/&frac18;/gi, '⅛')
+    .replace(/&frac38;/gi, '⅜')
+    .replace(/&frac58;/gi, '⅝')
+    .replace(/&frac78;/gi, '⅞')
+    .replace(/&#(\d+);/g, (_, value) => String.fromCodePoint(Number(value)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, value) => String.fromCodePoint(parseInt(value, 16)));
+
 export const normalizeIngredientText = (value?: string | null) =>
-  (value || '')
+  decodeIngredientHtmlEntities(value || '')
     .replace(/\r\n?/g, '\n')
     .replace(/\s*\n+\s*/g, ' ')
     .replace(/[ \t]{2,}/g, ' ')

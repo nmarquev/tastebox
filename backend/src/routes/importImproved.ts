@@ -49,8 +49,22 @@ const INGREDIENT_UNITS = new Set([
   'rama', 'ramas', 'paquete', 'paquetes', 'sobre', 'sobres',
 ]);
 
+const decodeIngredientHtmlEntities = (value: string) =>
+  value
+    .replace(/&frac14;/gi, '¼')
+    .replace(/&frac12;/gi, '½')
+    .replace(/&frac34;/gi, '¾')
+    .replace(/&frac13;/gi, '⅓')
+    .replace(/&frac23;/gi, '⅔')
+    .replace(/&frac18;/gi, '⅛')
+    .replace(/&frac38;/gi, '⅜')
+    .replace(/&frac58;/gi, '⅝')
+    .replace(/&frac78;/gi, '⅞')
+    .replace(/&#(\d+);/g, (_, numericValue) => String.fromCodePoint(Number(numericValue)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, numericValue) => String.fromCodePoint(parseInt(numericValue, 16)));
+
 const normalizeIngredientLineText = (value: unknown) =>
-  String(value || '')
+  decodeIngredientHtmlEntities(String(value || ''))
     .replace(/\r\n?/g, '\n')
     .replace(/\s*\n+\s*/g, ' ')
     .replace(/[ \t]{2,}/g, ' ')

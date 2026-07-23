@@ -449,6 +449,10 @@ export const EditRecipeModal = ({
   // Initialize form with recipe data
   useEffect(() => {
     if (recipe && isOpen) {
+      setActiveTab('info');
+      window.requestAnimationFrame(() => {
+        formScrollRef.current?.scrollTo({ top: 0 });
+      });
       setSavedIngredientSections([]);
       setSelectedIngredientIndexes(new Set());
       setBulkEditingIngredients(false);
