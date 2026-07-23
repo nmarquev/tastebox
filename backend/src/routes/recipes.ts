@@ -225,6 +225,18 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
+router.get('/count', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const count = await prisma.recipe.count({
+      where: { userId: req.user!.id }
+    });
+    res.json({ count });
+  } catch (error) {
+    console.error('Get recipes count error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Normaliza una URL para comparar duplicados (ignora protocolo http/https, "www.",
 // barra final, hash y parámetros de tracking comunes).
 function normalizeUrlForCompare(url: string): string {

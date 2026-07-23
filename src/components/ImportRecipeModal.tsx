@@ -95,8 +95,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           prepTime: recipe.prepTime,
           cookTime: recipe.cookTime,
           servings: recipe.servings,
-          // Dificultad: no autocompletar con lo que adivina la IA.
-          difficulty: undefined,
+          difficulty: recipe.difficulty,
           tags: recipe.tags,
           ingredients: normalizedIngredients,
           instructions: recipe.instructions,
@@ -105,7 +104,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           importedFrom: recipe.importedFrom,
           // Categoría, país e idioma: no autocompletar con lo que adivina la IA.
           recipeType: undefined,
-          country: undefined,
+          country: recipe.country,
           language: undefined,
           thermomix: recipe.thermomix,
           airFryer: recipe.airFryer,

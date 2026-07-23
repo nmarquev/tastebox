@@ -189,7 +189,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
           servings: recipe.servings,
           // Campos en común (si se eligieron) sobre los extraídos:
           // Dificultad: solo lo que el usuario indique en el Paso 2 (no autocompletar con la IA).
-          difficulty: (common.difficulty || undefined) as any,
+          difficulty: (common.difficulty || recipe.difficulty || undefined) as any,
           tags: recipe.tags,
           ingredients: recipe.ingredients,
           instructions: recipe.instructions,
@@ -200,7 +200,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
           // Categoría, país e idioma: solo lo que el usuario indique en el Paso 2 (no autocompletar con la IA).
           recipeType: common.recipeType || undefined,
           dishType: common.dishType || undefined,
-          country: common.country || undefined,
+          country: common.country || recipe.country || undefined,
           language: common.language || undefined,
           featured: common.featured || undefined,
           cooked: common.cooked || undefined,

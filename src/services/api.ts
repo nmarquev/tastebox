@@ -199,6 +199,17 @@ export const api = {
       return response.json();
     },
 
+    getCount: async (): Promise<number> => {
+      const response = await authFetch('/recipes/count');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch recipe count');
+      }
+
+      const data = await response.json();
+      return typeof data.count === 'number' ? data.count : 0;
+    },
+
     getById: async (id: string): Promise<Recipe> => {
       const response = await authFetch(`/recipes/${id}`);
 

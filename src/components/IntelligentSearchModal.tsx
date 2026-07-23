@@ -86,6 +86,11 @@ export const IntelligentSearchModal = ({ isOpen, onClose, onRecipeSaved, onViewR
   const [error, setError] = useState<string | null>(null);
 
   const { toast } = useToast();
+  const formatNutritionValue = (value: number) =>
+    new Intl.NumberFormat('es-AR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
 
   // Note: Using resolveImageUrl from @/utils/api for consistent image handling
 
@@ -492,24 +497,24 @@ export const IntelligentSearchModal = ({ isOpen, onClose, onRecipeSaved, onViewR
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Calorías:</span>
-                              <span className="font-medium">{Math.round(recipe.nutritionalInfo.calories)}</span>
+                              <span className="font-medium">{formatNutritionValue(recipe.nutritionalInfo.calories)}</span>
                             </div>
                             {recipe.nutritionalInfo.protein && (
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Proteína:</span>
-                                <span className="font-medium">{recipe.nutritionalInfo.protein.toFixed(1)}g</span>
+                                <span className="font-medium">{formatNutritionValue(recipe.nutritionalInfo.protein)}g</span>
                               </div>
                             )}
                             {recipe.nutritionalInfo.carbohydrates && (
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Carbohidratos:</span>
-                                <span className="font-medium">{recipe.nutritionalInfo.carbohydrates.toFixed(1)}g</span>
+                                <span className="font-medium">{formatNutritionValue(recipe.nutritionalInfo.carbohydrates)}g</span>
                               </div>
                             )}
                             {recipe.nutritionalInfo.fat && (
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Grasa:</span>
-                                <span className="font-medium">{recipe.nutritionalInfo.fat.toFixed(1)}g</span>
+                                <span className="font-medium">{formatNutritionValue(recipe.nutritionalInfo.fat)}g</span>
                               </div>
                             )}
                           </div>

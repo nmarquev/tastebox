@@ -26,6 +26,11 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
   isCalculating = false
 }) => {
   const hasNutritionData = nutrition.calories || nutrition.protein || nutrition.carbohydrates || nutrition.fat;
+  const formatNutritionValue = (value: number) =>
+    new Intl.NumberFormat('es-AR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
 
   if (!hasNutritionData && !showCalculateButton) {
     return null;
@@ -47,7 +52,7 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
             <div className="border-b border-gray-400 py-0.5">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-sm">Calorías</span>
-                <span className="font-bold text-sm">{Math.round(nutrition.calories)}</span>
+                <span className="font-bold text-sm">{formatNutritionValue(nutrition.calories)}</span>
               </div>
             </div>
           )}
@@ -61,49 +66,49 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
             {nutrition.fat !== null && nutrition.fat !== undefined && (
               <div className="flex justify-between gap-3 border-b border-gray-300 py-0.5">
                 <span className="font-bold">Grasa Total</span>
-                <span>{nutrition.fat.toFixed(2)}g</span>
+                <span>{formatNutritionValue(nutrition.fat)}g</span>
               </div>
             )}
 
             {nutrition.saturatedFat !== null && nutrition.saturatedFat !== undefined && (
               <div className="flex justify-between gap-3 border-b border-gray-300 py-0.5 pl-4">
                 <span>Grasas Saturadas</span>
-                <span>{nutrition.saturatedFat.toFixed(2)}g</span>
+                <span>{formatNutritionValue(nutrition.saturatedFat)}g</span>
               </div>
             )}
 
             {nutrition.sodium !== null && nutrition.sodium !== undefined && (
               <div className="flex justify-between gap-3 border-b border-gray-300 py-0.5">
                 <span className="font-bold">Sodio</span>
-                <span>{Math.round(nutrition.sodium)}mg</span>
+                <span>{formatNutritionValue(nutrition.sodium)}mg</span>
               </div>
             )}
 
             {nutrition.carbohydrates !== null && nutrition.carbohydrates !== undefined && (
               <div className="flex justify-between gap-3 border-b border-gray-300 py-0.5">
                 <span className="font-bold">Carbohidratos Totales</span>
-                <span>{nutrition.carbohydrates.toFixed(2)}g</span>
+                <span>{formatNutritionValue(nutrition.carbohydrates)}g</span>
               </div>
             )}
 
             {nutrition.fiber !== null && nutrition.fiber !== undefined && (
               <div className="flex justify-between gap-3 border-b border-gray-300 py-0.5 pl-4">
                 <span>Fibra Dietética</span>
-                <span>{nutrition.fiber.toFixed(2)}g</span>
+                <span>{formatNutritionValue(nutrition.fiber)}g</span>
               </div>
             )}
 
             {nutrition.sugar !== null && nutrition.sugar !== undefined && (
               <div className="flex justify-between gap-3 border-b border-gray-300 py-0.5 pl-4">
                 <span>Azúcares Totales</span>
-                <span>{nutrition.sugar.toFixed(2)}g</span>
+                <span>{formatNutritionValue(nutrition.sugar)}g</span>
               </div>
             )}
 
             {nutrition.protein !== null && nutrition.protein !== undefined && (
               <div className="flex justify-between gap-3 border-b border-gray-300 py-0.5">
                 <span className="font-bold">Proteína</span>
-                <span>{nutrition.protein.toFixed(2)}g</span>
+                <span>{formatNutritionValue(nutrition.protein)}g</span>
               </div>
             )}
           </div>

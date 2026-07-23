@@ -1404,7 +1404,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 )}
               </div>
               {/* Caracteristicas activas en el orden definido para el detalle de receta. */}
-              <div className="grid grid-cols-3 gap-x-6 gap-y-2 whitespace-nowrap [&_.feat-ico]:flex [&_.feat-ico]:h-6 [&_.feat-ico]:w-6 [&_.feat-ico]:shrink-0 [&_.feat-ico]:items-center [&_.feat-ico]:justify-center">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 whitespace-nowrap [&_.feat-ico]:flex [&_.feat-ico]:h-6 [&_.feat-ico]:w-6 [&_.feat-ico]:shrink-0 [&_.feat-ico]:items-center [&_.feat-ico]:justify-center">
                 {isThermomixRecipe(localRecipe) && (
                   <div className="flex items-center gap-2">
                     <span className="feat-ico"><img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain mix-blend-multiply" /></span>

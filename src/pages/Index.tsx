@@ -203,6 +203,7 @@ const Index = () => {
   const [pausedRecipeId, setPausedRecipeId] = useState<string | null>(null);
   const [generatingScript, setGeneratingScript] = useState<string | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [totalRecipeCount, setTotalRecipeCount] = useState(0);
   const [isLoadingRecipes, setIsLoadingRecipes] = useState(true);
   const [filters, setFilters] = useState<RecipeFilters>(() => {
     // Permite abrir en pestana nueva una coleccion/categoria/fuente/tipo:
@@ -762,11 +763,14 @@ const Index = () => {
 
     try {
       setIsLoadingRecipes(true);
-      const [userRecipes, collections] = await Promise.all([
+      const [userRecipes, collections, recipeCount] = await Promise.all([
         api.recipes.getAll(),
         api.collections.getAll(),
+        api.recipes.getCount().catch(() => undefined),
       ]);
-      setRecipes(uniqueRecipesById(userRecipes));
+      const uniqueRecipes = uniqueRecipesById(userRecipes);
+      setRecipes(uniqueRecipes);
+      setTotalRecipeCount(recipeCount ?? uniqueRecipes.length);
       setCollections(collections);
       setCollectionRecipeIds(new Set(collections.flatMap(collection => collection.recipeIds)));
     } catch (error) {
@@ -862,6 +866,7 @@ const Index = () => {
   const handleImportSuccess = (recipe: Recipe) => {
     // Add the imported recipe to the local state
     setRecipes(prev => uniqueRecipesById([recipe, ...prev]));
+    setTotalRecipeCount(prev => prev + 1);
     // Hide hero to show the recipes list
     setShowHero(false);
     // Clear any active filters to show all recipes including the new one
@@ -887,6 +892,7 @@ const Index = () => {
       console.log('Adding new recipe to recipes list');
       return uniqueRecipesById([recipe, ...prev]);
     });
+    setTotalRecipeCount(prev => prev + 1);
     // Hide hero to show the recipes list
     console.log('Hiding hero to show recipes list');
     setShowHero(false);
@@ -1854,6 +1860,7 @@ const Index = () => {
   const handleRecipeDeleted = (recipeId: string) => {
     // Remove the recipe from the local state
     setRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+    setTotalRecipeCount(prev => Math.max(prev - 1, 0));
     setSelectedRecipe(prev => prev?.id === recipeId ? null : prev);
     setRecipeToDelete(null);
   };
@@ -2036,6 +2043,7 @@ const Index = () => {
       );
 
       setRecipes(prev => prev.filter(recipe => !deletedIds.has(recipe.id)));
+      setTotalRecipeCount(prev => Math.max(prev - deletedIds.size, 0));
       setCollections(prev => prev.map(collection => {
         const recipeIds = collection.recipeIds.filter(recipeId => !deletedIds.has(recipeId));
         return {
@@ -3070,7 +3078,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       }}
       onShowCollections={() => { setShowHero(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowCollectionsGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
       onCreateCollection={handleCreateCollection}
-      totalRecipes={recipes.length}
+      totalRecipes={totalRecipeCount || recipes.length}
       allRecipesActive={!hasActiveFilters && !showCollectionsGallery && !showCategoriesGallery && !showSourcesGallery && !showDishTypesGallery && !showTagsGallery && !showAuthorsGallery && !searchTerm && searchTerms.length === 0}
       favoritesActive={filters.featured === true}
       favoritesCount={recipes.filter((r) => r.featured).length}

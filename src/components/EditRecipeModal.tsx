@@ -963,8 +963,13 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
 
     // Convierte un valor de input numérico (posible string vacío/NaN) a número o undefined.
     const num = (v: unknown) => {
-      const n = typeof v === 'number' ? v : parseFloat(String(v ?? ''));
-      return Number.isFinite(n) ? n : undefined;
+      const raw = String(v ?? '').trim();
+      if (!raw) return undefined;
+      const normalized = raw.includes(',')
+        ? raw.replace(/\./g, '').replace(',', '.')
+        : raw;
+      const n = typeof v === 'number' ? v : Number(normalized);
+      return Number.isFinite(n) ? Math.round(n * 100) / 100 : undefined;
     };
 
     setIsLoading(true);
@@ -1448,34 +1453,34 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <Label htmlFor="calories">Calorias</Label>
-                    <Input id="calories" type="number" step="0.1" {...register('calories')} placeholder="kcal" />
+                    <Input id="calories" type="number" step="any" inputMode="decimal" {...register('calories')} placeholder="kcal" />
                   </div>
                     <div>
                       <Label htmlFor="protein">Proteina</Label>
-                    <Input id="protein" type="number" step="0.1" {...register('protein')} placeholder="g" />
+                    <Input id="protein" type="number" step="any" inputMode="decimal" {...register('protein')} placeholder="g" />
                   </div>
                   <div>
                     <Label htmlFor="carbohydrates">Carbohidratos</Label>
-                    <Input id="carbohydrates" type="number" step="0.1" {...register('carbohydrates')} placeholder="g" />
+                    <Input id="carbohydrates" type="number" step="any" inputMode="decimal" {...register('carbohydrates')} placeholder="g" />
                   </div>
                   <div>
                     <Label htmlFor="fat">Grasa</Label>
-                    <Input id="fat" type="number" step="0.1" {...register('fat')} placeholder="g" />
+                    <Input id="fat" type="number" step="any" inputMode="decimal" {...register('fat')} placeholder="g" />
                   </div>
                 </div>
                 {/* g.2: Fibra / Azúcar / Sodio (mismo ancho que la fila de Calorías) */}
                 <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <Label htmlFor="fiber">Fibra</Label>
-                    <Input id="fiber" type="number" step="0.1" {...register('fiber')} placeholder="g" />
+                    <Input id="fiber" type="number" step="any" inputMode="decimal" {...register('fiber')} placeholder="g" />
                   </div>
                   <div>
                     <Label htmlFor="sugar">Azucar</Label>
-                    <Input id="sugar" type="number" step="0.1" {...register('sugar')} placeholder="g" />
+                    <Input id="sugar" type="number" step="any" inputMode="decimal" {...register('sugar')} placeholder="g" />
                   </div>
                   <div>
                     <Label htmlFor="sodium">Sodio</Label>
-                    <Input id="sodium" type="number" step="0.1" {...register('sodium')} placeholder="mg" />
+                    <Input id="sodium" type="number" step="any" inputMode="decimal" {...register('sodium')} placeholder="mg" />
                   </div>
                 </div>
               </div>

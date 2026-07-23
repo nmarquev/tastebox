@@ -770,9 +770,10 @@ function dedupeBestImages(urls: string[]): string[] {
 // con los valores EXACTOS por porción que muestra la página (incl. grasas saturadas).
 export function extractCookidooNutrition(html: string): Record<string, number> | null {
   if (!html || !html.includes('rdp-nutritious')) return null;
+  const roundNutritionValue = (value: number) => Math.round(value * 100) / 100;
   const num = (s: string): number | undefined => {
     const m = String(s).replace(/ /g, ' ').replace(',', '.').match(/-?\d+(?:\.\d+)?/);
-    return m ? parseFloat(m[0]) : undefined;
+    return m ? roundNutritionValue(parseFloat(m[0])) : undefined;
   };
   const out: Record<string, number> = {};
   const items = html.split('rdp-nutritious__item').slice(1);
@@ -795,6 +796,80 @@ export function extractCookidooNutrition(html: string): Record<string, number> |
     else if (name.includes('azúc') || name.includes('azuc')) { v = num(value); if (v !== undefined) out.sugar = v; }
   }
   return Object.keys(out).length ? out : null;
+}
+
+export function extractCookidooCountry(html: string): string | undefined {
+  if (!html) return undefined;
+
+  const cleanCountry = (value?: string | null) => {
+    const country = cleanHtmlFromText(decodeNumericHtmlEntities(String(value || '')))
+      .replace(/^(?:pa[iÃí]s|country)\s*:?\s*/i, '')
+      .trim();
+    if (!country || /^(?:pa[iÃí]s|country)$/i.test(country)) return undefined;
+    return country;
+  };
+
+  const explicitClassMatch = html.match(/rdp-country__country["'][^>]*>\s*([\s\S]*?)\s*</i);
+  const explicitClassCountry = cleanCountry(explicitClassMatch?.[1]);
+  if (explicitClassCountry) return explicitClassCountry;
+
+  const rdpCountryBlock = html.match(/<rdp-country\b[^>]*>([\s\S]*?)<\/rdp-country>/i);
+  if (rdpCountryBlock?.[1]) {
+    const countryFromBlock = cleanCountry(
+      rdpCountryBlock[1]
+        .replace(/<[^>]*\b(?:label|title|heading)[^>]*>[\s\S]*?<\/[^>]+>/gi, ' ')
+        .replace(/\bpa[iÃí]s\b\s*:?\s*/i, ' ')
+    );
+    if (countryFromBlock) return countryFromBlock;
+  }
+
+  const attrMatch = html.match(/\b(?:recipeCountry|country|data-country|data-recipe-country)=["']([^"']+)["']/i);
+  const attrCountry = cleanCountry(attrMatch?.[1]);
+  if (attrCountry) return attrCountry;
+
+  const jsonMatch = html.match(/"(?:recipeCountry|country)"\s*:\s*"([^"]+)"/i);
+  const jsonCountry = cleanCountry(jsonMatch?.[1]);
+  if (jsonCountry) return jsonCountry;
+
+  return undefined;
+}
+
+function normalizeDifficultyValue(value?: string | null): 'Fácil' | 'Medio' | 'Difícil' | undefined {
+  const normalized = cleanHtmlFromText(decodeNumericHtmlEntities(String(value || '')))
+    .replace(/^(?:dificultad|difficulty)\s*:?\s*/i, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es')
+    .trim();
+
+  if (!normalized || /^(?:dificultad|difficulty)$/.test(normalized)) return undefined;
+  if (/\b(?:facil|easy|simple)\b/.test(normalized)) return 'Fácil';
+  if (/\b(?:medio|media|intermedio|intermedia|medium|moderate)\b/.test(normalized)) return 'Medio';
+  if (/\b(?:dificil|avanzado|avanzada|hard|difficult|advanced)\b/.test(normalized)) return 'Difícil';
+  return undefined;
+}
+
+export function extractCookidooDifficulty(html: string): 'Fácil' | 'Medio' | 'Difícil' | undefined {
+  if (!html) return undefined;
+
+  const classMatch = html.match(/(?:rdp-difficulty|recipe-difficulty|difficulty)[^>]*>\s*([\s\S]*?)\s*</i);
+  const classDifficulty = normalizeDifficultyValue(classMatch?.[1]);
+  if (classDifficulty) return classDifficulty;
+
+  const blockMatch = html.match(/<(?:rdp-difficulty|tm-difficulty)\b[^>]*>([\s\S]*?)<\/(?:rdp-difficulty|tm-difficulty)>/i);
+  const blockDifficulty = normalizeDifficultyValue(blockMatch?.[1]);
+  if (blockDifficulty) return blockDifficulty;
+
+  const attrMatch = html.match(/\b(?:recipeDifficulty|difficulty|data-difficulty|data-recipe-difficulty)=["']([^"']+)["']/i);
+  const attrDifficulty = normalizeDifficultyValue(attrMatch?.[1]);
+  if (attrDifficulty) return attrDifficulty;
+
+  const jsonMatch = html.match(/"(?:recipeDifficulty|difficulty)"\s*:\s*"([^"]+)"/i);
+  const jsonDifficulty = normalizeDifficultyValue(jsonMatch?.[1]);
+  if (jsonDifficulty) return jsonDifficulty;
+
+  const labelMatch = html.match(/\b(?:dificultad|difficulty)\b[\s\S]{0,160}?\b(f[aá]cil|medio|media|dif[ií]cil|easy|medium|hard|difficult)\b/i);
+  return normalizeDifficultyValue(labelMatch?.[1]);
 }
 
 // Extrae datos estructurados schema.org/Recipe de los bloques JSON-LD.
@@ -2197,8 +2272,10 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
           }));
 
       // País (Cookidoo: componente <rdp-country>) e idioma (JSON-LD inLanguage).
-      const countryMatch = html.match(/rdp-country__country"[^>]*>\s*([^<]+?)\s*</i);
-      const country = countryMatch ? cleanHtmlFromText(countryMatch[1]) : undefined;
+      const country = isCookidooRecipe ? extractCookidooCountry(html) : undefined;
+      const difficulty = isCookidooRecipe
+        ? extractCookidooDifficulty(html) || validatedData.difficulty
+        : validatedData.difficulty;
       // Idioma: 1) atributo <html lang>, 2) JSON-LD inLanguage, 3) <meta og:locale>.
       const langDeclared =
         html.match(/<html[^>]*\blang=["']([^"']+)["']/i)?.[1]
@@ -2286,7 +2363,7 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
         prepTime: validatedData.prepTime,
         cookTime: cookidooSummary.cookTime,
         servings: validatedData.servings,
-        difficulty: validatedData.difficulty,
+        difficulty,
         recipeType: validatedData.recipeType,
         country,
         language,
@@ -3229,16 +3306,18 @@ Responde SOLO con JSON, valores POR PORCIÓN:
       console.log('✅ Nutrition calculation successful');
       console.log('📊 Calculated nutrition per serving:', parsedResponse);
 
+      const roundNutritionValue = (value: number) => Math.round(value * 100) / 100;
+
       return {
         success: true,
         nutrition: {
-          calories: Math.round(parsedResponse.calories * 10) / 10,
-          protein: Math.round(parsedResponse.protein * 10) / 10,
-          carbohydrates: Math.round(parsedResponse.carbohydrates * 10) / 10,
-          fat: Math.round(parsedResponse.fat * 10) / 10,
-          fiber: Math.round(parsedResponse.fiber * 10) / 10,
-          sugar: Math.round(parsedResponse.sugar * 10) / 10,
-          sodium: Math.round(parsedResponse.sodium)
+          calories: roundNutritionValue(parsedResponse.calories),
+          protein: roundNutritionValue(parsedResponse.protein),
+          carbohydrates: roundNutritionValue(parsedResponse.carbohydrates),
+          fat: roundNutritionValue(parsedResponse.fat),
+          fiber: roundNutritionValue(parsedResponse.fiber),
+          sugar: roundNutritionValue(parsedResponse.sugar),
+          sodium: roundNutritionValue(parsedResponse.sodium)
         }
       };
 
