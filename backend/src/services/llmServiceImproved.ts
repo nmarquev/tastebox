@@ -410,6 +410,34 @@ function inferSectionsFromSource<T extends { section?: string }>(
   });
 }
 
+function keepOnlyMeaningfulSectionGroups<T extends { section?: string }>(items: T[]): T[] {
+  const counts = new Map<string, number>();
+  for (const item of items) {
+    const section = (item.section || '').trim();
+    if (!section) continue;
+    const key = normalizeSectionLookupText(section);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  const meaningfulKeys = new Set(
+    Array.from(counts.entries())
+      .filter(([, count]) => count >= 2)
+      .map(([key]) => key)
+  );
+
+  if (meaningfulKeys.size < 2) {
+    return items.map(item => ({ ...item, section: undefined }));
+  }
+
+  return items.map(item => {
+    const key = normalizeSectionLookupText(item.section || '');
+    return key && meaningfulKeys.has(key)
+      ? item
+      : { ...item, section: undefined };
+  });
+}
+
 type CookidooAlternative = {
   primary: string;
   alternative: string;
@@ -2266,6 +2294,11 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
         readableEvidence || sourceEvidence,
         instruction => instruction.description || ''
       ) as typeof validatedData.instructions;
+      const isCookidooSource = sourceUrl?.includes('cookidoo') || false;
+      if (isCookidooSource) {
+        validatedData.ingredients = keepOnlyMeaningfulSectionGroups(validatedData.ingredients) as typeof validatedData.ingredients;
+        validatedData.instructions = keepOnlyMeaningfulSectionGroups(validatedData.instructions) as typeof validatedData.instructions;
+      }
       console.log('✅ Schema validation passed successfully');
 
       console.log('📊 Extracted recipe summary:');
@@ -2295,7 +2328,6 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
       // Guarda anti-alucinación para Cookidoo: su página pública NO trae los pasos
       // (están detrás de login). Si no llegaron pasos reales, NO devolvemos inventados:
       // damos un error accionable que guía al usuario a usar la extensión ya logueado.
-      const isCookidooSource = sourceUrl?.includes('cookidoo') || false;
       const placeholderDescriptions = ['preparar según la receta original', 'paso de preparación', 'seguir las instrucciones'];
       const realInstructions = validatedData.instructions.filter(inst =>
         inst.description &&
