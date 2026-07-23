@@ -358,6 +358,7 @@ const looksLikeSectionHeading = (line: string) => {
   if (/^(?:[-*•]|\d+[.)])\s*/.test(text)) return false;
   if (/[.!?;:]$/.test(text)) return false;
   if (/^\d/.test(text)) return false;
+  if (/^(?:de |del |la |el |los |las |en |o |u |y |a )/i.test(text)) return false;
   if (/\b(?:g|gr|kg|ml|l|cdita|cditas|cda|cdas|cucharadita|cucharada|taza|tazas|min|seg|°c|vel)\b/i.test(text)) return false;
   return text.split(/\s+/).length <= 7;
 };
@@ -2254,14 +2255,15 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
         .filter(Boolean)
         .map(value => decodeNumericHtmlEntities(String(value)))
         .join('\n');
+      const readableEvidence = decodeNumericHtmlEntities(htmlToReadableText(html));
       validatedData.ingredients = inferSectionsFromSource(
         groundLiteralIngredients(validatedData.ingredients, sourceEvidence),
-        sourceEvidence,
+        readableEvidence || sourceEvidence,
         ingredient => [ingredient.amount, ingredient.unit, ingredient.name].filter(Boolean).join(' ')
       ) as typeof validatedData.ingredients;
       validatedData.instructions = inferSectionsFromSource(
         groundLiteralInstructions(validatedData.instructions, sourceEvidence),
-        sourceEvidence,
+        readableEvidence || sourceEvidence,
         instruction => instruction.description || ''
       ) as typeof validatedData.instructions;
       console.log('✅ Schema validation passed successfully');
