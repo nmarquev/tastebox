@@ -379,12 +379,25 @@ function inferSectionsFromSource<T extends { section?: string }>(
     .filter(Boolean);
   if (!lines.length) return items;
 
+  const itemKeys = items
+    .map(item => normalizeSectionLookupText(getText(item)))
+    .filter(Boolean);
+  const isIngredientLikeText = (value: string) => {
+    const key = normalizeSectionLookupText(value);
+    return Boolean(key) && itemKeys.some(itemKey =>
+      itemKey !== key && itemKey.includes(key)
+    );
+  };
+
   let searchFrom = 0;
   return items.map(item => {
-    if (item.section) return item;
+    const itemWithCleanSection = item.section && isIngredientLikeText(item.section)
+      ? { ...item, section: undefined }
+      : item;
+    if (itemWithCleanSection.section) return itemWithCleanSection;
 
     const itemKey = normalizeSectionLookupText(getText(item));
-    if (!itemKey) return item;
+    if (!itemKey) return itemWithCleanSection;
 
     let foundIndex = -1;
     for (let index = searchFrom; index < lines.length; index += 1) {
@@ -396,17 +409,17 @@ function inferSectionsFromSource<T extends { section?: string }>(
         break;
       }
     }
-    if (foundIndex < 0) return item;
+    if (foundIndex < 0) return itemWithCleanSection;
 
     for (let index = foundIndex - 1; index >= Math.max(0, foundIndex - 25); index -= 1) {
       const candidate = lines[index];
       if (isMajorRecipeHeading(candidate)) break;
-      if (looksLikeSectionHeading(candidate)) {
-        return { ...item, section: normalizeSectionHeading(candidate) };
+      if (looksLikeSectionHeading(candidate) && !isIngredientLikeText(candidate)) {
+        return { ...itemWithCleanSection, section: normalizeSectionHeading(candidate) };
       }
     }
 
-    return item;
+    return itemWithCleanSection;
   });
 }
 

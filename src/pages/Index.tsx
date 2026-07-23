@@ -3078,7 +3078,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       }}
       onShowCollections={() => { setShowHero(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); setShowCollectionsGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
       onCreateCollection={handleCreateCollection}
-      totalRecipes={totalRecipeCount || recipes.length}
+      totalRecipes={recipes.length}
       allRecipesActive={!hasActiveFilters && !showCollectionsGallery && !showCategoriesGallery && !showSourcesGallery && !showDishTypesGallery && !showTagsGallery && !showAuthorsGallery && !searchTerm && searchTerms.length === 0}
       favoritesActive={filters.featured === true}
       favoritesCount={recipes.filter((r) => r.featured).length}
