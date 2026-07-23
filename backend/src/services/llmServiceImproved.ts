@@ -315,7 +315,7 @@ function groundLiteralIngredients(
       name: literalText,
       amount: '',
       unit: undefined,
-      section: undefined
+      section: ingredient.section
     }];
   });
 }
@@ -336,8 +336,76 @@ function groundLiteralInstructions(
       time: undefined,
       temperature: undefined,
       speed: undefined,
-      section: undefined
+      section: instruction.section
     }];
+  });
+}
+
+const normalizeSectionLookupText = (value: string) =>
+  cleanHtmlFromText(decodeNumericHtmlEntities(value))
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+
+const isMajorRecipeHeading = (value: string) =>
+  /^(?:ingredientes?|preparaci[oó]n|instrucciones?|procedimiento|elaboraci[oó]n|modo de preparaci[oó]n|informaci[oó]n nutricional|sugerencias?|tips?|consejos?|notas?)$/i.test(value.trim());
+
+const looksLikeSectionHeading = (line: string) => {
+  const text = cleanHtmlFromText(line).trim().replace(/^secci[oó]n\s*:\s*/i, '');
+  if (!text || text.length > 80 || isMajorRecipeHeading(text)) return false;
+  if (/^(?:[-*•]|\d+[.)])\s*/.test(text)) return false;
+  if (/[.!?;:]$/.test(text)) return false;
+  if (/^\d/.test(text)) return false;
+  if (/\b(?:g|gr|kg|ml|l|cdita|cditas|cda|cdas|cucharadita|cucharada|taza|tazas|min|seg|°c|vel)\b/i.test(text)) return false;
+  return text.split(/\s+/).length <= 7;
+};
+
+const normalizeSectionHeading = (line: string) =>
+  cleanHtmlFromText(line).trim().replace(/^secci[oó]n\s*:\s*/i, '');
+
+function inferSectionsFromSource<T extends { section?: string }>(
+  items: T[],
+  sourceContent: string,
+  getText: (item: T) => string
+): T[] {
+  if (!items.length || !sourceContent.trim()) return items;
+
+  const lines = sourceContent
+    .split(/\r?\n/)
+    .map(line => cleanHtmlFromText(line).trim())
+    .filter(Boolean);
+  if (!lines.length) return items;
+
+  let searchFrom = 0;
+  return items.map(item => {
+    if (item.section) return item;
+
+    const itemKey = normalizeSectionLookupText(getText(item));
+    if (!itemKey) return item;
+
+    let foundIndex = -1;
+    for (let index = searchFrom; index < lines.length; index += 1) {
+      const lineKey = normalizeSectionLookupText(lines[index]);
+      if (!lineKey) continue;
+      if (lineKey.includes(itemKey) || itemKey.includes(lineKey)) {
+        foundIndex = index;
+        searchFrom = index + 1;
+        break;
+      }
+    }
+    if (foundIndex < 0) return item;
+
+    for (let index = foundIndex - 1; index >= Math.max(0, foundIndex - 25); index -= 1) {
+      const candidate = lines[index];
+      if (isMajorRecipeHeading(candidate)) break;
+      if (looksLikeSectionHeading(candidate)) {
+        return { ...item, section: normalizeSectionHeading(candidate) };
+      }
+    }
+
+    return item;
   });
 }
 
@@ -2186,13 +2254,15 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
         .filter(Boolean)
         .map(value => decodeNumericHtmlEntities(String(value)))
         .join('\n');
-      validatedData.ingredients = groundLiteralIngredients(
-        validatedData.ingredients,
-        sourceEvidence
+      validatedData.ingredients = inferSectionsFromSource(
+        groundLiteralIngredients(validatedData.ingredients, sourceEvidence),
+        sourceEvidence,
+        ingredient => [ingredient.amount, ingredient.unit, ingredient.name].filter(Boolean).join(' ')
       ) as typeof validatedData.ingredients;
-      validatedData.instructions = groundLiteralInstructions(
-        validatedData.instructions,
-        sourceEvidence
+      validatedData.instructions = inferSectionsFromSource(
+        groundLiteralInstructions(validatedData.instructions, sourceEvidence),
+        sourceEvidence,
+        instruction => instruction.description || ''
       ) as typeof validatedData.instructions;
       console.log('✅ Schema validation passed successfully');
 
