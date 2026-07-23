@@ -256,17 +256,8 @@ function normalizeUrlForCompare(url: string): string {
 // Chequea si el usuario ya tiene una receta con esa URL (para evitar duplicados al importar).
 router.get('/check-url', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const url = String(req.query.url || '').trim();
-    if (!url) return res.json({ exists: false });
-    const target = normalizeUrlForCompare(url);
-    const recipes = await prisma.recipe.findMany({
-      where: { userId: req.user!.id, NOT: { sourceUrl: null } },
-      select: { id: true, title: true, sourceUrl: true },
-    });
-    const match = recipes.find(r => r.sourceUrl && normalizeUrlForCompare(r.sourceUrl) === target);
-    if (match) {
-      return res.json({ exists: true, recipe: { id: match.id, title: match.title } });
-    }
+    // No bloquear importaciones por URL repetida: si una receta fue borrada o el
+    // navegador conserva una respuesta vieja, el usuario debe poder reimportarla.
     res.json({ exists: false });
   } catch (error) {
     console.error('check-url error:', error);
