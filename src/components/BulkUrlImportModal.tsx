@@ -171,7 +171,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
         const dup = await api.recipes.checkUrl(url);
         if (cancelRef.current) return { url, status: 'pending' };
         if (dup.exists) {
-          return { url, status: 'duplicate', title: dup.recipe?.title };
+          // No bloquear la importacion: puede ser una receta borrada o un falso positivo.
         }
       } catch { /* si el chequeo falla, seguir con la importación normal */ }
 

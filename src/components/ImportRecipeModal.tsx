@@ -62,10 +62,10 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
     try {
       const dup = await api.recipes.checkUrl(url.trim());
       if (dup.exists) {
-        const seguir = window.confirm(
-          `Ya tenés una receta importada de esta URL${dup.recipe?.title ? `: "${dup.recipe.title}"` : ''}.\n\n¿Querés importarla igual?`
-        );
-        if (!seguir) return;
+        toast({
+          title: 'URL ya importada',
+          description: `Se va a importar igual${dup.recipe?.title ? ` aunque exista "${dup.recipe.title}"` : ''}.`,
+        });
       }
     } catch {
       // Si el chequeo falla, seguimos con la importación normal.
