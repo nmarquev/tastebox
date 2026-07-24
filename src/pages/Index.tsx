@@ -3954,7 +3954,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     selected={filters.ingredients || []}
                     onChange={(next) => handleFiltersChange({ ...filters, ingredients: next })}
                     placeholder="Escribir ingrediente..."
-                    emptyOption={EMPTY_FILTER_OPTIONS.ingredient}
                   />
                 </div>
               </div>
