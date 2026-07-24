@@ -284,6 +284,172 @@ type LiteralInstructionCandidate = {
   section?: string;
 };
 
+function deriveTagsFromMainIngredients(
+  ingredients: Array<{ name?: string; amount?: string; unit?: string }> | undefined,
+  fallbackTags: string[] = [],
+  title?: string
+): string[] {
+  const pantry = new Set([
+    'agua', 'sal', 'pimienta', 'aceite', 'aceite de oliva', 'azucar', 'azúcar',
+    'harina', 'mantequilla', 'manteca', 'leche', 'huevo', 'huevos', 'nata',
+    'crema', 'caldo', 'pastilla de caldo', 'levadura', 'polvo de hornear'
+  ]);
+  const units = [
+    'g', 'gr', 'gramos', 'kg', 'ml', 'l', 'litro', 'litros', 'cdita', 'cditas',
+    'cucharadita', 'cucharaditas', 'cda', 'cdas', 'cucharada', 'cucharadas',
+    'taza', 'tazas', 'pellizco', 'pellizcos', 'chorrito', 'chorritos',
+    'unidad', 'unidades', 'paquete', 'paquetes', 'lata', 'latas'
+  ];
+
+  const normalize = (value: string) =>
+    cleanHtmlFromText(decodeNumericHtmlEntities(value))
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('es')
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const cleanIngredientName = (rawName: string) => {
+    let text = cleanHtmlFromText(decodeNumericHtmlEntities(rawName)).toLocaleLowerCase('es');
+    text = text
+      .replace(/^[\s\d.,/¼½¾⅓⅔⅛⅜⅝⅞-]+/g, ' ')
+      .replace(new RegExp(`\\b(?:${units.join('|')})\\b\\.?`, 'gi'), ' ')
+      .replace(/^(?:de|del|la|el|los|las|un|una|unos|unas)\s+/gi, ' ')
+      .replace(/\bal gusto\b/gi, ' ')
+      .replace(/\b(?:en trozos|trocead[ao]s?|picad[ao]s?|pelad[ao]s?|cortad[ao]s?|molida?|rallad[ao]s?|limpi[ao]s?|sin piel|sin semillas|a temperatura ambiente)\b/gi, ' ')
+      .replace(/\([^)]*\)/g, ' ')
+      .replace(/[,;].*$/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const words = text.split(/\s+/).filter(Boolean);
+    return words.slice(0, 3).join(' ');
+  };
+
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  const addTag = (value: string) => {
+    const candidate = value.trim();
+    const key = normalize(candidate);
+    if (!candidate || !key || pantry.has(key) || seen.has(key)) return;
+    seen.add(key);
+    tags.push(candidate);
+  };
+
+  const titleTagCandidates = [
+    'torta', 'tartas?', 'bud[ií]n(?:es)?', 'muffins?', 'magdalenas?', 'cupcakes?',
+    'galletas?', 'cookies?', 'brownies?', 'bizcochos?', 'panqueques?', 'waffles?',
+    'sopa', 'crema', 'ensalada', 'pastas?', 'pizza', 'empanadas?', 'croquetas?',
+    'hamburguesas?', 'alb[oó]ndigas?', 'milanesas?', 'risotto', 'souffl[eé]',
+    'pan(?:es)?', 'focaccia', 'quiche', 'flan', 'helado', 'mousse', 'trufas?'
+  ];
+  const titleText = title || '';
+  for (const pattern of titleTagCandidates) {
+    const match = titleText.match(new RegExp(`\\b(${pattern})\\b`, 'i'));
+    if (match) addTag(cleanHtmlFromText(match[1]).toLocaleLowerCase('es'));
+    if (tags.length >= 4) break;
+  }
+
+  for (const ingredient of ingredients || []) {
+    const candidate = cleanIngredientName(ingredient.name || '');
+    addTag(candidate);
+    if (tags.length >= 4) break;
+  }
+
+  if (tags.length > 0) return tags;
+  return fallbackTags.map(tag => tag.trim()).filter(Boolean).slice(0, 4);
+}
+
+function deriveCategoryFromTitleAndIngredients(
+  title: string | undefined,
+  ingredients: Array<{ name?: string; amount?: string; unit?: string }> | undefined,
+  fallbackCategory?: string
+): string | undefined {
+  const rawTitle = cleanHtmlFromText(decodeNumericHtmlEntities(title || '')).trim();
+  if (!rawTitle) return fallbackCategory;
+
+  const normalize = (value: string) =>
+    cleanHtmlFromText(decodeNumericHtmlEntities(value))
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('es')
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const dishPatterns: Array<[RegExp, string]> = [
+    [/\barroz\b/i, 'arroz'],
+    [/\btortilla\b/i, 'tortilla'],
+    [/\btorta\b/i, 'torta'],
+    [/\bbud[ií]n\b/i, 'budín'],
+    [/\bmuffins?\b/i, 'muffin'],
+    [/\bcroquetas?\b/i, 'croquetas'],
+    [/\bensalada\b/i, 'ensalada'],
+    [/\bsopa\b/i, 'sopa'],
+    [/\bcrema\b/i, 'crema'],
+    [/\bpizza\b/i, 'pizza'],
+    [/\btartas?\b/i, 'tarta'],
+    [/\bpastas?\b/i, 'pasta'],
+    [/\brisotto\b/i, 'risotto'],
+    [/\bhamburguesas?\b/i, 'hamburguesa'],
+    [/\bmilanesas?\b/i, 'milanesa'],
+    [/\balb[oó]ndigas?\b/i, 'albóndigas'],
+    [/\bpan(?:es)?\b/i, 'pan'],
+    [/\bflan\b/i, 'flan'],
+    [/\bmousse\b/i, 'mousse'],
+    [/\bhelado\b/i, 'helado']
+  ];
+
+  const dishMatch = dishPatterns
+    .map(([pattern, label]) => ({ match: rawTitle.match(pattern), label }))
+    .filter(item => item.match)
+    .sort((a, b) => (a.match!.index || 0) - (b.match!.index || 0))[0];
+  if (!dishMatch) return fallbackCategory;
+
+  const removeDishPrefix = rawTitle.slice((dishMatch.match!.index || 0) + dishMatch.match![0].length);
+  const conMatch = removeDishPrefix.match(/\bcon\b\s+(.+)$/i);
+  const relationMatch = conMatch || removeDishPrefix.match(/\b(?:de|del|a la|al)\b\s+(.+)$/i);
+  const relationText = relationMatch?.[1] || removeDishPrefix;
+
+  const ingredientNames = (ingredients || [])
+    .map(ingredient => normalize(ingredient.name || ''))
+    .filter(Boolean);
+  const pantry = new Set(['agua', 'sal', 'pimienta', 'aceite', 'azucar', 'azúcar', 'harina', 'mantequilla', 'manteca', 'leche']);
+  const cleanupCandidate = (value: string) =>
+    value
+      .replace(/\b(?:sofrito|salteado|relleno|mezcla|salsa|crema)\s+de\b/gi, ' ')
+      .replace(/\b(?:sofrito|salteado|relleno|mezcla|salsa)\b/gi, ' ')
+      .replace(/\b(?:claras?|clara|huevos?|huevo)\s+de\s+huevo\b/gi, ' ')
+      .replace(/\([^)]*\)/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const parts = cleanupCandidate(relationText)
+    .split(/\s+(?:y|con|,|o)\s+/i)
+    .map(part => cleanupCandidate(part))
+    .filter(Boolean);
+
+  const candidates = parts.length ? parts : [cleanupCandidate(relationText)];
+  const selected = candidates.find(candidate => {
+    const key = normalize(candidate);
+    if (!key || pantry.has(key)) return false;
+    return ingredientNames.length === 0
+      || ingredientNames.some(ingredient => ingredient.includes(key) || key.includes(ingredient));
+  }) || candidates.find(candidate => {
+    const key = normalize(candidate);
+    return key && !pantry.has(key);
+  });
+
+  if (!selected) return fallbackCategory;
+  const deConnectorDishes = new Set([
+    'tortilla', 'torta', 'budín', 'muffin', 'croquetas', 'tarta', 'flan',
+    'mousse', 'helado', 'hamburguesa', 'milanesa', 'albóndigas', 'pan'
+  ]);
+  const connector = deConnectorDishes.has(dishMatch.label) ? 'de' : 'con';
+  return `${dishMatch.label} ${connector} ${selected.toLocaleLowerCase('es')}`.replace(/\s+/g, ' ').trim();
+}
+
 function findExactSourceFragment(candidate: string, sourceContent: string): string | undefined {
   const trimmedCandidate = candidate.trim();
   if (!trimmedCandidate) return undefined;
@@ -1409,7 +1575,7 @@ export class LLMServiceImproved {
       servings: 4,
       difficulty: 'Medio',
       recipeType: 'Video Recipe',
-      tags: ['video', 'importado']
+      tags: []
     };
   }
 
@@ -2053,11 +2219,11 @@ La respuesta DEBE ser un JSON válido con la estructura exacta solicitada.`
         cookTime: validatedData.cookTime || 0,
         servings: validatedData.servings || 1,
         difficulty: validatedData.difficulty,
-        recipeType: validatedData.recipeType,
+        recipeType: deriveCategoryFromTitleAndIngredients(cleanedTitle, literalIngredients, validatedData.recipeType),
         images: (validatedData.images || []).filter(img => img.url && typeof img.order === 'number') as any[],
         ingredients: literalIngredients as any[],
         instructions: instructions as any[],
-        tags: validatedData.tags || []
+        tags: deriveTagsFromMainIngredients(literalIngredients, validatedData.tags || [], cleanedTitle)
       };
 
     } catch (error) {
@@ -2639,10 +2805,10 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
         cookTime: cookidooSummary.cookTime,
         servings: validatedData.servings,
         difficulty,
-        recipeType: validatedData.recipeType,
+        recipeType: deriveCategoryFromTitleAndIngredients(cleanTitle, ingredients, validatedData.recipeType),
         country,
         language,
-        tags: validatedData.tags,
+        tags: deriveTagsFromMainIngredients(ingredients, validatedData.tags, cleanTitle),
         thermomix,
         airFryer,
         glutenFree,
@@ -3321,13 +3487,14 @@ Si el texto no contiene una receta válida, responde: {"error": true}`
 
       // Clean title
       const cleanTitle = this.cleanRecipeTitle(validatedData.title);
+      const ingredients = validatedData.ingredients.filter(ing => ing.name && ing.amount);
 
       return {
         title: cleanTitle,
         description: validatedData.description,
         suggestions: validatedData.suggestions,
         images: (validatedData.images || []).filter(img => img.url && typeof img.order === 'number') as any[], // DOCX typically won't have images
-        ingredients: validatedData.ingredients.filter(ing => ing.name && ing.amount).map((ing, index) => ({
+        ingredients: ingredients.map((ing, index) => ({
           ...ing,
           order: index + 1
         })) as any[],
@@ -3336,14 +3503,14 @@ Si el texto no contiene una receta válida, responde: {"error": true}`
         cookTime: validatedData.cookTime,
         servings: validatedData.servings,
         difficulty: validatedData.difficulty,
-        recipeType: validatedData.recipeType,
+        recipeType: deriveCategoryFromTitleAndIngredients(cleanTitle, ingredients, validatedData.recipeType),
         language: detectRecipeLanguage([
           cleanTitle,
           validatedData.description,
           ...validatedData.ingredients.map(i => i.name),
           ...validatedData.instructions.map(s => s.description),
         ].filter(Boolean).join(' ')),
-        tags: validatedData.tags
+        tags: deriveTagsFromMainIngredients(ingredients, validatedData.tags, cleanTitle)
       };
 
     } catch (error: any) {
@@ -3772,7 +3939,8 @@ NO agregues explicaciones antes o después del JSON. Responde solo con el JSON v
           prepTime: recipe.prepTime || 30,
           servings: recipe.servings || 4,
           difficulty: recipe.difficulty || 'Medio',
-          tags: recipe.tags || [],
+          recipeType: deriveCategoryFromTitleAndIngredients(recipe.title, recipe.ingredients, recipe.recipeType),
+          tags: deriveTagsFromMainIngredients(recipe.ingredients, recipe.tags || [], recipe.title),
           images: recipe.images || [],
           siteName: recipe.siteName || new URL(recipe.sourceUrl).hostname,
           foundAt: recipe.foundAt || new Date().toISOString().split('T')[0]
