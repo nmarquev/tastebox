@@ -8,12 +8,14 @@ interface FilterAutocompleteInputProps {
   selected: string[];
   onChange: (selected: string[]) => void;
   placeholder?: string;
+  emptyOption?: string;
 }
 
 export const FilterAutocompleteInput = ({
   selected,
   onChange,
   placeholder = 'Escribir...',
+  emptyOption,
 }: FilterAutocompleteInputProps) => {
   const [value, setValue] = useState('');
 
@@ -54,6 +56,23 @@ export const FilterAutocompleteInput = ({
           </button>
         )}
       </div>
+
+      {emptyOption && (
+        <button
+          type="button"
+          onClick={() => {
+            const isSelected = selected.includes(emptyOption);
+            onChange(isSelected ? selected.filter(item => item !== emptyOption) : [...selected, emptyOption]);
+          }}
+          className={`w-full rounded-md border px-3 py-2 text-left text-xs transition-colors ${
+            selected.includes(emptyOption)
+              ? 'border-primary bg-primary/10 text-primary'
+              : 'border-border bg-background text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          {emptyOption}
+        </button>
+      )}
 
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1">

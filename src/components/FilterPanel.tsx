@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Filter, ChevronDown, X, Heart, ChefHat, WheatOff, CandyOff, CakeSlice, Utensils } from "lucide-react";
 import { Recipe } from "@/components/RecipeCard";
 import { getSourceFromUrl } from "@/utils/siteUtils";
+import { EMPTY_FILTER_OPTIONS } from "@/constants/emptyFilterOptions";
 
 export interface RecipeFilters {
   difficulty: string[];
@@ -343,7 +344,7 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
             <div>
               <Label className="text-xs font-medium mb-2 block">Categoría</Label>
               <div className="flex flex-wrap gap-1">
-                {allRecipeTypes.map((recipeType) => (
+                {[...allRecipeTypes, EMPTY_FILTER_OPTIONS.category].map((recipeType) => (
                   <div key={recipeType} className="flex items-center space-x-1">
                     <Checkbox
                       id={`recipeType-${recipeType}`}
@@ -368,7 +369,7 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
             <div>
               <Label className="text-xs font-medium mb-2 block">Etiquetas</Label>
               <div className="grid grid-cols-1 gap-1 max-h-24 overflow-y-auto">
-                {allTags.slice(0, 10).map((tag) => (
+                {[...allTags.slice(0, 10), EMPTY_FILTER_OPTIONS.tag].map((tag) => (
                   <div key={tag} className="flex items-center space-x-1">
                     <Checkbox
                       id={`tag-${tag}`}
@@ -390,31 +391,29 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
             </div>
 
             {/* Source Filter */}
-            {allSources.length > 0 && (
-              <div>
-                <Label className="text-xs font-medium mb-2 block">Fuente</Label>
-                <div className="grid grid-cols-1 gap-1 max-h-24 overflow-y-auto">
-                  {allSources.map((source) => (
-                    <div key={source} className="flex items-center space-x-1">
-                      <Checkbox
-                        id={`source-${source}`}
-                        checked={(filters.sources || []).includes(source)}
-                        onCheckedChange={(checked) =>
-                          handleSourceChange(source, checked as boolean)
-                        }
-                        className="h-3 w-3"
-                      />
-                      <Label
-                        htmlFor={`source-${source}`}
-                        className="text-xs cursor-pointer truncate"
-                      >
-                        {source}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
+            <div>
+              <Label className="text-xs font-medium mb-2 block">Fuente</Label>
+              <div className="grid grid-cols-1 gap-1 max-h-24 overflow-y-auto">
+                {[...allSources, EMPTY_FILTER_OPTIONS.source].map((source) => (
+                  <div key={source} className="flex items-center space-x-1">
+                    <Checkbox
+                      id={`source-${source}`}
+                      checked={(filters.sources || []).includes(source)}
+                      onCheckedChange={(checked) =>
+                        handleSourceChange(source, checked as boolean)
+                      }
+                      className="h-3 w-3"
+                    />
+                    <Label
+                      htmlFor={`source-${source}`}
+                      className="text-xs cursor-pointer truncate"
+                    >
+                      {source}
+                    </Label>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
           </CardContent>
         </CollapsibleContent>
       </Collapsible>

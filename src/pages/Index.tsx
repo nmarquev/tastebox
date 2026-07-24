@@ -62,6 +62,7 @@ import { CoverPicker } from "@/components/CoverPicker";
 import { saveRecentCategory } from "@/utils/recentCategories";
 import { saveRecentRecipe } from "@/utils/recentRecipes";
 import { saveRecentSource } from "@/utils/recentSources";
+import { EMPTY_FILTER_OPTIONS } from "@/constants/emptyFilterOptions";
 
 type RecipeSort = 'title' | 'category' | 'date' | 'collection' | 'source' | 'dishType' | 'difficulty' | 'prepTime' | 'totalTime';
 type EditableGalleryKind = 'category' | 'source' | 'tag' | 'dishType';
@@ -620,12 +621,22 @@ const Index = () => {
 
     // Recipe type filter
     const recipeCategories = parseCategories(recipe.recipeType);
+    const wantsNoCategory = filters.recipeTypes.includes(EMPTY_FILTER_OPTIONS.category);
+    const selectedCategories = filters.recipeTypes.filter(c => c !== EMPTY_FILTER_OPTIONS.category);
     const matchesRecipeType = filters.recipeTypes.length === 0 ||
-      filters.recipeTypes.some(c => recipeCategories.includes(c));
+      (wantsNoCategory && recipeCategories.length === 0) ||
+      selectedCategories.some(c => recipeCategories.includes(c));
 
     // Tags filter
+    const recipeTagValues = (recipe.tags || [])
+      .map(recipeTag => typeof recipeTag === 'string' ? recipeTag : recipeTag.tag || recipeTag.name || '')
+      .map(tag => tag.trim())
+      .filter(Boolean);
+    const wantsNoTag = filters.tags.includes(EMPTY_FILTER_OPTIONS.tag);
+    const selectedTags = filters.tags.filter(tag => tag !== EMPTY_FILTER_OPTIONS.tag);
     const matchesTags = filters.tags.length === 0 ||
-      filters.tags.some(filterTag =>
+      (wantsNoTag && recipeTagValues.length === 0) ||
+      selectedTags.some(filterTag =>
         (recipe.tags || []).some(recipeTag => {
           const tagValue = typeof recipeTag === 'string' ? recipeTag : recipeTag.tag || recipeTag.name || '';
           return tagValue === filterTag;
@@ -638,14 +649,18 @@ const Index = () => {
         .replace(/[\u0300-\u036f]/g, '')
         .toLocaleLowerCase('es')
         .trim();
+    const wantsNoIngredients = filters.ingredients?.includes(EMPTY_FILTER_OPTIONS.ingredient) ?? false;
+    const selectedIngredients = (filters.ingredients || []).filter(ingredient => ingredient !== EMPTY_FILTER_OPTIONS.ingredient);
+    const recipeHasIngredients = (recipe.ingredients || []).some(ingredient => (ingredient.name || '').trim().length > 0);
     const matchesIngredients = !filters.ingredients?.length ||
-      filters.ingredients.every(filterIngredient => {
+      (wantsNoIngredients && !recipeHasIngredients) ||
+      (selectedIngredients.length > 0 && selectedIngredients.every(filterIngredient => {
         const filterValue = normalizeIngredient(filterIngredient);
         return (recipe.ingredients || []).some(ingredient => {
           const ingredientValue = normalizeIngredient(ingredient.name);
           return ingredientValue.includes(filterValue) || filterValue.includes(ingredientValue);
         });
-      });
+      }));
 
     // Featured filter
     const matchesFeatured = !filters.featured || recipe.featured === true;
@@ -666,16 +681,26 @@ const Index = () => {
     const matchesVegetarian = !filters.vegetarianOnly || recipe.vegetarian === true;
     const matchesSweet = !filters.sweetOnly || recipe.sweet === true;
     const matchesSavory = !filters.savoryOnly || recipe.savory === true;
-    const selectedCollection = filters.collectionId
+    const wantsNoCollection = filters.collectionId === EMPTY_FILTER_OPTIONS.collection;
+    const selectedCollection = filters.collectionId && !wantsNoCollection
       ? collections.find(collection => collection.id === filters.collectionId)
       : undefined;
     const matchesCollection = !filters.collectionId
+      || (wantsNoCollection && !collections.some(collection => collection.recipeIds.includes(recipe.id)))
       || Boolean(selectedCollection?.recipeIds.includes(recipe.id));
+    const recipeSource = getRecipeSource(recipe);
+    const wantsNoSource = filters.sources?.includes(EMPTY_FILTER_OPTIONS.source) ?? false;
+    const selectedSources = (filters.sources || []).filter(source => source !== EMPTY_FILTER_OPTIONS.source);
     const matchesSource = !filters.sources?.length
-      || filters.sources.includes(getRecipeSource(recipe));
+      || (wantsNoSource && !recipeSource)
+      || selectedSources.includes(recipeSource);
     const selectedDishTypes = [...(filters.dishTypes || []), ...(filters.dishType ? [filters.dishType] : [])];
+    const wantsNoDishType = selectedDishTypes.includes(EMPTY_FILTER_OPTIONS.dishType);
+    const selectedDishTypeValues = selectedDishTypes.filter(dishType => dishType !== EMPTY_FILTER_OPTIONS.dishType);
     const recipeDishTypes = (recipe.dishType || '').split(',').map(s => s.trim()).filter(Boolean);
-    const matchesDishType = selectedDishTypes.length === 0 || recipeDishTypes.some(dt => selectedDishTypes.includes(dt));
+    const matchesDishType = selectedDishTypes.length === 0 ||
+      (wantsNoDishType && recipeDishTypes.length === 0) ||
+      recipeDishTypes.some(dt => selectedDishTypeValues.includes(dt));
     const matchesAuthor = !filters.author || (recipe.author || '').trim() === filters.author;
 
     return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesSugarFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesSweet && matchesSavory && matchesCollection && matchesSource && matchesDishType && matchesAuthor;
@@ -2322,7 +2347,7 @@ const Index = () => {
   // Cada chip incluye onRemove para quitar solo ese filtro.
   const activeFilterChips: { label?: string; value: string; onRemove: () => void }[] = [];
   if (filters.collectionId) {
-    activeFilterChips.push({ label: 'Coleccion', value: collections.find(c => c.id === filters.collectionId)?.name || '', onRemove: () => handleFiltersChange({ ...filters, collectionId: undefined }) });
+    activeFilterChips.push({ label: 'Coleccion', value: filters.collectionId === EMPTY_FILTER_OPTIONS.collection ? EMPTY_FILTER_OPTIONS.collection : collections.find(c => c.id === filters.collectionId)?.name || '', onRemove: () => handleFiltersChange({ ...filters, collectionId: undefined }) });
   }
   const activeDishTypes = [...(filters.dishTypes || []), ...(filters.dishType ? [filters.dishType] : [])];
   if (activeDishTypes.length) activeFilterChips.push({ label: 'Tipo de comida', value: activeDishTypes.join(', '), onRemove: () => handleFiltersChange({ ...filters, dishTypes: [], dishType: undefined }) });
@@ -3815,6 +3840,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           </span>
                         </SelectItem>
                       ))}
+                      <SelectItem value={EMPTY_FILTER_OPTIONS.collection}>{EMPTY_FILTER_OPTIONS.collection}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -3829,7 +3855,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     )}
                   </div>
                   <MultiSelectCombobox
-                    options={dishTypeList.map(dt => dt.name)}
+                    options={[...dishTypeList.map(dt => dt.name), EMPTY_FILTER_OPTIONS.dishType]}
                     selected={[...(filters.dishTypes || []), ...(filters.dishType ? [filters.dishType] : [])]}
                     onChange={(newTypes) => handleFiltersChange({ ...filters, dishTypes: newTypes, dishType: undefined })}
                     placeholder="Filtrar por tipo de comida"
@@ -3840,7 +3866,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
                 <div>
                   <div className="-mb-1.5 flex items-center justify-between">
-                    <Label className="text-[13px] font-medium">Categorias</Label>
+                    <Label className="text-[13px] font-medium">Categoría</Label>
                     {filters.recipeTypes.length > 0 && (
                       <button type="button" onClick={() => handleFiltersChange({ ...filters, recipeTypes: [] })} className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Limpiar" title="Limpiar">
                         <X className="h-3.5 w-3.5" />
@@ -3848,7 +3874,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     )}
                   </div>
                   <MultiSelectCombobox
-                    options={categories}
+                    options={[...categories, EMPTY_FILTER_OPTIONS.category]}
                     selected={filters.recipeTypes}
                     onChange={(newTypes) => handleFiltersChange({ ...filters, recipeTypes: newTypes })}
                     placeholder="Filtrar por categoria"
@@ -3882,13 +3908,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })).map(source => (
                         <SelectItem key={source} value={source}>{source}</SelectItem>
                       ))}
+                      <SelectItem value={EMPTY_FILTER_OPTIONS.source}>{EMPTY_FILTER_OPTIONS.source}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
                   <div className="-mb-1.5 flex items-center justify-between">
-                    <Label className="text-[13px] font-medium">Etiquetas</Label>
+                    <Label className="text-[13px] font-medium">Etiqueta</Label>
                     {filters.tags.length > 0 && (
                       <button type="button" onClick={() => handleFiltersChange({ ...filters, tags: [] })} className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Limpiar" title="Limpiar">
                         <X className="h-3.5 w-3.5" />
@@ -3896,11 +3923,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     )}
                   </div>
                   <MultiSelectCombobox
-                    options={Array.from(new Set(
+                    options={[...Array.from(new Set(
                       recipes.flatMap(recipe =>
                         recipe.tags.map(tag => typeof tag === 'string' ? tag : tag.tag || tag.name || '')
                       ).filter(tag => tag.length > 0)
-                    )).sort()}
+                    )).sort(), EMPTY_FILTER_OPTIONS.tag]}
                     selected={filters.tags}
                     onChange={(newTags) => handleFiltersChange({ ...filters, tags: newTags })}
                     placeholder="Filtrar por etiqueta"
@@ -3927,6 +3954,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     selected={filters.ingredients || []}
                     onChange={(next) => handleFiltersChange({ ...filters, ingredients: next })}
                     placeholder="Escribir ingrediente..."
+                    emptyOption={EMPTY_FILTER_OPTIONS.ingredient}
                   />
                 </div>
               </div>

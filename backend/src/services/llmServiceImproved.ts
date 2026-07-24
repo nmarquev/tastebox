@@ -1062,6 +1062,143 @@ function extractRecipeJsonLd(html: string): string | null {
 }
 
 // Esquema de validation para respuesta LLM - VERSIÓN ULTRA RESILIENTE
+function extractRecipeJsonLdInstructions(html: string): LiteralInstructionCandidate[] {
+  if (!html) return [];
+  const blocks = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  if (!blocks || blocks.length === 0) return [];
+
+  const recipes: any[] = [];
+  const visit = (node: any) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(visit); return; }
+    const type = node['@type'];
+    const isRecipe = type === 'Recipe' || (Array.isArray(type) && type.includes('Recipe'));
+    if (isRecipe) recipes.push(node);
+    if (node['@graph']) visit(node['@graph']);
+  };
+
+  for (const block of blocks) {
+    const jsonText = block.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '').trim();
+    try { visit(JSON.parse(jsonText)); } catch { /* JSON-LD malformed: ignore */ }
+  }
+
+  const flattenInstructions = (instr: any, section?: string): { text: string; section?: string }[] => {
+    if (!instr) return [];
+    if (typeof instr === 'string') return [{ text: cleanHtmlFromText(decodeNumericHtmlEntities(instr)), section }];
+    if (Array.isArray(instr)) return instr.flatMap(item => flattenInstructions(item, section));
+    if (instr.itemListElement) {
+      const name = instr.name ? cleanHtmlFromText(decodeNumericHtmlEntities(String(instr.name))) : section;
+      return flattenInstructions(instr.itemListElement, name);
+    }
+    const text = instr.text || instr.name;
+    return text ? [{ text: cleanHtmlFromText(decodeNumericHtmlEntities(String(text))), section }] : [];
+  };
+
+  const seen = new Set<string>();
+  return recipes
+    .flatMap(recipe => flattenInstructions(recipe.recipeInstructions))
+    .map(step => ({
+      description: step.text.trim(),
+      section: step.section
+    }))
+    .filter(step => {
+      const key = normalizeSectionLookupText(step.description);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((step, index) => ({
+      step: index + 1,
+      description: step.description,
+      function: undefined,
+      time: undefined,
+      temperature: undefined,
+      speed: undefined,
+      section: step.section
+    }));
+}
+
+function extractNumberedInstructionsFromReadableText(readableText: string): LiteralInstructionCandidate[] {
+  if (!readableText?.trim()) return [];
+
+  const lines = readableText
+    .split(/\r?\n/)
+    .map(line => cleanHtmlFromText(decodeNumericHtmlEntities(line)).trim())
+    .filter(Boolean);
+  if (!lines.length) return [];
+
+  const isPreparationHeading = (line: string) =>
+    /^(?:preparaci[oó]n|instrucciones?|procedimiento|elaboraci[oó]n|modo de preparaci[oó]n)\s*:?\s*$/i.test(line);
+
+  const parsedFrom = (startIndex: number): LiteralInstructionCandidate[] => {
+    const steps: LiteralInstructionCandidate[] = [];
+    let current: { step: number; parts: string[]; section?: string } | null = null;
+    let currentSection: string | undefined;
+
+    const flush = () => {
+      if (!current) return;
+      const description = current.parts.join(' ').replace(/\s+/g, ' ').trim();
+      if (description) {
+        steps.push({
+          step: steps.length + 1,
+          description,
+          function: undefined,
+          time: undefined,
+          temperature: undefined,
+          speed: undefined,
+          section: current.section
+        });
+      }
+      current = null;
+    };
+
+    for (let index = startIndex + 1; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (isMajorRecipeHeading(line) && !isPreparationHeading(line)) {
+        flush();
+        if (steps.length > 0) break;
+        continue;
+      }
+
+      const inlineNumber = line.match(/^(\d{1,2})[.)]?\s+(.+)$/);
+      const bareNumber = line.match(/^(\d{1,2})[.)]?$/);
+      const expectedStep = steps.length + (current ? 2 : 1);
+
+      if (inlineNumber && Number(inlineNumber[1]) === expectedStep) {
+        flush();
+        current = { step: expectedStep, parts: [inlineNumber[2]], section: currentSection };
+        continue;
+      }
+
+      if (bareNumber && Number(bareNumber[1]) === expectedStep) {
+        flush();
+        current = { step: expectedStep, parts: [], section: currentSection };
+        continue;
+      }
+
+      if (current) {
+        current.parts.push(line);
+        continue;
+      }
+
+      if (looksLikeSectionHeading(line)) {
+        currentSection = normalizeSectionHeading(line);
+      }
+    }
+
+    flush();
+    return steps.length >= 2 ? steps : [];
+  };
+
+  const candidates = lines
+    .map((line, index) => ({ line, index }))
+    .filter(item => isPreparationHeading(item.line))
+    .map(item => parsedFrom(item.index))
+    .sort((a, b) => b.length - a.length);
+
+  return candidates[0] || [];
+}
+
 const llmResponseSchema = z.object({
   error: z.boolean().optional(),
   title: z.string().min(1).catch('Receta Importada'), // título por defecto
@@ -2307,6 +2444,18 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
         readableEvidence || sourceEvidence,
         instruction => instruction.description || ''
       ) as typeof validatedData.instructions;
+      const jsonLdInstructions = extractRecipeJsonLdInstructions(html);
+      const visibleNumberedInstructions = extractNumberedInstructionsFromReadableText(readableEvidence);
+      const deterministicInstructions = [jsonLdInstructions, visibleNumberedInstructions]
+        .sort((a, b) => b.length - a.length)[0] || [];
+      if (deterministicInstructions.length > validatedData.instructions.length) {
+        console.log(`🧭 La página trae ${deterministicInstructions.length} pasos numerados; reemplazando extracción incompleta de ${validatedData.instructions.length}.`);
+        validatedData.instructions = inferSectionsFromSource(
+          deterministicInstructions,
+          readableEvidence || sourceEvidence,
+          instruction => instruction.description || ''
+        ) as typeof validatedData.instructions;
+      }
       const isCookidooSource = sourceUrl?.includes('cookidoo') || false;
       if (isCookidooSource) {
         validatedData.ingredients = keepOnlyMeaningfulSectionGroups(validatedData.ingredients) as typeof validatedData.ingredients;
