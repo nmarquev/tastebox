@@ -197,6 +197,8 @@ export const EditRecipeModal = ({
   const formScrollRef = useRef<HTMLDivElement>(null);
   const lastSelectedIngredientIndex = useRef<number | null>(null);
   const lastSelectedInstructionIndex = useRef<number | null>(null);
+  const lastInitializedRecipeKey = useRef<string | null>(null);
+  const wasOpenRef = useRef(false);
 
   const scrollFormToTop = () => formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   const scrollFormToBottom = () => formScrollRef.current?.scrollTo({
@@ -448,11 +450,23 @@ export const EditRecipeModal = ({
 
   // Initialize form with recipe data
   useEffect(() => {
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      return;
+    }
+
     if (recipe && isOpen) {
-      setActiveTab('info');
-      window.requestAnimationFrame(() => {
-        formScrollRef.current?.scrollTo({ top: 0 });
-      });
+      const recipeKey = recipe.id || `${mode}:${recipe.title || ''}`;
+      const shouldResetTab = !wasOpenRef.current || lastInitializedRecipeKey.current !== recipeKey;
+      wasOpenRef.current = true;
+      lastInitializedRecipeKey.current = recipeKey;
+
+      if (shouldResetTab) {
+        setActiveTab('info');
+        window.requestAnimationFrame(() => {
+          formScrollRef.current?.scrollTo({ top: 0 });
+        });
+      }
       setSavedIngredientSections([]);
       setSelectedIngredientIndexes(new Set());
       setBulkEditingIngredients(false);
@@ -522,7 +536,7 @@ export const EditRecipeModal = ({
       // Foto de los valores ya cargados: punto de partida para detectar cambios reales.
       initialFormSnapshot.current = getFormSnapshot(getValues());
     }
-  }, [recipe, isOpen, reset, getValues]);
+  }, [recipe, isOpen, reset, getValues, mode]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -955,12 +969,12 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
     return base.toISOString();
   };
 
-  const onSubmit = async (data: RecipeFormData) => {
+  const onSubmit = async (data: RecipeFormData, forceSave = false) => {
     if (!recipe) return;
 
     // Sin cambios: no se actualiza. En modo cola pasa a la siguiente; en edición normal
     // el botón está deshabilitado, así que esto no debería dispararse (no cerramos).
-    if (!hasChanges) {
+    if (!forceSave && !hasChanges) {
       if (queue) queue.onNext();
       return;
     }
@@ -1001,7 +1015,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
       const recipeData = {
         title: data.title,
         description: data.description,
-        suggestions: data.suggestions?.trim() || undefined,
+        suggestions: data.suggestions?.trim() || null,
         importedFrom: data.importedFrom || undefined,
         sourceUrl: data.sourceUrl || undefined,
         source: data.source?.trim() || undefined,
@@ -1132,6 +1146,20 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleClearSuggestions = async () => {
+    const currentValues = getValues();
+    if (!(currentValues.suggestions || '').trim() && !(recipe?.suggestions || '').trim()) {
+      return;
+    }
+
+    const nextValues = { ...currentValues, suggestions: '' };
+    setValue('suggestions', '', { shouldDirty: true });
+
+    if (recipe?.id) {
+      await onSubmit(nextValues, true);
     }
   };
 
@@ -2293,7 +2321,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   variant="outline"
                   size="sm"
                   className="mt-3"
-                  onClick={() => setValue('suggestions', '', { shouldDirty: true })}
+                  onClick={() => void handleClearSuggestions()}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Borrar sugerencias

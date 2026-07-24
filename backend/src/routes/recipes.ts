@@ -361,7 +361,9 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       data: {
         title: normalizeRecipeTitle(data.title),
         description: data.description,
-        suggestions: sanitizeSuggestionText(data.suggestions),
+        suggestions: data.suggestions !== undefined
+          ? (sanitizeSuggestionText(data.suggestions) ?? null)
+          : undefined,
         prepTime: data.prepTime,
         cookTime: data.cookTime,
         servings: data.servings,
@@ -687,7 +689,9 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
       data: {
         title: normalizeRecipeTitle(data.title),
         description: data.description,
-        suggestions: sanitizeSuggestionText(data.suggestions),
+        suggestions: data.suggestions !== undefined
+          ? (sanitizeSuggestionText(data.suggestions) ?? null)
+          : undefined,
         prepTime: data.prepTime,
         cookTime: data.cookTime,
         servings: data.servings,
