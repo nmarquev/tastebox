@@ -1298,8 +1298,7 @@ function extractNumberedInstructionsFromReadableText(readableText: string): Lite
 
   const parsedFrom = (startIndex: number): LiteralInstructionCandidate[] => {
     const steps: LiteralInstructionCandidate[] = [];
-    let current: { step: number; parts: string[]; section?: string } | null = null;
-    let currentSection: string | undefined;
+    let current: { step: number; parts: string[] } | null = null;
 
     const flush = () => {
       if (!current) return;
@@ -1312,7 +1311,7 @@ function extractNumberedInstructionsFromReadableText(readableText: string): Lite
           time: undefined,
           temperature: undefined,
           speed: undefined,
-          section: current.section
+          section: undefined
         });
       }
       current = null;
@@ -1332,13 +1331,13 @@ function extractNumberedInstructionsFromReadableText(readableText: string): Lite
 
       if (inlineNumber && Number(inlineNumber[1]) === expectedStep) {
         flush();
-        current = { step: expectedStep, parts: [inlineNumber[2]], section: currentSection };
+        current = { step: expectedStep, parts: [inlineNumber[2]] };
         continue;
       }
 
       if (bareNumber && Number(bareNumber[1]) === expectedStep) {
         flush();
-        current = { step: expectedStep, parts: [], section: currentSection };
+        current = { step: expectedStep, parts: [] };
         continue;
       }
 
@@ -1347,9 +1346,6 @@ function extractNumberedInstructionsFromReadableText(readableText: string): Lite
         continue;
       }
 
-      if (looksLikeSectionHeading(line)) {
-        currentSection = normalizeSectionHeading(line);
-      }
     }
 
     flush();
@@ -2605,10 +2601,9 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
         readableEvidence || sourceEvidence,
         ingredient => [ingredient.amount, ingredient.unit, ingredient.name].filter(Boolean).join(' ')
       ) as typeof validatedData.ingredients;
-      validatedData.instructions = inferSectionsFromSource(
-        groundLiteralInstructions(validatedData.instructions, sourceEvidence),
-        readableEvidence || sourceEvidence,
-        instruction => instruction.description || ''
+      validatedData.instructions = groundLiteralInstructions(
+        validatedData.instructions,
+        sourceEvidence
       ) as typeof validatedData.instructions;
       const jsonLdInstructions = extractRecipeJsonLdInstructions(html);
       const visibleNumberedInstructions = extractNumberedInstructionsFromReadableText(readableEvidence);
@@ -2616,11 +2611,7 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
         .sort((a, b) => b.length - a.length)[0] || [];
       if (deterministicInstructions.length > validatedData.instructions.length) {
         console.log(`🧭 La página trae ${deterministicInstructions.length} pasos numerados; reemplazando extracción incompleta de ${validatedData.instructions.length}.`);
-        validatedData.instructions = inferSectionsFromSource(
-          deterministicInstructions,
-          readableEvidence || sourceEvidence,
-          instruction => instruction.description || ''
-        ) as typeof validatedData.instructions;
+        validatedData.instructions = deterministicInstructions as typeof validatedData.instructions;
       }
       const isCookidooSource = sourceUrl?.includes('cookidoo') || false;
       if (isCookidooSource) {

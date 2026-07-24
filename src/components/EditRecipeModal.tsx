@@ -2288,6 +2288,16 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   placeholder="Tips, consejos o notas para preparar la receta"
                   rows={3}
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => setValue('suggestions', '', { shouldDirty: true })}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Borrar sugerencias
+                </Button>
               </div>
             </TabsContent>
 
