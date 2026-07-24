@@ -969,12 +969,12 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
     return base.toISOString();
   };
 
-  const onSubmit = async (data: RecipeFormData, forceSave = false) => {
+  const onSubmit = async (data: RecipeFormData) => {
     if (!recipe) return;
 
     // Sin cambios: no se actualiza. En modo cola pasa a la siguiente; en edición normal
     // el botón está deshabilitado, así que esto no debería dispararse (no cerramos).
-    if (!forceSave && !hasChanges) {
+    if (!hasChanges) {
       if (queue) queue.onNext();
       return;
     }
@@ -1149,18 +1149,13 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
     }
   };
 
-  const handleClearSuggestions = async () => {
+  const handleClearSuggestions = () => {
     const currentValues = getValues();
     if (!(currentValues.suggestions || '').trim() && !(recipe?.suggestions || '').trim()) {
       return;
     }
 
-    const nextValues = { ...currentValues, suggestions: '' };
     setValue('suggestions', '', { shouldDirty: true });
-
-    if (recipe?.id) {
-      await onSubmit(nextValues, true);
-    }
   };
 
   const handleClose = () => {
@@ -2321,7 +2316,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   variant="outline"
                   size="sm"
                   className="mt-3"
-                  onClick={() => void handleClearSuggestions()}
+                  onClick={handleClearSuggestions}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Borrar sugerencias
