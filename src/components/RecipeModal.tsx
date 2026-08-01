@@ -1032,7 +1032,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           title={localRecipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
           className={`order-2 h-9 w-9 border p-0 ${
             localRecipe.checked
-              ? 'border-[#7daa3f] bg-[#8ebf4c] text-[#29420f] hover:bg-[#82b144]'
+              ? 'border-white/60 bg-white/80 text-[#8ebf4c] hover:bg-white/90'
               : 'border-white/60 bg-white/80 text-gray-500 hover:bg-white/90'
           }`}
           onClick={() => onToggleFeature(localRecipe, 'checked', !localRecipe.checked)}

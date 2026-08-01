@@ -5993,7 +5993,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         }}
                         className={`inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
                           recipe.checked
-                            ? 'border-[#7daa3f] bg-[#8ebf4c] text-[#29420f]'
+                            ? 'border-transparent bg-transparent text-[#8ebf4c] hover:bg-muted'
                             : 'border-muted-foreground/40 text-muted-foreground hover:border-[#8ebf4c] hover:text-[#5f852c]'
                         }`}
                         title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
@@ -6124,7 +6124,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         }}
                         className={`inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
                           recipe.checked
-                            ? 'border-[#7daa3f] bg-[#8ebf4c] text-[#29420f]'
+                            ? 'border-transparent bg-transparent text-[#8ebf4c] hover:bg-muted'
                             : 'border-muted-foreground/40 text-muted-foreground hover:border-[#8ebf4c] hover:text-[#5f852c]'
                         }`}
                         title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}

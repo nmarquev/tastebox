@@ -351,7 +351,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
               className={`order-2 h-8 w-8 border p-0 ${
                 recipe.checked
-                  ? 'border-[#7daa3f] bg-[#8ebf4c] text-[#29420f] hover:bg-[#82b144]'
+                  ? 'border-white/60 bg-white/50 text-[#8ebf4c] hover:bg-white/70'
                   : 'border-white/60 bg-white/50 text-gray-500 hover:bg-white/70'
               }`}
               onClick={(event) => {
