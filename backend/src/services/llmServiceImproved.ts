@@ -2694,7 +2694,7 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
       const isCookidooSource = sourceUrl?.includes('cookidoo') || false;
       if (isCookidooSource) {
         const structuredIngredients = extractCookidooStructuredIngredients(html);
-        validatedData.ingredients = structuredIngredients.length >= validatedData.ingredients.length
+        validatedData.ingredients = structuredIngredients.length > 0
           ? structuredIngredients as typeof validatedData.ingredients
           : keepOnlyCookidooIngredientSections(validatedData.ingredients, html) as typeof validatedData.ingredients;
         validatedData.instructions = keepOnlyMeaningfulSectionGroups(validatedData.instructions) as typeof validatedData.instructions;
