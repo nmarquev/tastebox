@@ -8,6 +8,7 @@ import {
   SOCIAL_INGREDIENTS_UNAVAILABLE,
   YOUTUBE_INGREDIENTS_UNAVAILABLE,
 } from '../utils/socialRecipeContent';
+import { deriveMainIngredientTags } from '../utils/recipeTags';
 
 // Parseo robusto del JSON devuelto por el LLM. Algunos modelos (DeepSeek, etc.) ignoran
 // response_format:json_object y devuelven el JSON envuelto en fences markdown (```json ... ```)
@@ -286,79 +287,10 @@ type LiteralInstructionCandidate = {
 
 function deriveTagsFromMainIngredients(
   ingredients: Array<{ name?: string; amount?: string; unit?: string }> | undefined,
-  fallbackTags: string[] = [],
+  _fallbackTags: string[] = [],
   title?: string
 ): string[] {
-  const pantry = new Set([
-    'agua', 'sal', 'pimienta', 'aceite', 'aceite de oliva', 'azucar', 'azúcar',
-    'harina', 'mantequilla', 'manteca', 'leche', 'huevo', 'huevos', 'nata',
-    'crema', 'caldo', 'pastilla de caldo', 'levadura', 'polvo de hornear'
-  ]);
-  const units = [
-    'g', 'gr', 'gramos', 'kg', 'ml', 'l', 'litro', 'litros', 'cdita', 'cditas',
-    'cucharadita', 'cucharaditas', 'cda', 'cdas', 'cucharada', 'cucharadas',
-    'taza', 'tazas', 'pellizco', 'pellizcos', 'chorrito', 'chorritos',
-    'unidad', 'unidades', 'paquete', 'paquetes', 'lata', 'latas'
-  ];
-
-  const normalize = (value: string) =>
-    cleanHtmlFromText(decodeNumericHtmlEntities(value))
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLocaleLowerCase('es')
-      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-  const cleanIngredientName = (rawName: string) => {
-    let text = cleanHtmlFromText(decodeNumericHtmlEntities(rawName)).toLocaleLowerCase('es');
-    text = text
-      .replace(/^[\s\d.,/¼½¾⅓⅔⅛⅜⅝⅞-]+/g, ' ')
-      .replace(new RegExp(`\\b(?:${units.join('|')})\\b\\.?`, 'gi'), ' ')
-      .replace(/^(?:de|del|la|el|los|las|un|una|unos|unas)\s+/gi, ' ')
-      .replace(/\bal gusto\b/gi, ' ')
-      .replace(/\b(?:en trozos|trocead[ao]s?|picad[ao]s?|pelad[ao]s?|cortad[ao]s?|molida?|rallad[ao]s?|limpi[ao]s?|sin piel|sin semillas|a temperatura ambiente)\b/gi, ' ')
-      .replace(/\([^)]*\)/g, ' ')
-      .replace(/[,;].*$/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const words = text.split(/\s+/).filter(Boolean);
-    return words.slice(0, 3).join(' ');
-  };
-
-  const seen = new Set<string>();
-  const tags: string[] = [];
-  const addTag = (value: string) => {
-    const candidate = value.trim();
-    const key = normalize(candidate);
-    if (!candidate || !key || pantry.has(key) || seen.has(key)) return;
-    seen.add(key);
-    tags.push(candidate);
-  };
-
-  const titleTagCandidates = [
-    'torta', 'tartas?', 'bud[ií]n(?:es)?', 'muffins?', 'magdalenas?', 'cupcakes?',
-    'galletas?', 'cookies?', 'brownies?', 'bizcochos?', 'panqueques?', 'waffles?',
-    'sopa', 'crema', 'ensalada', 'pastas?', 'pizza', 'empanadas?', 'croquetas?',
-    'hamburguesas?', 'alb[oó]ndigas?', 'milanesas?', 'risotto', 'souffl[eé]',
-    'pan(?:es)?', 'focaccia', 'quiche', 'flan', 'helado', 'mousse', 'trufas?'
-  ];
-  const titleText = title || '';
-  for (const pattern of titleTagCandidates) {
-    const match = titleText.match(new RegExp(`\\b(${pattern})\\b`, 'i'));
-    if (match) addTag(cleanHtmlFromText(match[1]).toLocaleLowerCase('es'));
-    if (tags.length >= 4) break;
-  }
-
-  for (const ingredient of ingredients || []) {
-    const candidate = cleanIngredientName(ingredient.name || '');
-    addTag(candidate);
-    if (tags.length >= 4) break;
-  }
-
-  if (tags.length > 0) return tags;
-  return fallbackTags.map(tag => tag.trim()).filter(Boolean).slice(0, 4);
+  return deriveMainIngredientTags(ingredients || [], title, 4);
 }
 
 function deriveCategoryFromTitleAndIngredients(

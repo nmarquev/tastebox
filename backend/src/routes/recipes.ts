@@ -96,6 +96,7 @@ const createRecipeSchema = z.object({
   autoTags: z.boolean().optional(), // false = no autogenerar etiquetas desde ingredientes
   featured: z.boolean().optional(),
   cooked: z.boolean().optional(),
+  checked: z.boolean().optional(),
   locution: z.string().optional().nullable()
 });
 
@@ -168,6 +169,7 @@ const updateRecipeSchema = z.object({
   ])),
   featured: z.boolean().optional(),
   cooked: z.boolean().optional(),
+  checked: z.boolean().optional(),
   locution: z.string().optional().nullable()
 });
 
@@ -381,6 +383,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         importedFrom: data.importedFrom ?? detectImportSource(data.sourceUrl),
         featured: data.featured,
         cooked: data.cooked,
+        checked: data.checked,
         thermomix: data.thermomix,
         airFryer: data.airFryer,
         glutenFree,
@@ -497,6 +500,7 @@ router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
       tags: z.array(z.string()).optional(),
       featured: z.boolean().optional(),
       cooked: z.boolean().optional(),
+      checked: z.boolean().optional(),
       thermomix: z.boolean().optional(),
       airFryer: z.boolean().optional(),
       glutenFree: z.boolean().optional(),
@@ -530,7 +534,7 @@ router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
     if (fields.createdAt !== undefined) data.createdAt = new Date(fields.createdAt);
     if (fields.dishType !== undefined) data.dishType = fields.dishType?.trim() || null;
     if (fields.recipeType !== undefined) data.recipeType = fields.recipeType?.trim() || null;
-    (['featured', 'cooked', 'thermomix', 'airFryer', 'glutenFree', 'sugarFree', 'keto', 'lowCarb', 'vegetarian', 'proteica', 'sweet', 'savory'] as const)
+    (['featured', 'cooked', 'checked', 'thermomix', 'airFryer', 'glutenFree', 'sugarFree', 'keto', 'lowCarb', 'vegetarian', 'proteica', 'sweet', 'savory'] as const)
       .forEach(f => { if (fields[f] !== undefined) data[f] = fields[f]; });
 
     const hasScalar = Object.keys(data).length > 0;
@@ -711,6 +715,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
           ?? (data.sourceUrl ? detectImportSource(data.sourceUrl) : undefined),
         featured: data.featured,
         cooked: data.cooked,
+        checked: data.checked,
         thermomix: data.thermomix,
         airFryer: data.airFryer,
         glutenFree,

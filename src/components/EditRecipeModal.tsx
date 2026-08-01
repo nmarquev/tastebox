@@ -68,6 +68,7 @@ interface RecipeFormData {
   airFryer: boolean;
   featured: boolean;
   cooked: boolean;
+  checked: boolean;
   locution: string;
   tags: string[];
   calories?: number;
@@ -509,6 +510,7 @@ export const EditRecipeModal = ({
         airFryer: recipe.airFryer || false,
         featured: recipe.featured || false,
         cooked: recipe.cooked || false,
+        checked: recipe.checked || false,
         locution: recipe.locution || '',
         tags: recipe.tags?.map(tag => typeof tag === 'string' ? tag : tag.tag || tag.name || '') || [],
         calories: recipe.calories || undefined,
@@ -1045,6 +1047,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         airFryer: data.airFryer,
         featured: data.featured,
         cooked: data.cooked,
+        checked: data.checked,
         locution: data.locution,
         tags: data.tags,
         calories: num(data.calories),
@@ -1750,6 +1753,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     { field: 'sweet', label: 'Receta dulce', icon: <CakeSlice className="h-4 w-4" /> },
                     { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
                     { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-4 w-4" /> },
+                    { field: 'checked', label: 'Chequeada', icon: <Check className="h-4 w-4" /> },
                     { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
                   ] as const).map(({ field, label, icon }) => {
                     const active = Boolean(watch(field as any));

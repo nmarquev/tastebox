@@ -6057,6 +6057,32 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         <span className="text-[11px] text-muted-foreground">Sin ingredientes</span>
                       )}
                     </span>
+                    {activeBulkPanel === null && (
+                      <span
+                        role="checkbox"
+                        tabIndex={0}
+                        aria-checked={Boolean(recipe.checked)}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          handleToggleFeature(recipe, 'checked', !recipe.checked);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Enter' && event.key !== ' ') return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          handleToggleFeature(recipe, 'checked', !recipe.checked);
+                        }}
+                        className={`inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
+                          recipe.checked
+                            ? 'border-emerald-600 bg-emerald-600 text-white'
+                            : 'border-muted-foreground/40 text-muted-foreground hover:border-emerald-600 hover:text-emerald-700'
+                        }`}
+                        title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
+                      >
+                        <Check className="h-4 w-4" />
+                      </span>
+                    )}
                     {activeBulkPanel !== null && (
                       <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${ingSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 text-transparent'}`}>
                         <Check className="h-3.5 w-3.5" />
@@ -6161,6 +6187,32 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         </span>
                       )}
                     </span>
+                    )}
+                    {activeBulkPanel === null && (
+                      <span
+                        role="checkbox"
+                        tabIndex={0}
+                        aria-checked={Boolean(recipe.checked)}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          handleToggleFeature(recipe, 'checked', !recipe.checked);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Enter' && event.key !== ' ') return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          handleToggleFeature(recipe, 'checked', !recipe.checked);
+                        }}
+                        className={`inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
+                          recipe.checked
+                            ? 'border-emerald-600 bg-emerald-600 text-white'
+                            : 'border-muted-foreground/40 text-muted-foreground hover:border-emerald-600 hover:text-emerald-700'
+                        }`}
+                        title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
+                      >
+                        <Check className="h-4 w-4" />
+                      </span>
                     )}
                     {viewMode === 'list' && (
                       <span

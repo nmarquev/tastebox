@@ -51,6 +51,7 @@ export interface Recipe {
   importedFrom?: string;
   recipeType?: string;
   dishType?: string;
+  checked?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -94,6 +95,7 @@ export interface RecipeImportResponse {
   tags: string[];
   featured?: boolean; // true si es receta favorita / destacada
   cooked?: boolean; // true si la receta ya fue cocinada
+  checked?: boolean; // true si la receta ya fue revisada y completada
   thermomix?: boolean; // true si es receta Thermomix (Cookidoo o con configuraciones TMX)
   airFryer?: boolean; // true si se prepara en freidora de aire
   glutenFree?: boolean; // true si es receta sin gluten

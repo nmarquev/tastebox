@@ -48,6 +48,7 @@ interface RecipeModalProps {
 }
 
 const DETAIL_FEATURE_TOGGLES: { field: keyof Recipe; label: string; icon: JSX.Element }[] = [
+  { field: 'checked', label: 'Chequeada', icon: <Check className="h-4 w-4" /> },
   { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
   { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-5 w-5" /> },
   { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" className="h-5 w-5 object-contain" /> },

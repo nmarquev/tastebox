@@ -52,6 +52,7 @@ export interface Recipe {
   language?: string;
   featured?: boolean;
   cooked?: boolean;
+  checked?: boolean;
   thermomix?: boolean;
   airFryer?: boolean;
   glutenFree?: boolean;
@@ -104,6 +105,7 @@ export interface ImportRecipeResponse {
     proteica?: boolean;
     sweet?: boolean;
     savory?: boolean;
+    checked?: boolean;
     images: RecipeImage[];
     ingredients: Ingredient[];
     instructions: Instruction[];

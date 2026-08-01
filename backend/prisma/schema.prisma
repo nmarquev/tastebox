@@ -51,6 +51,7 @@ model Recipe {
   importedFrom String? // www | instagram | youtube | doc
   featured     Boolean? @default(false) // Favorite/starred recipe
   cooked       Boolean? @default(false) // Receta ya cocinada / probada
+  checked      Boolean  @default(false) // Receta revisada y con campos faltantes completados
   thermomix    Boolean  @default(false) // Receta Thermomix (Cookidoo o con configuraciones TMX)
   airFryer     Boolean  @default(false) // Receta preparada en freidora de aire
   glutenFree   Boolean  @default(false) // Receta sin gluten
