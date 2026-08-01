@@ -1363,7 +1363,7 @@ function extractRecipeJsonLd(html: string): string | null {
 }
 
 // Esquema de validation para respuesta LLM - VERSIÓN ULTRA RESILIENTE
-function extractRecipeJsonLdInstructions(html: string): LiteralInstructionCandidate[] {
+export function extractRecipeJsonLdInstructions(html: string): LiteralInstructionCandidate[] {
   if (!html) return [];
   const blocks = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
   if (!blocks || blocks.length === 0) return [];
@@ -2742,10 +2742,14 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
       ) as typeof validatedData.instructions;
       const jsonLdInstructions = extractRecipeJsonLdInstructions(html);
       const visibleNumberedInstructions = extractNumberedInstructionsFromReadableText(readableEvidence);
-      const deterministicInstructions = [jsonLdInstructions, visibleNumberedInstructions]
-        .sort((a, b) => b.length - a.length)[0] || [];
-      if (deterministicInstructions.length > validatedData.instructions.length) {
-        console.log(`🧭 La página trae ${deterministicInstructions.length} pasos numerados; reemplazando extracción incompleta de ${validatedData.instructions.length}.`);
+      const jsonLdHasSections = jsonLdInstructions.some(instruction => Boolean(instruction.section?.trim()));
+      const deterministicInstructions = jsonLdHasSections
+        ? jsonLdInstructions
+        : [jsonLdInstructions, visibleNumberedInstructions]
+            .sort((a, b) => b.length - a.length)[0] || [];
+      if (jsonLdHasSections || deterministicInstructions.length > validatedData.instructions.length) {
+        const reason = jsonLdHasSections ? 'secciones estructuradas' : 'más pasos numerados';
+        console.log(`🧭 La página trae ${reason}; reemplazando extracción de ${validatedData.instructions.length} pasos por ${deterministicInstructions.length} pasos respaldados por la fuente.`);
         validatedData.instructions = deterministicInstructions as typeof validatedData.instructions;
       }
       const isCookidooSource = sourceUrl?.includes('cookidoo') || false;
