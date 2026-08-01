@@ -223,6 +223,7 @@ const Index = () => {
       tags: etiqueta ? [etiqueta] : [],
       ingredients: [],
       featured: undefined,
+      checkedOnly: initialRecipeTypeFilter === 'checked' ? true : undefined,
       thermomixOnly: initialAppView === 'thermomix' || initialRecipeTypeFilter === 'thermomix' ? true : undefined,
       airFryerOnly: initialRecipeTypeFilter === 'air-fryer' ? true : undefined,
       glutenFreeOnly: initialRecipeTypeFilter === 'sin-gluten' ? true : undefined,
@@ -266,6 +267,7 @@ const Index = () => {
       tags: [],
       ingredients: [],
       featured: typeFilter === 'favoritas' ? true : undefined,
+      checkedOnly: typeFilter === 'checked' ? true : undefined,
       cookedOnly: typeFilter === 'cocinadas' ? true : undefined,
       thermomixOnly: view === 'thermomix' || typeFilter === 'thermomix' ? true : undefined,
       airFryerOnly: typeFilter === 'air-fryer' ? true : undefined,
@@ -665,6 +667,9 @@ const Index = () => {
     // Featured filter
     const matchesFeatured = !filters.featured || recipe.featured === true;
 
+    // Recetas revisadas
+    const matchesChecked = !filters.checkedOnly || recipe.checked === true;
+
     // Cocinadas filter
     const matchesCooked = !filters.cookedOnly || recipe.cooked === true;
 
@@ -703,7 +708,7 @@ const Index = () => {
       recipeDishTypes.some(dt => selectedDishTypeValues.includes(dt));
     const matchesAuthor = !filters.author || (recipe.author || '').trim() === filters.author;
 
-    return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesSugarFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesSweet && matchesSavory && matchesCollection && matchesSource && matchesDishType && matchesAuthor;
+    return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesChecked && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesSugarFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesSweet && matchesSavory && matchesCollection && matchesSource && matchesDishType && matchesAuthor;
   }).sort((a, b) => {
     const directionFactor = sortDirection === 'asc' ? 1 : -1;
     const compareText = (left: string, right: string) =>
@@ -2244,6 +2249,7 @@ const Index = () => {
     || (filters.cookTimeRange?.[0] ?? 0) > 0
     || (filters.cookTimeRange?.[1] ?? 120) < 120
     || filters.featured === true
+    || filters.checkedOnly === true
     || filters.cookedOnly === true
     || filters.thermomixOnly === true
     || filters.airFryerOnly === true
@@ -2275,6 +2281,7 @@ const Index = () => {
   if (filters.ingredients?.length) activeFilterChips.push({ label: 'Ingredientes', value: filters.ingredients.join(', '), onRemove: () => handleFiltersChange({ ...filters, ingredients: [] }) });
   if (filters.author) activeFilterChips.push({ label: 'Autor', value: filters.author, onRemove: () => handleFiltersChange({ ...filters, author: undefined }) });
   if (filters.featured) activeFilterChips.push({ value: 'Favoritos', onRemove: () => handleFiltersChange({ ...filters, featured: undefined }) });
+  if (filters.checkedOnly) activeFilterChips.push({ value: 'Checked', onRemove: () => handleFiltersChange({ ...filters, checkedOnly: undefined }) });
   if (filters.cookedOnly) activeFilterChips.push({ value: 'Cocinadas', onRemove: () => handleFiltersChange({ ...filters, cookedOnly: undefined }) });
   if (filters.thermomixOnly) activeFilterChips.push({ value: 'Thermomix', onRemove: () => handleFiltersChange({ ...filters, thermomixOnly: undefined }) });
   if (filters.airFryerOnly) activeFilterChips.push({ value: 'Air Fryer', onRemove: () => handleFiltersChange({ ...filters, airFryerOnly: undefined }) });
@@ -2295,6 +2302,7 @@ const Index = () => {
       tags: [],
       ingredients: [],
       featured: undefined,
+      checkedOnly: undefined,
       cookedOnly: undefined,
       thermomixOnly: undefined,
       airFryerOnly: undefined,
@@ -5993,7 +6001,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         }}
                         className={`inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
                           recipe.checked
-                            ? 'border-transparent bg-transparent text-[#8ebf4c] hover:bg-muted'
+                            ? 'border-transparent bg-transparent text-[#6f9f32] hover:bg-muted'
                             : 'border-muted-foreground/40 text-muted-foreground hover:border-[#8ebf4c] hover:text-[#5f852c]'
                         }`}
                         title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
@@ -6124,7 +6132,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         }}
                         className={`inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
                           recipe.checked
-                            ? 'border-transparent bg-transparent text-[#8ebf4c] hover:bg-muted'
+                            ? 'border-transparent bg-transparent text-[#6f9f32] hover:bg-muted'
                             : 'border-muted-foreground/40 text-muted-foreground hover:border-[#8ebf4c] hover:text-[#5f852c]'
                         }`}
                         title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}

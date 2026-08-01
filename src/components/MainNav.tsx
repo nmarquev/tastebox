@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import {
+  Check,
   CheckCircle2,
   Beef,
   CakeSlice,
@@ -35,6 +36,7 @@ const menuItems = [
 const recipeTypeItems = [
   { label: "Todas las Recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> },
   { label: "Favoritas", to: "/app?filtro=favoritas", icon: <Heart className="h-4 w-4" /> },
+  { label: "Checked", to: "/app?filtro=checked", icon: <Check className="h-4 w-4" strokeWidth={3} /> },
   { label: "Cocinadas", to: "/app?filtro=cocinadas", icon: <CheckCircle2 className="h-4 w-4" /> },
   {
     label: "Thermomix",

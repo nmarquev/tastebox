@@ -17,6 +17,7 @@ export interface RecipeFilters {
   recipeTypes: string[];
   tags: string[];
   featured?: boolean;
+  checkedOnly?: boolean;
   cookedOnly?: boolean;
   thermomixOnly?: boolean;
   airFryerOnly?: boolean;
