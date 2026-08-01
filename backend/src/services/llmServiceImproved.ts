@@ -695,6 +695,63 @@ export function extractCookidooStructuredIngredients(html: string): ExtractedIng
   return ingredients;
 }
 
+function extractCookidooJsonLdIngredients(html: string): ExtractedIngredient[] {
+  const blocks = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+  const ingredients: ExtractedIngredient[] = [];
+
+  const visit = (node: any) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+
+    const type = node['@type'];
+    const isRecipe = type === 'Recipe' || (Array.isArray(type) && type.includes('Recipe'));
+    if (isRecipe) {
+      const recipeIngredients = Array.isArray(node.recipeIngredient)
+        ? node.recipeIngredient
+        : node.recipeIngredient ? [node.recipeIngredient] : [];
+      for (const ingredient of recipeIngredients) {
+        const name = cleanHtmlFromText(decodeNumericHtmlEntities(String(ingredient)));
+        if (name) ingredients.push({ name, amount: '', unit: undefined, section: undefined });
+      }
+    }
+    if (node['@graph']) visit(node['@graph']);
+  };
+
+  for (const block of blocks) {
+    const jsonText = block.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '').trim();
+    try { visit(JSON.parse(jsonText)); } catch { /* Ignorar JSON-LD malformado. */ }
+  }
+
+  return ingredients;
+}
+
+export function extractCompleteCookidooIngredients(html: string): ExtractedIngredient[] {
+  const structured = extractCookidooStructuredIngredients(html);
+  const jsonLd = extractCookidooJsonLdIngredients(html);
+  if (structured.length === 0) return jsonLd;
+  if (jsonLd.length === 0) return structured;
+
+  const usedStructuredIndexes = new Set<number>();
+  const complete = jsonLd.map(jsonIngredient => {
+    const structuredIndex = structured.findIndex((ingredient, index) =>
+      !usedStructuredIndexes.has(index) && ingredientMatchesText(ingredient, jsonIngredient.name)
+    );
+    if (structuredIndex < 0) return jsonIngredient;
+
+    usedStructuredIndexes.add(structuredIndex);
+    return structured[structuredIndex];
+  });
+
+  structured.forEach((ingredient, index) => {
+    if (!usedStructuredIndexes.has(index)) complete.push(ingredient);
+  });
+
+  return complete;
+}
+
 type CookidooAlternative = {
   primary: string;
   alternative: string;
@@ -2693,9 +2750,9 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
       }
       const isCookidooSource = sourceUrl?.includes('cookidoo') || false;
       if (isCookidooSource) {
-        const structuredIngredients = extractCookidooStructuredIngredients(html);
-        validatedData.ingredients = structuredIngredients.length > 0
-          ? structuredIngredients as typeof validatedData.ingredients
+        const completeIngredients = extractCompleteCookidooIngredients(html);
+        validatedData.ingredients = completeIngredients.length > 0
+          ? completeIngredients as typeof validatedData.ingredients
           : keepOnlyCookidooIngredientSections(validatedData.ingredients, html) as typeof validatedData.ingredients;
         validatedData.instructions = keepOnlyMeaningfulSectionGroups(validatedData.instructions) as typeof validatedData.instructions;
       }
