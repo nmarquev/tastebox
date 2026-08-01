@@ -241,27 +241,6 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         />
       )}
       <div className={`relative overflow-hidden cursor-pointer ${oneCol ? "sm:w-72 sm:shrink-0" : ""}`} onClick={handleCardClick}>
-        {!selectionMode && onToggleFeature && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            aria-pressed={Boolean(recipe.checked)}
-            aria-label={recipe.checked ? 'Marcar como pendiente de revisión' : 'Marcar como chequeada'}
-            title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
-            className={`absolute left-3 top-3 z-10 h-8 w-8 border p-0 shadow-sm ${
-              recipe.checked
-                ? 'border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700'
-                : 'border-white/80 bg-white/75 text-gray-500 hover:bg-white'
-            } ${compact ? 'left-2 top-2 h-6 w-6 [&_svg]:h-3.5 [&_svg]:w-3.5' : ''}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleFeature(recipe, 'checked', !recipe.checked);
-            }}
-          >
-            <Check className="h-5 w-5" />
-          </Button>
-        )}
         {selectionMode && (
           <span
             className={`pointer-events-none absolute right-3 bottom-3 z-20 inline-flex h-5 w-5 items-center justify-center rounded-md border-2 shadow-sm ${
@@ -358,6 +337,27 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               </PopoverContent>
             </Popover>
           )}
+          {onToggleFeature && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              aria-pressed={Boolean(recipe.checked)}
+              aria-label={recipe.checked ? 'Marcar como pendiente de revisión' : 'Marcar como chequeada'}
+              title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
+              className={`order-4 h-8 w-8 border p-0 ${
+                recipe.checked
+                  ? 'border-[#7daa3f] bg-[#8ebf4c] text-[#29420f] hover:bg-[#82b144]'
+                  : 'border-white/60 bg-white/50 text-gray-500 hover:bg-white/70'
+              }`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleFeature(recipe, 'checked', !recipe.checked);
+              }}
+            >
+              <Check className="h-5 w-5" />
+            </Button>
+          )}
           {onSaveToCollection && (
             <Button
               type="button"
@@ -385,7 +385,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 e.stopPropagation();
                 window.open(recipe.sourceUrl, '_blank', 'noopener,noreferrer');
               }}
-              className="order-4 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
+              className="order-5 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
               title={`Ver receta original en ${getSourceFromUrl(recipe.sourceUrl)}`}
             >
               <ExternalLink className="h-4 w-4 text-gray-600" />
@@ -396,7 +396,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               <Button
                 variant="secondary"
                 size="sm"
-                className="order-5 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
+                className="order-6 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
               >
                 <MoreVertical className="h-4 w-4 text-gray-600" />
               </Button>

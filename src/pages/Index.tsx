@@ -2112,84 +2112,21 @@ const Index = () => {
   };
 
   const handleToggleFavorite = async (recipe: Recipe) => {
-    console.log('Starting handleToggleFavorite for recipe:', recipe.title, 'Current featured:', recipe.featured);
-
+    const newFeaturedState = !recipe.featured;
+    setRecipes(prev => prev.map(r =>
+      r.id === recipe.id ? { ...r, featured: newFeaturedState } : r
+    ));
+    setSelectedRecipe(prev =>
+      prev?.id === recipe.id ? { ...prev, featured: newFeaturedState } : prev
+    );
     try {
-      // Optimistically update UI first
-      const newFeaturedState = !recipe.featured;
-      console.log('Optimistically updating UI, newFeaturedState:', newFeaturedState);
-
-      setRecipes(prev => {
-        const updated = prev.map(r =>
-          r.id === recipe.id ? { ...r, featured: newFeaturedState } : r
-        );
-        console.log('Recipe state updated optimistically');
-        return updated;
-      });
-      setSelectedRecipe(prev =>
-        prev?.id === recipe.id ? { ...prev, featured: newFeaturedState } : prev
-      );
-
-      // Clean instructions to handle null values
-      const cleanedInstructions = recipe.instructions.map(instruction => ({
-        ...instruction,
-        time: instruction.time || "",
-        temperature: instruction.temperature || "",
-        speed: instruction.speed || ""
-      }));
-      console.log('Instructions cleaned:', cleanedInstructions.length, 'instructions');
-
-      // Clean tags to handle both string and object formats
-      const cleanedTags = recipe.tags.map(tag => {
-        if (typeof tag === 'string') {
-          return { tag, tagId: tag }; // Convert string to object format
-        }
-        return tag; // Already an object
-      });
-
-      console.log('Calling API to update recipe...');
-      const updatedRecipe = await api.recipes.update(recipe.id, {
-        title: recipe.title,
-        description: recipe.description,
-        prepTime: recipe.prepTime,
-        cookTime: recipe.cookTime,
-        servings: recipe.servings,
-        difficulty: recipe.difficulty,
-        images: recipe.images,
-        ingredients: recipe.ingredients,
-        instructions: cleanedInstructions,
-        tags: cleanedTags,
-        sourceUrl: recipe.sourceUrl,
-        recipeType: recipe.recipeType,
-        featured: newFeaturedState
-      });
-
-      console.log('API call successful! Updated recipe featured state:', updatedRecipe.featured);
-
-      // Update with the server response (in case of discrepancies)
-      setRecipes(prev => {
-        const final = prev.map(r =>
-          r.id === recipe.id ? updatedRecipe : r
-        );
-        console.log('Final state update with server response');
-        return final;
-      });
-      setSelectedRecipe(prev =>
-        prev?.id === recipe.id ? updatedRecipe : prev
-      );
-
-      console.log('Showing success toast');
+      await api.recipes.bulkUpdate([recipe.id], { featured: newFeaturedState });
       toast({
-        title: updatedRecipe.featured ? "Anadida a favoritos!" : "Eliminada de favoritos",
-        description: `"${updatedRecipe.title}" ${updatedRecipe.featured ? 'se anadio a' : 'se elimino de'} tus favoritos`,
+        title: newFeaturedState ? "Anadida a favoritos!" : "Eliminada de favoritos",
+        description: `"${recipe.title}" ${newFeaturedState ? 'se anadio a' : 'se elimino de'} tus favoritos`,
       });
-
-      console.log('handleToggleFavorite completed successfully');
     } catch (error) {
       console.error('Error in handleToggleFavorite:', error);
-
-      // Revert optimistic update on error
-      console.log('Reverting optimistic update due to error');
       setRecipes(prev => prev.map(r =>
         r.id === recipe.id ? recipe : r
       ));
@@ -2197,7 +2134,6 @@ const Index = () => {
         prev?.id === recipe.id ? recipe : prev
       );
 
-      console.log('Showing error toast');
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado de favorito",
@@ -2218,43 +2154,11 @@ const Index = () => {
     );
 
     try {
-      const cleanedInstructions = recipe.instructions.map(instruction => ({
-        ...instruction,
-        time: instruction.time || "",
-        temperature: instruction.temperature || "",
-        speed: instruction.speed || ""
-      }));
-
-      const cleanedTags = recipe.tags.map(tag =>
-        typeof tag === 'string' ? { tag, tagId: tag } : tag
-      );
-
-      const updatedRecipe = await api.recipes.update(recipe.id, {
-        title: recipe.title,
-        description: recipe.description,
-        prepTime: recipe.prepTime,
-        cookTime: recipe.cookTime,
-        servings: recipe.servings,
-        difficulty: recipe.difficulty,
-        images: recipe.images,
-        ingredients: recipe.ingredients,
-        instructions: cleanedInstructions,
-        tags: cleanedTags,
-        sourceUrl: recipe.sourceUrl,
-        recipeType: recipe.recipeType,
-        cooked: newCookedState
-      });
-
-      setRecipes(prev => prev.map(r =>
-        r.id === recipe.id ? updatedRecipe : r
-      ));
-      setSelectedRecipe(prev =>
-        prev?.id === recipe.id ? updatedRecipe : prev
-      );
+      await api.recipes.bulkUpdate([recipe.id], { cooked: newCookedState });
 
       toast({
-        title: updatedRecipe.cooked ? "?Marcada como cocinada!" : "Marca de cocinada quitada",
-        description: `"${updatedRecipe.title}" ${updatedRecipe.cooked ? 'se marca como cocinada' : 'ya no est? marcada como cocinada'}`,
+        title: newCookedState ? "Marcada como cocinada" : "Marca de cocinada quitada",
+        description: `"${recipe.title}" ${newCookedState ? 'se marco como cocinada' : 'ya no esta marcada como cocinada'}`,
       });
     } catch (error) {
       console.error('Error in handleToggleCooked:', error);
@@ -6073,14 +5977,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           event.stopPropagation();
                           handleToggleFeature(recipe, 'checked', !recipe.checked);
                         }}
-                        className={`inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
+                        className={`inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
                           recipe.checked
-                            ? 'border-emerald-600 bg-emerald-600 text-white'
-                            : 'border-muted-foreground/40 text-muted-foreground hover:border-emerald-600 hover:text-emerald-700'
+                            ? 'border-[#7daa3f] bg-[#8ebf4c] text-[#29420f]'
+                            : 'border-muted-foreground/40 text-muted-foreground hover:border-[#8ebf4c] hover:text-[#5f852c]'
                         }`}
                         title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
                       >
-                        <Check className="h-4 w-4" />
+                        <Check className="h-3.5 w-3.5" />
                       </span>
                     )}
                     {activeBulkPanel !== null && (
@@ -6204,14 +6108,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           event.stopPropagation();
                           handleToggleFeature(recipe, 'checked', !recipe.checked);
                         }}
-                        className={`inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
+                        className={`inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
                           recipe.checked
-                            ? 'border-emerald-600 bg-emerald-600 text-white'
-                            : 'border-muted-foreground/40 text-muted-foreground hover:border-emerald-600 hover:text-emerald-700'
+                            ? 'border-[#7daa3f] bg-[#8ebf4c] text-[#29420f]'
+                            : 'border-muted-foreground/40 text-muted-foreground hover:border-[#8ebf4c] hover:text-[#5f852c]'
                         }`}
                         title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
                       >
-                        <Check className="h-4 w-4" />
+                        <Check className="h-3.5 w-3.5" />
                       </span>
                     )}
                     {viewMode === 'list' && (

@@ -1022,6 +1022,25 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </Popover>
       )}
 
+      {onToggleFeature && (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          aria-pressed={Boolean(localRecipe.checked)}
+          aria-label={localRecipe.checked ? 'Marcar como pendiente de revisión' : 'Marcar como chequeada'}
+          title={localRecipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
+          className={`order-4 h-9 w-9 border p-0 ${
+            localRecipe.checked
+              ? 'border-[#7daa3f] bg-[#8ebf4c] text-[#29420f] hover:bg-[#82b144]'
+              : 'border-white/60 bg-white/80 text-gray-500 hover:bg-white/90'
+          }`}
+          onClick={() => onToggleFeature(localRecipe, 'checked', !localRecipe.checked)}
+        >
+          <Check className="h-5 w-5" />
+        </Button>
+      )}
+
       {onSaveToCollection && (
         <Button
           type="button"
@@ -1045,7 +1064,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           type="button"
           variant="secondary"
           size="sm"
-          className="order-4 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
+          className="order-5 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
           onClick={() => window.open(localRecipe.sourceUrl, '_blank', 'noopener,noreferrer')}
           title={`Ver receta original en ${getSourceFromUrl(localRecipe.sourceUrl)}`}
           aria-label="Ver receta original"
@@ -1060,7 +1079,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             type="button"
             variant="secondary"
             size="sm"
-            className="order-5 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
+            className="order-6 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
             title="Mas opciones"
             aria-label="Mas opciones"
           >
