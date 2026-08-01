@@ -48,7 +48,7 @@ interface RecipeModalProps {
 }
 
 const DETAIL_FEATURE_TOGGLES: { field: keyof Recipe; label: string; icon: JSX.Element }[] = [
-  { field: 'checked', label: 'Chequeada', icon: <Check className="h-4 w-4" /> },
+  { field: 'checked', label: 'Chequeada', icon: <Check className="h-4 w-4" strokeWidth={3} /> },
   { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
   { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-5 w-5" /> },
   { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" className="h-5 w-5 object-contain" /> },
@@ -980,7 +980,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               type="button"
               variant="secondary"
               size="sm"
-              className="order-3 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
+              className="order-4 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
               title="Caracteristicas"
               aria-label="Caracteristicas"
             >
@@ -1030,14 +1030,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           aria-pressed={Boolean(localRecipe.checked)}
           aria-label={localRecipe.checked ? 'Marcar como pendiente de revisión' : 'Marcar como chequeada'}
           title={localRecipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
-          className={`order-4 h-9 w-9 border p-0 ${
+          className={`order-2 h-9 w-9 border p-0 ${
             localRecipe.checked
               ? 'border-[#7daa3f] bg-[#8ebf4c] text-[#29420f] hover:bg-[#82b144]'
               : 'border-white/60 bg-white/80 text-gray-500 hover:bg-white/90'
           }`}
           onClick={() => onToggleFeature(localRecipe, 'checked', !localRecipe.checked)}
         >
-          <Check className="h-5 w-5" />
+          <Check className="h-5 w-5" strokeWidth={3} />
         </Button>
       )}
 
@@ -1046,7 +1046,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           type="button"
           variant="secondary"
           size="sm"
-          className="order-2 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
+          className="order-3 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
           onClick={() => onSaveToCollection(localRecipe)}
           title="Agregar a una coleccion"
           aria-label="Agregar a una coleccion"

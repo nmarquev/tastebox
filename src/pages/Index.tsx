@@ -962,13 +962,27 @@ const Index = () => {
     }
   };
 
-  // Guardado inline (vista 1 columna) de Tipo de comida, Categoria y Coleccion.
+  // Guardado inline de los metadatos visibles en la vista de una columna.
   const handleInlineSaveFields = async (
     recipeId: string,
-    data: { source: string; dishType: string; recipeType: string; collectionIds: string[] }
+    data: { source: string; dishType: string; recipeType: string; tags: string[]; collectionIds: string[] }
   ) => {
     try {
-      await api.recipes.bulkUpdate([recipeId], { source: data.source || undefined, dishType: data.dishType, recipeType: data.recipeType });
+      const currentTags = (recipes.find(recipe => recipe.id === recipeId)?.tags || [])
+        .map(tag => tag.trim())
+        .filter(Boolean);
+      const selectedTagKeys = new Set(data.tags.map(tag => tag.toLocaleLowerCase()));
+      const currentTagKeys = new Set(currentTags.map(tag => tag.toLocaleLowerCase()));
+      const tagsToAdd = data.tags.filter(tag => !currentTagKeys.has(tag.toLocaleLowerCase()));
+      const tagsToRemove = currentTags.filter(tag => !selectedTagKeys.has(tag.toLocaleLowerCase()));
+
+      await api.recipes.bulkUpdate([recipeId], {
+        source: data.source || undefined,
+        dishType: data.dishType,
+        recipeType: data.recipeType,
+        ...(tagsToAdd.length > 0 ? { tags: tagsToAdd } : {}),
+      });
+      await Promise.all(tagsToRemove.map(tag => api.recipes.removeTag(recipeId, tag)));
       if (data.source.trim()) {
         try { await api.sources.create(data.source.trim()); } catch { /* no bloquear */ }
       }
@@ -978,7 +992,7 @@ const Index = () => {
       const toRemove = current.filter(id => !data.collectionIds.includes(id));
       for (const cid of toAdd) { try { await api.collections.addRecipe(cid, recipeId); } catch { /* no bloquear */ } }
       for (const cid of toRemove) { try { await api.collections.removeRecipe(cid, recipeId); } catch { /* no bloquear */ } }
-      await Promise.all([loadRecipes(), reloadSources()]);
+      await Promise.all([loadRecipes(), reloadSources(), reloadTags()]);
       toast({ title: 'Receta actualizada', description: 'Se guardaron los campos.' });
     } catch (error) {
       toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo guardar', variant: 'destructive' });
@@ -5984,7 +5998,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         }`}
                         title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
                       >
-                        <Check className="h-3.5 w-3.5" />
+                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
                       </span>
                     )}
                     {activeBulkPanel !== null && (
@@ -6115,7 +6129,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         }`}
                         title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
                       >
-                        <Check className="h-3.5 w-3.5" />
+                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
                       </span>
                     )}
                     {viewMode === 'list' && (
@@ -6150,6 +6164,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   collectionNames={gridColumns <= 4 ? collections.filter(c => c.recipeIds.includes(recipe.id)).map(c => c.name) : undefined}
                   dishTypeOptions={gridColumns === 1 ? dishTypeList.map(d => d.name) : undefined}
                   categoryOptions={gridColumns === 1 ? categoryList.map(c => c.name) : undefined}
+                  tagOptions={gridColumns === 1 ? tagList.map(tag => tag.name) : undefined}
                   sourceOptions={gridColumns === 1 ? sourceList.map(s => s.name) : undefined}
                   allCollections={gridColumns === 1 ? collections.map(c => ({ id: c.id, name: c.name })) : undefined}
                   onInlineSave={gridColumns === 1 ? handleInlineSaveFields : undefined}

@@ -30,12 +30,13 @@ interface RecipeCardProps {
   isInCollection?: boolean;
   columns?: 1 | 2 | 3 | 4 | 5;
   collectionNames?: string[];
-  // Edición inline en vista de 1 columna (Tipo de comida / Categoría / Colección).
+  // Edición inline en vista de 1 columna.
   dishTypeOptions?: string[];
   categoryOptions?: string[];
+  tagOptions?: string[];
   sourceOptions?: string[];
   allCollections?: { id: string; name: string }[];
-  onInlineSave?: (recipeId: string, data: { source: string; dishType: string; recipeType: string; collectionIds: string[] }) => Promise<void> | void;
+  onInlineSave?: (recipeId: string, data: { source: string; dishType: string; recipeType: string; tags: string[]; collectionIds: string[] }) => Promise<void> | void;
   // Activar/desactivar características (favorita, cocinada, thermomix, etc.) desde el popover.
   onToggleFeature?: (recipe: Recipe, field: string, value: boolean) => void;
   isPlayingTTS?: boolean;
@@ -47,7 +48,7 @@ interface RecipeCardProps {
 
 // Características editables desde el popover "ON".
 const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
-  { field: 'checked', label: 'Chequeada', icon: <Check className="h-4 w-4" /> },
+  { field: 'checked', label: 'Chequeada', icon: <Check className="h-4 w-4" strokeWidth={3} /> },
   { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
   { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="!h-5 !w-5" /> },
   { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="!h-5 !w-5 object-contain" /> },
@@ -62,19 +63,21 @@ const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
 ];
 
-export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], tagOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   // Edición inline (vista 1 columna) de los campos visibles.
   const [inlineEditing, setInlineEditing] = useState(false);
   const [savingInline, setSavingInline] = useState(false);
   const [editDishType, setEditDishType] = useState<string[]>([]);
   const [editCategories, setEditCategories] = useState<string[]>([]);
+  const [editTags, setEditTags] = useState<string[]>([]);
   const [editCollections, setEditCollections] = useState<string[]>([]); // nombres
   const [editSource, setEditSource] = useState<string[]>([]);
 
   const startInlineEdit = () => {
     setEditDishType((recipe.dishType || '').split(',').map(s => s.trim()).filter(Boolean));
     setEditCategories(parseCategories(recipe.recipeType));
+    setEditTags((recipe.tags || []).map(tag => tag.trim()).filter(Boolean));
     setEditCollections(collectionNames);
     const currentSource = getRecipeSource(recipe);
     setEditSource(currentSource ? [currentSource] : []);
@@ -92,6 +95,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         source: editSource[0] || '',
         dishType: editDishType.join(', '),
         recipeType: editCategories.join(', '),
+        tags: editTags,
         collectionIds,
       });
       setInlineEditing(false);
@@ -293,7 +297,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   type="button"
                   variant="secondary"
                   size="sm"
-                  className="order-3 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
+                  className="order-4 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
                   title="Características (favorita, cocinada, thermomix, etc.)"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -345,7 +349,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               aria-pressed={Boolean(recipe.checked)}
               aria-label={recipe.checked ? 'Marcar como pendiente de revisión' : 'Marcar como chequeada'}
               title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
-              className={`order-4 h-8 w-8 border p-0 ${
+              className={`order-2 h-8 w-8 border p-0 ${
                 recipe.checked
                   ? 'border-[#7daa3f] bg-[#8ebf4c] text-[#29420f] hover:bg-[#82b144]'
                   : 'border-white/60 bg-white/50 text-gray-500 hover:bg-white/70'
@@ -355,7 +359,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 onToggleFeature(recipe, 'checked', !recipe.checked);
               }}
             >
-              <Check className="h-5 w-5" />
+              <Check className="h-5 w-5" strokeWidth={3} />
             </Button>
           )}
           {onSaveToCollection && (
@@ -363,7 +367,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               type="button"
               variant="secondary"
               size="sm"
-              className="order-2 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
+              className="order-3 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
               title="Guardar en una colección"
               onClick={(event) => {
                 event.stopPropagation();
@@ -619,6 +623,18 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   closeOnSelect allowCreate createLabel="Agregar"
                 />
               </div>
+              <div className="[&_button]:h-8 [&_button]:text-xs">
+                <p className="mb-1 text-xs font-semibold text-foreground">Etiquetas</p>
+                <MultiSelectCombobox
+                  options={tagOptions}
+                  selected={editTags}
+                  onChange={setEditTags}
+                  placeholder="Agregar etiquetas"
+                  searchPlaceholder="Buscar o escribir..."
+                  allowCreate
+                  createLabel="Agregar"
+                />
+              </div>
               <div>
                 <p className="mb-1 font-semibold text-foreground">Fuente</p>
                 <MultiSelectCombobox
@@ -661,6 +677,18 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 <div>
                   <p className="font-semibold text-foreground">Tipo de comida</p>
                   <p className="text-muted-foreground">{recipe.dishType.trim()}</p>
+                </div>
+              )}
+              {recipe.tags?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-foreground">Etiquetas</p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {recipe.tags.map(tag => (
+                      <Badge key={tag} variant="secondary" className="px-1.5 py-0 text-[10px] font-normal leading-4">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
             </>
