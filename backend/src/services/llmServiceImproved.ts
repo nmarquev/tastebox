@@ -551,7 +551,7 @@ function inferSectionsFromSource<T extends { section?: string }>(
   const isIngredientLikeText = (value: string) => {
     const key = normalizeSectionLookupText(value);
     return Boolean(key) && itemKeys.some(itemKey =>
-      itemKey !== key && itemKey.includes(key)
+      itemKey.includes(key)
     );
   };
 
@@ -615,6 +615,84 @@ function keepOnlyMeaningfulSectionGroups<T extends { section?: string }>(items: 
       ? item
       : { ...item, section: undefined };
   });
+}
+
+function extractCookidooIngredientsHtml(html: string): string {
+  const ingredientsStart = html.search(/id=["']ingredients-section["']/i);
+  if (ingredientsStart < 0) return '';
+
+  const contentAfterIngredients = html.slice(ingredientsStart);
+  const nextSectionOffset = contentAfterIngredients.slice(1).search(
+    /<div\b[^>]*id=["'][^"']+-section["']/i
+  );
+  return nextSectionOffset >= 0
+    ? contentAfterIngredients.slice(0, nextSectionOffset + 1)
+    : contentAfterIngredients;
+}
+
+export function keepOnlyCookidooIngredientSections<T extends { section?: string }>(
+  items: T[],
+  html: string
+): T[] {
+  const ingredientsHtml = extractCookidooIngredientsHtml(html);
+  if (!ingredientsHtml) {
+    return items.map(item => ({ ...item, section: undefined }));
+  }
+
+  const sourceSectionKeys = new Set<string>();
+  const headingPattern = /<h[1-6]\b[^>]*class=["'][^"']*\brecipe-content__inner-title\b[^"']*["'][^>]*>([\s\S]*?)<\/h[1-6]>/gi;
+
+  for (const match of ingredientsHtml.matchAll(headingPattern)) {
+    const key = normalizeSectionLookupText(match[1]);
+    if (key) sourceSectionKeys.add(key);
+  }
+
+  return items.map(item => {
+    const key = normalizeSectionLookupText(item.section || '');
+    return key && sourceSectionKeys.has(key)
+      ? item
+      : { ...item, section: undefined };
+  });
+}
+
+export function extractCookidooStructuredIngredients(html: string): ExtractedIngredient[] {
+  const ingredientsHtml = extractCookidooIngredientsHtml(html);
+  if (!ingredientsHtml) return [];
+
+  const ingredients: ExtractedIngredient[] = [];
+  const tokenPattern = /<h[1-6]\b[^>]*class=["'][^"']*\brecipe-content__inner-title\b[^"']*["'][^>]*>([\s\S]*?)<\/h[1-6]>|<recipe-ingredient\b[^>]*>([\s\S]*?)<\/recipe-ingredient>/gi;
+  let currentSection: string | undefined;
+
+  for (const match of ingredientsHtml.matchAll(tokenPattern)) {
+    if (match[1] !== undefined) {
+      currentSection = cleanHtmlFromText(match[1]) || undefined;
+      continue;
+    }
+
+    const block = match[2] || '';
+    const field = (className: string) => cleanHtmlFromText(decodeNumericHtmlEntities(
+      block.match(new RegExp(
+        `<[^>]+class=["'][^"']*\\b${className}\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/[^>]+>`,
+        'i'
+      ))?.[1] || ''
+    ));
+    const name = field('recipe-ingredient__name');
+    if (!name) continue;
+
+    const description = field('recipe-ingredient__description');
+    const alternative = field('recipe-ingredient__alternative');
+    const amount = field('recipe-ingredient__amount');
+    const detailedName = description ? `${name}, ${description}` : name;
+
+    ingredients.push({
+      name: alternative ? `${detailedName} o ${alternative}` : detailedName,
+      amount,
+      unit: undefined,
+      section: currentSection
+    });
+  }
+
+  return ingredients;
 }
 
 type CookidooAlternative = {
@@ -2615,7 +2693,10 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
       }
       const isCookidooSource = sourceUrl?.includes('cookidoo') || false;
       if (isCookidooSource) {
-        validatedData.ingredients = keepOnlyMeaningfulSectionGroups(validatedData.ingredients) as typeof validatedData.ingredients;
+        const structuredIngredients = extractCookidooStructuredIngredients(html);
+        validatedData.ingredients = structuredIngredients.length >= validatedData.ingredients.length
+          ? structuredIngredients as typeof validatedData.ingredients
+          : keepOnlyCookidooIngredientSections(validatedData.ingredients, html) as typeof validatedData.ingredients;
         validatedData.instructions = keepOnlyMeaningfulSectionGroups(validatedData.instructions) as typeof validatedData.instructions;
       }
       console.log('✅ Schema validation passed successfully');
