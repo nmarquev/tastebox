@@ -46,6 +46,7 @@ export const MultiSelectCombobox = ({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const previousSelectedRef = useRef(selected);
   const normalizedSearch = search.trim();
   const filteredOptions = options.filter((option) =>
@@ -113,9 +114,18 @@ export const MultiSelectCombobox = ({
           <Command shouldFilter={false}>
             <div className="relative">
               <CommandInput
+                ref={inputRef}
                 placeholder={searchPlaceholder}
                 value={search}
                 onValueChange={setSearch}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" || !canCreate) return;
+                  event.preventDefault();
+                  onChange(singleSelect ? [normalizedSearch] : [...selected, normalizedSearch]);
+                  void onCreate?.(normalizedSearch);
+                  setSearch("");
+                  if (closeOnSelect) setOpen(false);
+                }}
               />
               {search && (
                 <button
@@ -133,9 +143,10 @@ export const MultiSelectCombobox = ({
               {!filteredOptions.length && !canCreate && (
                 <CommandEmpty>Sin resultados.</CommandEmpty>
               )}
-              <CommandGroup>
+              <CommandGroup className="[&_[cmdk-group-items]]:flex [&_[cmdk-group-items]]:flex-col">
                 {canCreate && (
                   <CommandItem
+                    className="order-last"
                     value={`create-${normalizedSearch}`}
                     onSelect={() => {
                       onChange(singleSelect ? [normalizedSearch] : [...selected, normalizedSearch]);
@@ -148,6 +159,16 @@ export const MultiSelectCombobox = ({
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     {createLabel} “{normalizedSearch}”
+                  </CommandItem>
+                )}
+                {allowCreate && !normalizedSearch && (
+                  <CommandItem
+                    className="order-last text-primary"
+                    value="create-new-value"
+                    onSelect={() => inputRef.current?.focus()}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Agregar nuevo
                   </CommandItem>
                 )}
                 {filteredOptions.map((opt) => (

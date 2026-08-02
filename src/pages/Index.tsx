@@ -98,6 +98,14 @@ const uniqueRecipesById = (recipes: Recipe[]): Recipe[] => {
   });
 };
 
+const sameValues = (left: string[], right: string[]) => {
+  const normalize = (values: string[]) => values.map(value => value.trim()).filter(Boolean);
+  const normalizedLeft = normalize(left);
+  const normalizedRight = normalize(right);
+  return normalizedLeft.length === normalizedRight.length
+    && normalizedLeft.every((value, index) => value === normalizedRight[index]);
+};
+
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -223,7 +231,9 @@ const Index = () => {
       tags: etiqueta ? [etiqueta] : [],
       ingredients: [],
       featured: undefined,
-      checkedOnly: initialRecipeTypeFilter === 'checked' ? true : undefined,
+      checkedStatus: initialRecipeTypeFilter === 'checked'
+        ? 'checked'
+        : initialRecipeTypeFilter === 'unchecked' ? 'unchecked' : undefined,
       thermomixOnly: initialAppView === 'thermomix' || initialRecipeTypeFilter === 'thermomix' ? true : undefined,
       airFryerOnly: initialRecipeTypeFilter === 'air-fryer' ? true : undefined,
       glutenFreeOnly: initialRecipeTypeFilter === 'sin-gluten' ? true : undefined,
@@ -267,7 +277,9 @@ const Index = () => {
       tags: [],
       ingredients: [],
       featured: typeFilter === 'favoritas' ? true : undefined,
-      checkedOnly: typeFilter === 'checked' ? true : undefined,
+      checkedStatus: typeFilter === 'checked'
+        ? 'checked'
+        : typeFilter === 'unchecked' ? 'unchecked' : undefined,
       cookedOnly: typeFilter === 'cocinadas' ? true : undefined,
       thermomixOnly: view === 'thermomix' || typeFilter === 'thermomix' ? true : undefined,
       airFryerOnly: typeFilter === 'air-fryer' ? true : undefined,
@@ -289,6 +301,15 @@ const Index = () => {
 
   const [gridColumns, setGridColumns] = useState<1 | 2 | 3 | 4 | 5>(3); // Default to 3 columns
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'detail' | 'ingredients'>('grid'); // Grilla, lista, detalle o ingredientes
+  const [ingredientsEditDraft, setIngredientsEditDraft] = useState<{
+    recipeId: string;
+    dishTypes: string[];
+    tags: string[];
+    collections: string[];
+    categories: string[];
+    source: string[];
+  } | null>(null);
+  const [savingIngredientsEdit, setSavingIngredientsEdit] = useState(false);
   const [recipeSort, setRecipeSort] = useState<RecipeSort>(() => {
     return (localStorage.getItem('recipe-sort') as RecipeSort) || 'date';
   });
@@ -668,7 +689,8 @@ const Index = () => {
     const matchesFeatured = !filters.featured || recipe.featured === true;
 
     // Recetas revisadas
-    const matchesChecked = !filters.checkedOnly || recipe.checked === true;
+    const matchesChecked = !filters.checkedStatus
+      || (filters.checkedStatus === 'checked' ? recipe.checked === true : recipe.checked !== true);
 
     // Cocinadas filter
     const matchesCooked = !filters.cookedOnly || recipe.cooked === true;
@@ -970,37 +992,74 @@ const Index = () => {
   // Guardado inline de los metadatos visibles en la vista de una columna.
   const handleInlineSaveFields = async (
     recipeId: string,
-    data: { source: string; dishType: string; recipeType: string; tags: string[]; collectionIds: string[] }
+    data: { source: string; dishType: string; recipeType: string; tags: string[]; collections: string[] }
   ) => {
     try {
-      const currentTags = (recipes.find(recipe => recipe.id === recipeId)?.tags || [])
-        .map(tag => tag.trim())
-        .filter(Boolean);
-      const selectedTagKeys = new Set(data.tags.map(tag => tag.toLocaleLowerCase()));
-      const currentTagKeys = new Set(currentTags.map(tag => tag.toLocaleLowerCase()));
-      const tagsToAdd = data.tags.filter(tag => !currentTagKeys.has(tag.toLocaleLowerCase()));
-      const tagsToRemove = currentTags.filter(tag => !selectedTagKeys.has(tag.toLocaleLowerCase()));
-
       await api.recipes.bulkUpdate([recipeId], {
         source: data.source || undefined,
         dishType: data.dishType,
         recipeType: data.recipeType,
-        ...(tagsToAdd.length > 0 ? { tags: tagsToAdd } : {}),
+        replaceTags: data.tags,
       });
-      await Promise.all(tagsToRemove.map(tag => api.recipes.removeTag(recipeId, tag)));
       if (data.source.trim()) {
         try { await api.sources.create(data.source.trim()); } catch { /* no bloquear */ }
       }
+      // Resolver las colecciones por nombre y crear las nuevas antes de asociarlas.
+      const availableCollections = [...collections];
+      const selectedCollectionIds: string[] = [];
+      for (const rawName of data.collections) {
+        const name = rawName.trim();
+        if (!name) continue;
+        let collection = availableCollections.find(item => item.name.toLocaleLowerCase('es') === name.toLocaleLowerCase('es'));
+        if (!collection) {
+          collection = await api.collections.create(name);
+          availableCollections.push(collection);
+          const createdCollection = collection;
+          setCollections(previous => [...previous, createdCollection].sort((left, right) => left.name.localeCompare(right.name, 'es')));
+        }
+        selectedCollectionIds.push(collection.id);
+      }
       // Colecciones: agregar/quitar segun la diferencia con la pertenencia actual.
       const current = collections.filter(c => c.recipeIds.includes(recipeId)).map(c => c.id);
-      const toAdd = data.collectionIds.filter(id => !current.includes(id));
-      const toRemove = current.filter(id => !data.collectionIds.includes(id));
+      const toAdd = selectedCollectionIds.filter(id => !current.includes(id));
+      const toRemove = current.filter(id => !selectedCollectionIds.includes(id));
       for (const cid of toAdd) { try { await api.collections.addRecipe(cid, recipeId); } catch { /* no bloquear */ } }
       for (const cid of toRemove) { try { await api.collections.removeRecipe(cid, recipeId); } catch { /* no bloquear */ } }
       await Promise.all([loadRecipes(), reloadSources(), reloadTags()]);
       toast({ title: 'Receta actualizada', description: 'Se guardaron los campos.' });
+      return true;
     } catch (error) {
       toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo guardar', variant: 'destructive' });
+      return false;
+    }
+  };
+
+  const startIngredientsInlineEdit = (recipe: Recipe, recipeCollections: string[]) => {
+    setIngredientsEditDraft({
+      recipeId: recipe.id,
+      dishTypes: (recipe.dishType || '').split(',').map(value => value.trim()).filter(Boolean),
+      tags: (recipe.tags || []).map(tag => tag.trim()).filter(Boolean),
+      collections: recipeCollections,
+      categories: parseCategories(recipe.recipeType),
+      source: getRecipeSource(recipe) ? [getRecipeSource(recipe)] : [],
+    });
+  };
+
+  const saveIngredientsInlineEdit = async () => {
+    if (!ingredientsEditDraft) return;
+    setSavingIngredientsEdit(true);
+    try {
+      const saved = await handleInlineSaveFields(ingredientsEditDraft.recipeId, {
+        source: ingredientsEditDraft.source[0] || '',
+        dishType: ingredientsEditDraft.dishTypes.join(', '),
+        recipeType: ingredientsEditDraft.categories.join(', '),
+        tags: ingredientsEditDraft.tags,
+        collections: ingredientsEditDraft.collections,
+      });
+      if (!saved) return;
+      setIngredientsEditDraft(null);
+    } finally {
+      setSavingIngredientsEdit(false);
     }
   };
 
@@ -2249,7 +2308,7 @@ const Index = () => {
     || (filters.cookTimeRange?.[0] ?? 0) > 0
     || (filters.cookTimeRange?.[1] ?? 120) < 120
     || filters.featured === true
-    || filters.checkedOnly === true
+    || Boolean(filters.checkedStatus)
     || filters.cookedOnly === true
     || filters.thermomixOnly === true
     || filters.airFryerOnly === true
@@ -2281,7 +2340,7 @@ const Index = () => {
   if (filters.ingredients?.length) activeFilterChips.push({ label: 'Ingredientes', value: filters.ingredients.join(', '), onRemove: () => handleFiltersChange({ ...filters, ingredients: [] }) });
   if (filters.author) activeFilterChips.push({ label: 'Autor', value: filters.author, onRemove: () => handleFiltersChange({ ...filters, author: undefined }) });
   if (filters.featured) activeFilterChips.push({ value: 'Favoritos', onRemove: () => handleFiltersChange({ ...filters, featured: undefined }) });
-  if (filters.checkedOnly) activeFilterChips.push({ value: 'Checked', onRemove: () => handleFiltersChange({ ...filters, checkedOnly: undefined }) });
+  if (filters.checkedStatus) activeFilterChips.push({ value: filters.checkedStatus === 'checked' ? 'Checked' : 'Unchecked', onRemove: () => handleFiltersChange({ ...filters, checkedStatus: undefined }) });
   if (filters.cookedOnly) activeFilterChips.push({ value: 'Cocinadas', onRemove: () => handleFiltersChange({ ...filters, cookedOnly: undefined }) });
   if (filters.thermomixOnly) activeFilterChips.push({ value: 'Thermomix', onRemove: () => handleFiltersChange({ ...filters, thermomixOnly: undefined }) });
   if (filters.airFryerOnly) activeFilterChips.push({ value: 'Air Fryer', onRemove: () => handleFiltersChange({ ...filters, airFryerOnly: undefined }) });
@@ -2302,7 +2361,7 @@ const Index = () => {
       tags: [],
       ingredients: [],
       featured: undefined,
-      checkedOnly: undefined,
+      checkedStatus: undefined,
       cookedOnly: undefined,
       thermomixOnly: undefined,
       airFryerOnly: undefined,
@@ -3884,8 +3943,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 </div>
               </div>
 
-              {/* Toggles (Favoritos, Cocinadas, Thermomix, etc.) al final del bloque: 4 y 4 en iPad */}
-              <div className="mt-2 grid grid-cols-2 justify-items-center gap-2 sm:grid-cols-4 xl:grid-cols-6 [&>button]:w-[94%] [&>button]:px-2 [&>button]:text-[13px]">
+              {/* Filtros de caracteristicas: 7 por fila en escritorio. */}
+              <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-7 [&>button]:!h-7 [&>button]:w-full [&>button]:gap-1 [&>button]:px-1.5 [&>button]:text-xs [&>button>img]:!mr-1 [&>button>svg]:!mr-1">
                 <Button
                   variant={filters.featured === true ? "default" : "outline"}
                   size="sm"
@@ -4011,6 +4070,30 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 >
                   <Utensils className="h-4 w-4 mr-2" />
                   Recetas Saladas
+                </Button>
+                <Button
+                  variant={filters.checkedStatus === 'checked' ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFiltersChange({
+                    ...filters,
+                    checkedStatus: filters.checkedStatus === 'checked' ? undefined : 'checked',
+                  })}
+                  className="h-8"
+                >
+                  <Check className="mr-2 h-4 w-4" strokeWidth={3} />
+                  Checked
+                </Button>
+                <Button
+                  variant={filters.checkedStatus === 'unchecked' ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFiltersChange({
+                    ...filters,
+                    checkedStatus: filters.checkedStatus === 'unchecked' ? undefined : 'unchecked',
+                  })}
+                  className="h-8"
+                >
+                  <Square className="mr-2 h-4 w-4" />
+                  Unchecked
                 </Button>
               </div>
             </div>
@@ -5869,11 +5952,37 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   .filter(collection => collection.recipeIds.includes(recipe.id))
                   .map(collection => collection.name)
                   .filter(Boolean);
+                const ingredientsHasChanges = ingredientsEditDraft?.recipeId === recipe.id && (
+                  !sameValues(ingredientsEditDraft.source, ingSource ? [ingSource] : [])
+                  || !sameValues(ingredientsEditDraft.dishTypes, (recipe.dishType || '').split(','))
+                  || !sameValues(ingredientsEditDraft.collections, ingCollections)
+                  || !sameValues(ingredientsEditDraft.categories, parseCategories(recipe.recipeType))
+                  || !sameValues(ingredientsEditDraft.tags, recipe.tags || [])
+                );
                 return (
-                  <button
+                  <div
                     key={recipe.id}
-                    type="button"
-                    onClick={(e) => { if (activeBulkPanel !== null) { e.preventDefault(); handleToggleRecipeSelection(recipe, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey }); } else { handleViewRecipe(recipe); } }}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      if (ingredientsEditDraft?.recipeId === recipe.id) return;
+                      if (activeBulkPanel !== null) {
+                        e.preventDefault();
+                        handleToggleRecipeSelection(recipe, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey });
+                      } else {
+                        handleViewRecipe(recipe);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
+                      e.preventDefault();
+                      if (ingredientsEditDraft?.recipeId === recipe.id) return;
+                      if (activeBulkPanel !== null) {
+                        handleToggleRecipeSelection(recipe, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey });
+                      } else {
+                        handleViewRecipe(recipe);
+                      }
+                    }}
                     className={`flex items-start gap-4 px-3 py-3 text-left transition-colors hover:bg-muted/50 ${ingSelected ? 'bg-accent/60' : ''}`}
                   >
                     {/* Imagen a la izquierda */}
@@ -5883,7 +5992,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
                     </span>
                     {/* Medio: titulo, fuente, iconos, tipo y categorias */}
-                    <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <span className="block text-lg font-medium leading-tight text-foreground">{recipe.title}</span>
                       {ingSource && (
                         <span className="block truncate text-xs text-muted-foreground">{ingSource}</span>
@@ -5953,19 +6062,100 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           )}
                         </span>
                       )}
-                      {/* Tipo de comida y categorias */}
-                      <span className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                        {recipe.dishType?.trim() && (
-                          <span><span className="font-semibold text-foreground">Tipo de comida:</span> {recipe.dishType}</span>
-                        )}
-                        {ingCollections.length > 0 && (
-                          <span><span className="font-semibold text-foreground">Coleccion:</span> {ingCollections.join(', ')}</span>
-                        )}
-                        {ingCategories.length > 0 && (
-                          <span><span className="font-semibold text-foreground">Categoria:</span> {ingCategories.join(', ')}</span>
-                        )}
-                      </span>
-                    </span>
+                      {ingredientsEditDraft?.recipeId === recipe.id ? (
+                        <div
+                          className="mt-1 grid grid-cols-1 gap-2 rounded-md border border-border bg-background/80 p-2 lg:grid-cols-2"
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        >
+                          <div>
+                            <p className="mb-1 text-xs font-semibold text-foreground">Fuente</p>
+                            <MultiSelectCombobox
+                              options={sourceList.map(item => item.name)}
+                              selected={ingredientsEditDraft.source}
+                              onChange={(source) => setIngredientsEditDraft(current => current ? { ...current, source } : current)}
+                              placeholder="Elegi una fuente"
+                              searchPlaceholder="Buscar o escribir fuente..."
+                              singleSelect closeOnSelect allowCreate createLabel="Agregar"
+                            />
+                          </div>
+                          <div>
+                            <p className="mb-1 text-xs font-semibold text-foreground">Tipo de comida</p>
+                            <MultiSelectCombobox
+                              options={dishTypeList.map(item => item.name)}
+                              selected={ingredientsEditDraft.dishTypes}
+                              onChange={(dishTypes) => setIngredientsEditDraft(current => current ? { ...current, dishTypes } : current)}
+                              placeholder="Elegi uno o mas"
+                              searchPlaceholder="Buscar o escribir..."
+                              closeOnSelect allowCreate createLabel="Agregar"
+                            />
+                          </div>
+                          <div>
+                            <p className="mb-1 text-xs font-semibold text-foreground">Coleccion</p>
+                            <MultiSelectCombobox
+                              options={collections.map(collection => collection.name)}
+                              selected={ingredientsEditDraft.collections}
+                              onChange={(selectedCollections) => setIngredientsEditDraft(current => current ? { ...current, collections: selectedCollections } : current)}
+                              placeholder="Elegi una o mas"
+                              searchPlaceholder="Buscar coleccion..."
+                              closeOnSelect allowCreate createLabel="Agregar"
+                            />
+                          </div>
+                          <div>
+                            <p className="mb-1 text-xs font-semibold text-foreground">Categoria</p>
+                            <MultiSelectCombobox
+                              options={categoryList.map(item => item.name)}
+                              selected={ingredientsEditDraft.categories}
+                              onChange={(categories) => setIngredientsEditDraft(current => current ? { ...current, categories } : current)}
+                              placeholder="Elegi una o mas"
+                              searchPlaceholder="Buscar o escribir..."
+                              closeOnSelect allowCreate createLabel="Agregar"
+                            />
+                          </div>
+                          <div>
+                            <p className="mb-1 text-xs font-semibold text-foreground">Etiquetas</p>
+                            <MultiSelectCombobox
+                              options={tagList.map(item => item.name)}
+                              selected={ingredientsEditDraft.tags}
+                              onChange={(tags) => setIngredientsEditDraft(current => current ? { ...current, tags } : current)}
+                              placeholder="Agregar etiquetas"
+                              searchPlaceholder="Buscar o escribir..."
+                              allowCreate createLabel="Agregar"
+                            />
+                          </div>
+                          <div className="flex items-end justify-end gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIngredientsEditDraft(null)} disabled={savingIngredientsEdit}>
+                              <X className="mr-1 h-4 w-4" /> Cancelar
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => void saveIngredientsInlineEdit()}
+                              disabled={savingIngredientsEdit || !ingredientsHasChanges}
+                              className={ingredientsHasChanges ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-secondary/35 text-secondary-foreground"}
+                            >
+                              {savingIngredientsEdit ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+                              Guardar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                          {recipe.dishType?.trim() && (
+                            <span><span className="font-semibold text-foreground">Tipo de comida:</span> {recipe.dishType}</span>
+                          )}
+                          {recipe.tags?.length > 0 && (
+                            <span className="text-[10px]"><span className="font-semibold text-foreground">Etiquetas:</span> {recipe.tags.join(', ')}</span>
+                          )}
+                          {ingCollections.length > 0 && (
+                            <span><span className="font-semibold text-foreground">Coleccion:</span> {ingCollections.join(', ')}</span>
+                          )}
+                          {ingCategories.length > 0 && (
+                            <span><span className="font-semibold text-foreground">Categoria:</span> {ingCategories.join(', ')}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     {/* Derecha: ingredientes con fuente mas pequena */}
                     <span className="hidden shrink-0 sm:block sm:w-60 md:w-72">
                       {recipe.ingredients && recipe.ingredients.length > 0 ? (
@@ -5984,37 +6174,26 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                     </span>
                     {activeBulkPanel === null && (
-                      <span
-                        role="checkbox"
-                        tabIndex={0}
-                        aria-checked={Boolean(recipe.checked)}
+                      <button
+                        type="button"
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
-                          handleToggleFeature(recipe, 'checked', !recipe.checked);
+                          startIngredientsInlineEdit(recipe, ingCollections);
                         }}
-                        onKeyDown={(event) => {
-                          if (event.key !== 'Enter' && event.key !== ' ') return;
-                          event.preventDefault();
-                          event.stopPropagation();
-                          handleToggleFeature(recipe, 'checked', !recipe.checked);
-                        }}
-                        className={`inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
-                          recipe.checked
-                            ? 'border-transparent bg-transparent text-[#6f9f32] hover:bg-muted'
-                            : 'border-muted-foreground/40 text-muted-foreground hover:border-[#8ebf4c] hover:text-[#5f852c]'
-                        }`}
-                        title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        title="Editar datos de la receta"
+                        aria-label="Editar datos de la receta"
                       >
-                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                      </span>
+                        <Edit className="h-4 w-4" />
+                      </button>
                     )}
                     {activeBulkPanel !== null && (
                       <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${ingSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 text-transparent'}`}>
                         <Check className="h-3.5 w-3.5" />
                       </span>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -6170,12 +6349,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   recipe={recipe}
                   columns={gridColumns}
                   collectionNames={gridColumns <= 4 ? collections.filter(c => c.recipeIds.includes(recipe.id)).map(c => c.name) : undefined}
-                  dishTypeOptions={gridColumns === 1 ? dishTypeList.map(d => d.name) : undefined}
-                  categoryOptions={gridColumns === 1 ? categoryList.map(c => c.name) : undefined}
-                  tagOptions={gridColumns === 1 ? tagList.map(tag => tag.name) : undefined}
-                  sourceOptions={gridColumns === 1 ? sourceList.map(s => s.name) : undefined}
-                  allCollections={gridColumns === 1 ? collections.map(c => ({ id: c.id, name: c.name })) : undefined}
-                  onInlineSave={gridColumns === 1 ? handleInlineSaveFields : undefined}
+                  dishTypeOptions={gridColumns <= 4 ? dishTypeList.map(d => d.name) : undefined}
+                  categoryOptions={gridColumns <= 4 ? categoryList.map(c => c.name) : undefined}
+                  tagOptions={gridColumns <= 4 ? tagList.map(tag => tag.name) : undefined}
+                  sourceOptions={gridColumns <= 4 ? sourceList.map(s => s.name) : undefined}
+                  allCollections={gridColumns <= 4 ? collections.map(c => ({ id: c.id, name: c.name })) : undefined}
+                  onInlineSave={gridColumns <= 4 ? handleInlineSaveFields : undefined}
                   onToggleFeature={handleToggleFeature}
                   onView={handleViewRecipe}
                   onEdit={handleEditRecipe}

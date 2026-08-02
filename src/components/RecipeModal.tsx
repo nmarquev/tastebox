@@ -274,7 +274,12 @@ export const RecipeModal = ({
     if (!localRecipe || removingTag) return;
     setRemovingTag(tagName);
     try {
-      const updatedRecipe = await api.recipes.removeTag(localRecipe.id, tagName);
+      const normalizedTagName = tagName.trim().toLocaleLowerCase('es');
+      const remainingTags = (localRecipe.tags || []).filter(
+        tag => tag.trim().toLocaleLowerCase('es') !== normalizedTagName
+      );
+      await api.recipes.bulkUpdate([localRecipe.id], { replaceTags: remainingTags });
+      const updatedRecipe = { ...localRecipe, tags: remainingTags };
       setLocalRecipe(updatedRecipe);
       onRecipeUpdate?.(updatedRecipe);
       toast({

@@ -13,6 +13,7 @@ import {
   Leaf,
   PlusCircle,
   Search,
+  Square,
   Sparkles,
   Utensils,
   WheatOff,
@@ -37,6 +38,7 @@ const recipeTypeItems = [
   { label: "Todas las Recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> },
   { label: "Favoritas", to: "/app?filtro=favoritas", icon: <Heart className="h-4 w-4" /> },
   { label: "Checked", to: "/app?filtro=checked", icon: <Check className="h-4 w-4" strokeWidth={3} /> },
+  { label: "Unchecked", to: "/app?filtro=unchecked", icon: <Square className="h-4 w-4" /> },
   { label: "Cocinadas", to: "/app?filtro=cocinadas", icon: <CheckCircle2 className="h-4 w-4" /> },
   {
     label: "Thermomix",

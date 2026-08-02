@@ -498,6 +498,7 @@ router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
       dishType: z.string().optional().nullable(),
       recipeType: z.string().optional().nullable(),
       tags: z.array(z.string()).optional(),
+      replaceTags: z.array(z.string()).optional(),
       featured: z.boolean().optional(),
       cooked: z.boolean().optional(),
       checked: z.boolean().optional(),
@@ -539,12 +540,35 @@ router.patch('/bulk', authenticateToken, async (req: AuthRequest, res) => {
 
     const hasScalar = Object.keys(data).length > 0;
     const tagsToAdd = fields.tags; // si viene, se AGREGAN a las existentes (no reemplazan)
+    const tagsToReplace = fields.replaceTags;
 
     for (const id of ownedIds) {
       if (hasScalar) {
         await prisma.recipe.update({ where: { id }, data });
       }
-      if (tagsToAdd !== undefined && tagsToAdd.length > 0) {
+      if (tagsToReplace !== undefined) {
+        const seenTags = new Set<string>();
+        const normalizedTags = tagsToReplace
+          .map(name => name.trim())
+          .filter(name => {
+            const key = name.toLocaleLowerCase('es');
+            if (!name || seenTags.has(key)) return false;
+            seenTags.add(key);
+            return true;
+          });
+        await prisma.recipe.update({
+          where: { id },
+          data: {
+            tags: {
+              deleteMany: {},
+              create: normalizedTags.map((tagName, index) => ({
+                order: index + 1,
+                tag: { connectOrCreate: { where: { name: tagName }, create: { name: tagName } } },
+              })),
+            },
+          },
+        });
+      } else if (tagsToAdd !== undefined && tagsToAdd.length > 0) {
         // Unir con las etiquetas existentes (sin duplicar) y conservar el orden.
         const current = await prisma.recipe.findUnique({
           where: { id },

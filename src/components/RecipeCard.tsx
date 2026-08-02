@@ -36,7 +36,7 @@ interface RecipeCardProps {
   tagOptions?: string[];
   sourceOptions?: string[];
   allCollections?: { id: string; name: string }[];
-  onInlineSave?: (recipeId: string, data: { source: string; dishType: string; recipeType: string; tags: string[]; collectionIds: string[] }) => Promise<void> | void;
+  onInlineSave?: (recipeId: string, data: { source: string; dishType: string; recipeType: string; tags: string[]; collections: string[] }) => Promise<boolean | void> | boolean | void;
   // Activar/desactivar características (favorita, cocinada, thermomix, etc.) desde el popover.
   onToggleFeature?: (recipe: Recipe, field: string, value: boolean) => void;
   isPlayingTTS?: boolean;
@@ -63,6 +63,14 @@ const FEATURE_TOGGLES: { field: string; label: string; icon: JSX.Element }[] = [
   { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
 ];
 
+const sameValues = (left: string[], right: string[]) => {
+  const normalize = (values: string[]) => values.map(value => value.trim()).filter(Boolean);
+  const normalizedLeft = normalize(left);
+  const normalizedRight = normalize(right);
+  return normalizedLeft.length === normalizedRight.length
+    && normalizedLeft.every((value, index) => value === normalizedRight[index]);
+};
+
 export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], tagOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   // Edición inline (vista 1 columna) de los campos visibles.
@@ -74,12 +82,18 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
   const [editCollections, setEditCollections] = useState<string[]>([]); // nombres
   const [editSource, setEditSource] = useState<string[]>([]);
 
+  const currentSource = getRecipeSource(recipe);
+  const inlineHasChanges = !sameValues(editSource, currentSource ? [currentSource] : [])
+    || !sameValues(editDishType, (recipe.dishType || '').split(','))
+    || !sameValues(editCollections, collectionNames)
+    || !sameValues(editCategories, parseCategories(recipe.recipeType))
+    || !sameValues(editTags, recipe.tags || []);
+
   const startInlineEdit = () => {
     setEditDishType((recipe.dishType || '').split(',').map(s => s.trim()).filter(Boolean));
     setEditCategories(parseCategories(recipe.recipeType));
     setEditTags((recipe.tags || []).map(tag => tag.trim()).filter(Boolean));
     setEditCollections(collectionNames);
-    const currentSource = getRecipeSource(recipe);
     setEditSource(currentSource ? [currentSource] : []);
     setInlineEditing(true);
   };
@@ -88,16 +102,14 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
     if (!onInlineSave) return;
     setSavingInline(true);
     try {
-      const collectionIds = editCollections
-        .map(name => allCollections.find(c => c.name === name)?.id)
-        .filter(Boolean) as string[];
-      await onInlineSave(recipe.id, {
+      const saved = await onInlineSave(recipe.id, {
         source: editSource[0] || '',
         dishType: editDishType.join(', '),
         recipeType: editCategories.join(', '),
         tags: editTags,
-        collectionIds,
+        collections: editCollections,
       });
+      if (saved === false) return;
       setInlineEditing(false);
     } finally {
       setSavingInline(false);
@@ -152,6 +164,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
   const minimal = columns === 5;
   // En 1 columna la tarjeta es horizontal y muestra info adicional a la derecha.
   const oneCol = columns === 1;
+  const inlineGridCard = columns >= 2 && columns <= 4;
   const infoIconClass = oneCol ? "h-5 w-5" : compact ? "h-3 w-3" : "h-4 w-4";
   const hasNutritionData = recipe.calories !== null && recipe.calories !== undefined && recipe.calories > 0;
   const activeCardFeatures = [
@@ -478,7 +491,10 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         )}
       </div>
 
-      <CardContent className="flex flex-1 cursor-pointer flex-col space-y-3 p-4" onClick={handleCardClick}>
+      <CardContent
+        className="flex flex-1 cursor-pointer flex-col space-y-3 p-4"
+        onClick={handleCardClick}
+      >
         <div>
           <h3 className={`recipe-card-title font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors ${minimal ? "text-sm leading-tight" : oneCol ? "text-2xl leading-8" : "text-lg leading-7"}`}>
             {recipe.title}
@@ -550,7 +566,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         )}
 
         {!minimal && collectionNames.length > 0 && (
-        <div className="mt-auto flex items-end gap-2 border-t border-border/60 pt-3">
+        <div className={`mt-auto flex items-end gap-2 border-t border-border/60 pt-3 ${inlineGridCard && onInlineSave && !inlineEditing ? 'pr-10' : ''}`}>
           {collectionNames.length > 0 && (
             <div className="flex min-w-0 flex-1 flex-wrap content-end gap-x-0.5 gap-y-1">
               {collectionNames.map((collection) => (
@@ -572,10 +588,25 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
       </CardContent>
 
       {/* Panel derecho (solo en vista de 1 columna): Colección, Categoría, Tipo de comida */}
-      {oneCol && (
-        <div className="shrink-0 space-y-3 border-t p-4 text-sm sm:w-60 sm:border-l sm:border-t-0" onClick={inlineEditing ? (e) => e.stopPropagation() : undefined}>
+      {inlineGridCard && onInlineSave && !inlineEditing && !selectionMode && (
+        <button
+          type="button"
+          onClick={(event) => { event.stopPropagation(); startInlineEdit(); }}
+          className="absolute bottom-3 right-3 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          title="Editar estos campos"
+          aria-label="Editar campos"
+        >
+          <Edit className="h-4 w-4" />
+        </button>
+      )}
+
+      {(oneCol || (inlineGridCard && inlineEditing)) && (
+        <div
+          className={`relative flex shrink-0 flex-col gap-3 border-t p-4 text-sm ${oneCol ? 'sm:w-60 sm:border-l sm:border-t-0' : 'w-full'}`}
+          onClick={inlineEditing ? (e) => e.stopPropagation() : undefined}
+        >
           {(onInlineSave || onEdit) && !inlineEditing && (
-            <div className="flex justify-end">
+            <div className="absolute right-4 top-3 z-10">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); if (onInlineSave) { startInlineEdit(); } else { onEdit?.(recipe); } }}
@@ -591,6 +622,31 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           {inlineEditing ? (
             <>
               <div>
+                <p className="mb-1 font-semibold text-foreground">Fuente</p>
+                <MultiSelectCombobox
+                  options={sourceOptions}
+                  selected={editSource}
+                  onChange={setEditSource}
+                  placeholder="Elegi una fuente"
+                  searchPlaceholder="Buscar o escribir fuente..."
+                  singleSelect
+                  closeOnSelect
+                  allowCreate
+                  createLabel="Agregar"
+                />
+              </div>
+              <div>
+                <p className="mb-1 font-semibold text-foreground">Tipo de comida</p>
+                <MultiSelectCombobox
+                  options={dishTypeOptions}
+                  selected={editDishType}
+                  onChange={setEditDishType}
+                  placeholder="Elegi uno o mas"
+                  searchPlaceholder="Buscar o escribir..."
+                  closeOnSelect allowCreate createLabel="Agregar"
+                />
+              </div>
+              <div>
                 <p className="mb-1 font-semibold text-foreground">Coleccion</p>
                 <MultiSelectCombobox
                   options={allCollections.map(c => c.name)}
@@ -598,7 +654,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   onChange={setEditCollections}
                   placeholder="Elegi una o mas"
                   searchPlaceholder="Buscar coleccion..."
-                  closeOnSelect
+                  closeOnSelect allowCreate createLabel="Agregar"
                 />
               </div>
               <div>
@@ -613,18 +669,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 />
               </div>
               <div>
-                <p className="mb-1 font-semibold text-foreground">Tipo de comida</p>
-                <MultiSelectCombobox
-                  options={dishTypeOptions}
-                  selected={editDishType}
-                  onChange={setEditDishType}
-                  placeholder="Elegi uno o mas"
-                  searchPlaceholder="Buscar o escribir..."
-                  closeOnSelect allowCreate createLabel="Agregar"
-                />
-              </div>
-              <div className="[&_button]:h-8 [&_button]:text-xs">
-                <p className="mb-1 text-xs font-semibold text-foreground">Etiquetas</p>
+                <p className="mb-1 font-semibold text-foreground">Etiquetas</p>
                 <MultiSelectCombobox
                   options={tagOptions}
                   selected={editTags}
@@ -635,32 +680,30 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   createLabel="Agregar"
                 />
               </div>
-              <div>
-                <p className="mb-1 font-semibold text-foreground">Fuente</p>
-                <MultiSelectCombobox
-                  options={sourceOptions}
-                  selected={editSource}
-                  onChange={setEditSource}
-                  placeholder="Elegi una fuente"
-                  searchPlaceholder="Buscar o escribir fuente..."
-                  singleSelect
-                  closeOnSelect
-                  allowCreate
-                  createLabel="Agregar"
-                />
-              </div>
               <div className="flex justify-end gap-2 pt-1">
                 <Button type="button" variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setInlineEditing(false); }} disabled={savingInline}>
                   <X className="mr-1 h-4 w-4" /> Cancelar
                 </Button>
-                <Button type="button" size="sm" onClick={(e) => { e.stopPropagation(); void saveInlineEdit(); }} disabled={savingInline}>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={(e) => { e.stopPropagation(); void saveInlineEdit(); }}
+                  disabled={savingInline || !inlineHasChanges}
+                  className={inlineHasChanges ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-secondary/35 text-secondary-foreground"}
+                >
                   {savingInline ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
                   Guardar
                 </Button>
               </div>
             </>
           ) : (
-            <>
+            <div className="flex flex-col gap-3 [&>div:first-child]:pr-9">
+              {recipe.dishType?.trim() && (
+                <div>
+                  <p className="font-semibold text-foreground">Tipo de comida</p>
+                  <p className="text-muted-foreground">{recipe.dishType.trim()}</p>
+                </div>
+              )}
               {collectionNames.some(n => n && n.trim()) && (
                 <div>
                   <p className="font-semibold text-foreground">Coleccion</p>
@@ -673,15 +716,9 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   <p className="text-muted-foreground">{categories.join(', ')}</p>
                 </div>
               )}
-              {recipe.dishType?.trim() && (
-                <div>
-                  <p className="font-semibold text-foreground">Tipo de comida</p>
-                  <p className="text-muted-foreground">{recipe.dishType.trim()}</p>
-                </div>
-              )}
               {recipe.tags?.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-foreground">Etiquetas</p>
+                  <p className="font-semibold text-foreground">Etiquetas</p>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {recipe.tags.map(tag => (
                       <Badge key={tag} variant="secondary" className="px-1.5 py-0 text-[10px] font-normal leading-4">
@@ -691,7 +728,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   </div>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       )}
