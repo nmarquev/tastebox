@@ -6017,7 +6017,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       </span>
                       {/* Iconos de caracteristicas */}
                       {(recipe.thermomix || recipe.airFryer || recipe.cooked || recipe.featured || recipe.glutenFree || recipe.sugarFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.sweet || recipe.savory) && (
-                        <span className="flex flex-wrap items-center gap-2">
+                        <span className="order-last flex flex-wrap items-center gap-2">
                           {recipe.thermomix && (
                             <img src="/thermomix-logo.png" alt="" title="Thermomix" className="h-5 w-5 object-contain mix-blend-multiply" />
                           )}
