@@ -517,7 +517,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             </p>
           )}
           {!minimal && (
-            <p className={`mt-1.5 text-muted-foreground ${oneCol ? "text-base" : "text-[13px]"}`}>
+            <p className={`mt-1.5 text-muted-foreground ${oneCol ? "text-base" : columns === 2 ? "text-sm" : "text-[13px]"}`}>
               <span className="font-semibold text-foreground">Fuente:</span>{' '}
               {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) ? (
                 <a

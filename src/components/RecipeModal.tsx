@@ -1767,8 +1767,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             </span>
                             <span className={!ingredient.amount && !ingredient.unit && ingredient.name.includes('\n') ? 'whitespace-pre-wrap' : undefined}>
                               {(ingredient.amount || ingredient.unit) && (
-                                <span className="font-medium">{ingredient.amount} {ingredient.unit}</span>
-                              )}{' '}{ingredient.name}
+                                <span>{ingredient.amount} {ingredient.unit}</span>
+                              )}{' '}<span className="font-semibold text-foreground">{ingredient.name}</span>
                             </span>
                           </li>
                         ))}

@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import type { ReactNode } from "react";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { RecipeCard, Recipe } from "@/components/RecipeCard";
@@ -63,9 +64,11 @@ import { saveRecentCategory } from "@/utils/recentCategories";
 import { saveRecentRecipe } from "@/utils/recentRecipes";
 import { saveRecentSource } from "@/utils/recentSources";
 import { EMPTY_FILTER_OPTIONS } from "@/constants/emptyFilterOptions";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type RecipeSort = 'title' | 'category' | 'date' | 'collection' | 'source' | 'dishType' | 'difficulty' | 'prepTime' | 'totalTime';
 type EditableGalleryKind = 'category' | 'source' | 'tag' | 'dishType';
+type RecipeFeatureField = 'checked' | 'featured' | 'cooked' | 'thermomix' | 'airFryer' | 'glutenFree' | 'sugarFree' | 'keto' | 'lowCarb' | 'proteica' | 'vegetarian' | 'sweet' | 'savory';
 
 type EditableGalleryTarget = {
   kind: EditableGalleryKind;
@@ -105,6 +108,38 @@ const sameValues = (left: string[], right: string[]) => {
   return normalizedLeft.length === normalizedRight.length
     && normalizedLeft.every((value, index) => value === normalizedRight[index]);
 };
+
+const INGREDIENT_FEATURE_TOGGLES: { field: RecipeFeatureField; label: string; icon: ReactNode }[] = [
+  { field: 'checked', label: 'Chequeada', icon: <Check className="h-4 w-4" strokeWidth={3} /> },
+  { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
+  { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-5 w-5" /> },
+  { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain" /> },
+  { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+  { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
+  { field: 'sugarFree', label: 'Sin Azucar', icon: <CandyOff className="h-4 w-4" /> },
+  { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-[18px] w-[18px]" /> },
+  { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
+  { field: 'proteica', label: 'Proteica', icon: <Beef className="h-4 w-4" /> },
+  { field: 'vegetarian', label: 'Vegetariana', icon: <Leaf className="h-4 w-4" /> },
+  { field: 'sweet', label: 'Receta dulce', icon: <CakeSlice className="h-4 w-4" /> },
+  { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
+];
+
+const getRecipeFeatures = (recipe: Recipe): Record<RecipeFeatureField, boolean> => ({
+  checked: Boolean(recipe.checked),
+  featured: Boolean(recipe.featured),
+  cooked: Boolean(recipe.cooked),
+  thermomix: Boolean(recipe.thermomix),
+  airFryer: Boolean(recipe.airFryer),
+  glutenFree: Boolean(recipe.glutenFree),
+  sugarFree: Boolean(recipe.sugarFree),
+  keto: Boolean(recipe.keto),
+  lowCarb: Boolean(recipe.lowCarb),
+  proteica: Boolean(recipe.proteica),
+  vegetarian: Boolean(recipe.vegetarian),
+  sweet: Boolean(recipe.sweet),
+  savory: Boolean(recipe.savory),
+});
 
 const Index = () => {
   const location = useLocation();
@@ -308,6 +343,7 @@ const Index = () => {
     collections: string[];
     categories: string[];
     source: string[];
+    features: Record<RecipeFeatureField, boolean>;
   } | null>(null);
   const [savingIngredientsEdit, setSavingIngredientsEdit] = useState(false);
   const [recipeSort, setRecipeSort] = useState<RecipeSort>(() => {
@@ -992,7 +1028,7 @@ const Index = () => {
   // Guardado inline de los metadatos visibles en la vista de una columna.
   const handleInlineSaveFields = async (
     recipeId: string,
-    data: { source: string; dishType: string; recipeType: string; tags: string[]; collections: string[] }
+    data: { source: string; dishType: string; recipeType: string; tags: string[]; collections: string[]; features?: Record<RecipeFeatureField, boolean> }
   ) => {
     try {
       await api.recipes.bulkUpdate([recipeId], {
@@ -1000,6 +1036,7 @@ const Index = () => {
         dishType: data.dishType,
         recipeType: data.recipeType,
         replaceTags: data.tags,
+        ...data.features,
       });
       if (data.source.trim()) {
         try { await api.sources.create(data.source.trim()); } catch { /* no bloquear */ }
@@ -1042,6 +1079,7 @@ const Index = () => {
       collections: recipeCollections,
       categories: parseCategories(recipe.recipeType),
       source: getRecipeSource(recipe) ? [getRecipeSource(recipe)] : [],
+      features: getRecipeFeatures(recipe),
     });
   };
 
@@ -1055,6 +1093,7 @@ const Index = () => {
         recipeType: ingredientsEditDraft.categories.join(', '),
         tags: ingredientsEditDraft.tags,
         collections: ingredientsEditDraft.collections,
+        features: ingredientsEditDraft.features,
       });
       if (!saved) return;
       setIngredientsEditDraft(null);
@@ -5958,6 +5997,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   || !sameValues(ingredientsEditDraft.collections, ingCollections)
                   || !sameValues(ingredientsEditDraft.categories, parseCategories(recipe.recipeType))
                   || !sameValues(ingredientsEditDraft.tags, recipe.tags || [])
+                  || INGREDIENT_FEATURE_TOGGLES.some(({ field }) => ingredientsEditDraft.features[field] !== Boolean(recipe[field]))
                 );
                 return (
                   <div
@@ -5986,16 +6026,72 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     className={`flex items-start gap-4 px-3 py-3 text-left transition-colors hover:bg-muted/50 ${ingSelected ? 'bg-accent/60' : ''}`}
                   >
                     {/* Imagen a la izquierda */}
-                    <span className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                    <span className="relative flex h-36 w-36 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                       {ingImg
                         ? <img src={ingImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
+                      {ingredientsEditDraft?.recipeId === recipe.id && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={(event) => event.stopPropagation()}
+                              className="absolute inset-x-1 bottom-1 inline-flex h-7 items-center justify-center gap-0.5 rounded-md border border-white/70 bg-white/90 px-0.5 text-[9px] font-semibold text-gray-700 shadow-sm transition-colors hover:bg-white"
+                              title="Cambiar características"
+                              aria-label="Cambiar características"
+                            >
+                              <ChefHat className="h-3 w-3" />
+                              Características
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="start"
+                            className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5"
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => event.stopPropagation()}
+                          >
+                            <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
+                            <div className="space-y-0.5">
+                              {INGREDIENT_FEATURE_TOGGLES.map(({ field, label, icon }) => {
+                                const active = ingredientsEditDraft.features[field];
+                                return (
+                                  <button
+                                    key={field}
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      setIngredientsEditDraft(current => current ? {
+                                        ...current,
+                                        features: { ...current.features, [field]: !current.features[field] },
+                                      } : current);
+                                    }}
+                                    className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                                  >
+                                    <span className="flex min-w-0 items-center gap-1.5">
+                                      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center [&>img]:h-4 [&>img]:w-4 [&>svg]:h-4 [&>svg]:w-4">
+                                        {icon}
+                                      </span>
+                                      <span className="truncate text-left">{label}</span>
+                                    </span>
+                                    <span className={`w-6 shrink-0 text-right text-[10px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>
+                                      {active ? 'ON' : 'OFF'}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
                     </span>
                     {/* Medio: titulo, fuente, iconos, tipo y categorias */}
                     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <span className="block text-lg font-medium leading-tight text-foreground">{recipe.title}</span>
                       {ingSource && (
-                        <span className="block truncate text-xs text-muted-foreground">{ingSource}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          <span className="font-semibold text-foreground">Fuente:</span>{' '}
+                          <span className="recipe-source-link text-primary">{ingSource}</span>
+                        </span>
                       )}
                       {/* Tiempos y porciones */}
                       <span className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -6064,7 +6160,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                       {ingredientsEditDraft?.recipeId === recipe.id ? (
                         <div
-                          className="mt-1 grid grid-cols-1 gap-2 rounded-md border border-border bg-background/80 p-2 lg:grid-cols-2"
+                          className="mt-1 grid grid-cols-1 gap-2 rounded-md border border-primary bg-primary/10 p-2 shadow-sm ring-1 ring-primary/40 lg:grid-cols-2"
                           onClick={(event) => event.stopPropagation()}
                           onKeyDown={(event) => event.stopPropagation()}
                         >
@@ -6144,14 +6240,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           {recipe.dishType?.trim() && (
                             <span><span className="font-semibold text-foreground">Tipo de comida:</span> {recipe.dishType}</span>
                           )}
-                          {recipe.tags?.length > 0 && (
-                            <span className="text-[10px]"><span className="font-semibold text-foreground">Etiquetas:</span> {recipe.tags.join(', ')}</span>
-                          )}
                           {ingCollections.length > 0 && (
                             <span><span className="font-semibold text-foreground">Coleccion:</span> {ingCollections.join(', ')}</span>
                           )}
                           {ingCategories.length > 0 && (
                             <span><span className="font-semibold text-foreground">Categoria:</span> {ingCategories.join(', ')}</span>
+                          )}
+                          {recipe.tags?.length > 0 && (
+                            <span><span className="font-semibold text-foreground">Etiquetas:</span> {recipe.tags.join(', ')}</span>
                           )}
                         </div>
                       )}
@@ -6164,7 +6260,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <li key={idx} className="flex gap-1.5">
                               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
                               <span>
-                                {(ing.amount || ing.unit) && <span className="font-medium">{[ing.amount, ing.unit].filter(Boolean).join(' ')}</span>} {ing.name}
+                                {(ing.amount || ing.unit) && <span>{[ing.amount, ing.unit].filter(Boolean).join(' ')}</span>}{' '}
+                                <span className="font-semibold text-foreground">{ing.name}</span>
                               </span>
                             </li>
                           ))}
@@ -6176,16 +6273,28 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     {activeBulkPanel === null && (
                       <button
                         type="button"
+                        disabled={savingIngredientsEdit}
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
+                          if (ingredientsEditDraft?.recipeId === recipe.id) {
+                            void saveIngredientsInlineEdit();
+                            return;
+                          }
                           startIngredientsInlineEdit(recipe, ingCollections);
                         }}
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        title="Editar datos de la receta"
-                        aria-label="Editar datos de la receta"
+                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors disabled:cursor-wait disabled:opacity-70 ${
+                          ingredientsEditDraft?.recipeId === recipe.id
+                            ? 'border-primary bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
+                            : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                        title={ingredientsEditDraft?.recipeId === recipe.id ? "Guardar y cerrar edición" : "Editar datos de la receta"}
+                        aria-label={ingredientsEditDraft?.recipeId === recipe.id ? "Guardar y cerrar edición" : "Editar datos de la receta"}
+                        aria-pressed={ingredientsEditDraft?.recipeId === recipe.id}
                       >
-                        <Edit className="h-4 w-4" />
+                        {savingIngredientsEdit && ingredientsEditDraft?.recipeId === recipe.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <Edit className="h-4 w-4" />}
                       </button>
                     )}
                     {activeBulkPanel !== null && (
