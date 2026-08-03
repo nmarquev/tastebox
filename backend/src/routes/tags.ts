@@ -72,8 +72,7 @@ router.patch('/:name', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// Eliminar una etiqueta: borra su metadato y la quita de las recetas del usuario
-// (elimina las relaciones RecipeTag de las recetas propias; las recetas se mantienen).
+// Solo se puede eliminar una etiqueta que no esté asignada a una receta.
 router.delete('/:name', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const name = decodeURIComponent(req.params.name).trim();
@@ -90,12 +89,25 @@ router.delete('/:name', authenticateToken, async (req: AuthRequest, res) => {
       select: { id: true }
     })).map(r => r.id);
 
-    await prisma.$transaction([
-      ...savedMeta.map(m => prisma.recipeTagMeta.delete({ where: { id: m.id } })),
-      ...tags.map(t => prisma.recipeTag.deleteMany({
-        where: { tagId: t.id, recipeId: { in: userRecipeIds } }
-      })),
-    ]);
+    const assignedCount = tags.length && userRecipeIds.length
+      ? await prisma.recipeTag.count({
+          where: {
+            tagId: { in: tags.map(tag => tag.id) },
+            recipeId: { in: userRecipeIds }
+          }
+        })
+      : 0;
+    if (assignedCount > 0) {
+      return res.status(409).json({
+        error: 'No se puede eliminar porque tiene una receta asociada.'
+      });
+    }
+
+    if (savedMeta.length) {
+      await prisma.$transaction(
+        savedMeta.map(meta => prisma.recipeTagMeta.delete({ where: { id: meta.id } }))
+      );
+    }
 
     res.json({ success: true, name });
   } catch (error) {

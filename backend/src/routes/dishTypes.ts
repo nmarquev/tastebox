@@ -37,7 +37,9 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
     };
 
     savedDishTypes.forEach(dishType => addName(dishType.name, dishType.coverImage));
-    recipes.forEach(recipe => addName(recipe.dishType || ''));
+    recipes.forEach(recipe => {
+      (recipe.dishType || '').split(',').forEach(value => addName(value));
+    });
 
     res.json(
       Array.from(byKey.values()).sort((a, b) => a.name.localeCompare(b.name, 'es'))
@@ -104,24 +106,36 @@ router.patch('/:name', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// Eliminar un tipo de receta: borra el registro guardado y quita la etiqueta
-// de las recetas que lo tenían (las recetas se mantienen).
+// Solo se puede eliminar un tipo de comida que no esté asignado a una receta.
 router.delete('/:name', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const name = decodeURIComponent(req.params.name).trim();
     if (!name) return res.status(400).json({ error: 'Nombre de tipo de receta inválido' });
 
+    const lower = name.toLocaleLowerCase();
     const saved = (await prisma.recipeDishType.findMany({
       where: { userId: req.user!.id }
-    })).filter(dt => dt.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+    })).filter(dt => dt.name.toLocaleLowerCase() === lower);
 
-    await prisma.$transaction([
-      ...saved.map(dt => prisma.recipeDishType.delete({ where: { id: dt.id } })),
-      prisma.recipe.updateMany({
-        where: { userId: req.user!.id, dishType: name },
-        data: { dishType: null }
-      })
-    ]);
+    const recipes = await prisma.recipe.findMany({
+      where: { userId: req.user!.id, dishType: { not: null } },
+      select: { dishType: true }
+    });
+    const isAssigned = recipes.some(recipe =>
+      (recipe.dishType || '').split(',')
+        .some(type => type.trim().toLocaleLowerCase() === lower)
+    );
+    if (isAssigned) {
+      return res.status(409).json({
+        error: 'No se puede eliminar porque tiene una receta asociada.'
+      });
+    }
+
+    if (saved.length) {
+      await prisma.$transaction(
+        saved.map(dt => prisma.recipeDishType.delete({ where: { id: dt.id } }))
+      );
+    }
 
     res.json({ success: true, name });
   } catch (error) {

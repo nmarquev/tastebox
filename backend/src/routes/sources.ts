@@ -133,8 +133,7 @@ router.patch('/:name', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// Eliminar una fuente: borra el registro guardado y quita la fuente (sourceUrl)
-// de las recetas cuya fuente derivada coincide (las recetas se mantienen).
+// Solo se puede eliminar una fuente que no esté asignada a una receta.
 router.delete('/:name', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const name = decodeURIComponent(req.params.name).trim();
@@ -146,21 +145,26 @@ router.delete('/:name', authenticateToken, async (req: AuthRequest, res) => {
     })).filter(s => s.name.toLocaleLowerCase() === lower);
 
     const recipes = await prisma.recipe.findMany({
-      where: { userId: req.user!.id, sourceUrl: { not: null } },
-      select: { id: true, sourceUrl: true }
+      where: { userId: req.user!.id },
+      select: { source: true, sourceUrl: true }
     });
 
-    const recipeUpdates = recipes
-      .filter(recipe => getSourceFromUrl(recipe.sourceUrl || '').toLocaleLowerCase() === lower)
-      .map(recipe => prisma.recipe.update({
-        where: { id: recipe.id },
-        data: { sourceUrl: null }
-      }));
+    const isAssigned = recipes.some(recipe => {
+      const explicit = (recipe.source || '').trim();
+      const actualSource = explicit || getSourceFromUrl(recipe.sourceUrl || '');
+      return actualSource.toLocaleLowerCase() === lower;
+    });
+    if (isAssigned) {
+      return res.status(409).json({
+        error: 'No se puede eliminar porque tiene una receta asociada.'
+      });
+    }
 
-    await prisma.$transaction([
-      ...saved.map(s => prisma.recipeSource.delete({ where: { id: s.id } })),
-      ...recipeUpdates
-    ]);
+    if (saved.length) {
+      await prisma.$transaction(
+        saved.map(source => prisma.recipeSource.delete({ where: { id: source.id } }))
+      );
+    }
 
     res.json({ success: true, name });
   } catch (error) {

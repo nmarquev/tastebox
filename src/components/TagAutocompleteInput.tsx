@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +45,7 @@ export const TagAutocompleteInput = ({
 }: TagAutocompleteInputProps) => {
   const [loadedTags, setLoadedTags] = useState<string[]>([]);
   const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (options) return;
@@ -59,7 +60,7 @@ export const TagAutocompleteInput = ({
     const selected = new Set(selectedTags.map(tag => tag.toLocaleLowerCase('es')));
     return existingTags
       .filter(tag =>
-        tag.toLocaleLowerCase('es').includes(query)
+        tag.toLocaleLowerCase('es').startsWith(query)
         && !selected.has(tag.toLocaleLowerCase('es'))
       )
       .slice(0, 8);
@@ -69,6 +70,7 @@ export const TagAutocompleteInput = ({
     <div className="relative">
       <div className="flex gap-2">
         <Input
+          ref={inputRef}
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
           onFocus={() => setFocused(true)}
@@ -79,6 +81,7 @@ export const TagAutocompleteInput = ({
             if (event.key !== 'Enter') return;
             event.preventDefault();
             onAdd(suggestions[0] || value);
+            window.requestAnimationFrame(() => inputRef.current?.focus());
           }}
         />
         {showAddButton && (
@@ -96,7 +99,10 @@ export const TagAutocompleteInput = ({
                 type="button"
                 className="min-w-0 flex-1 px-2 py-1.5 text-left text-sm"
                 onMouseDown={(event) => event.preventDefault()}
-                onClick={() => onAdd(tag)}
+                onClick={() => {
+                  onAdd(tag);
+                  window.requestAnimationFrame(() => inputRef.current?.focus());
+                }}
               >
                 <span className="block truncate">{tag}</span>
               </button>

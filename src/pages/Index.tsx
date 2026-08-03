@@ -64,6 +64,7 @@ import { saveRecentCategory } from "@/utils/recentCategories";
 import { saveRecentRecipe } from "@/utils/recentRecipes";
 import { saveRecentSource } from "@/utils/recentSources";
 import { EMPTY_FILTER_OPTIONS } from "@/constants/emptyFilterOptions";
+import { splitIngredientDisplayName } from "@/utils/ingredientText";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type RecipeSort = 'title' | 'category' | 'date' | 'collection' | 'source' | 'dishType' | 'difficulty' | 'prepTime' | 'totalTime';
@@ -1427,6 +1428,16 @@ const Index = () => {
   const sameName = (left?: string | null, right?: string | null) =>
     (left || '').trim().toLocaleLowerCase() === (right || '').trim().toLocaleLowerCase();
 
+  const canDeleteFilterOption = (recipeCount: number) => {
+    if (recipeCount === 0) return true;
+    toast({
+      title: "No se puede eliminar",
+      description: "No se puede eliminar porque tiene una receta asociada.",
+      variant: "destructive",
+    });
+    return false;
+  };
+
   const replaceNameInList = (values: string[], oldName: string, newName: string) => {
     const seen = new Set<string>();
     return values
@@ -1529,7 +1540,7 @@ const Index = () => {
       if (filters.collectionId === id) {
         handleFiltersChange({ ...filters, collectionId: undefined });
       }
-      toast({ title: "Coleccion eliminada", description: "Las recetas siguen disponibles en tu lista." });
+      toast({ title: "Colección eliminada", description: "Se eliminó de la lista." });
     } catch (error) {
       toast({
         title: "No se pudo eliminar la coleccion",
@@ -1585,16 +1596,20 @@ const Index = () => {
     }
   };
 
-  // Eliminar un tipo de comida (las recetas se mantienen, pierden la etiqueta).
+  // Eliminar un tipo de comida sin recetas asociadas.
   const handleDeleteDishType = async (name: string) => {
-    setDeleteDishTypeTarget(null); // cerrar el dialogo de inmediato
-    if (filters.dishType === name || filters.dishTypes?.includes(name)) {
-      handleFiltersChange({ ...filters, dishType: filters.dishType === name ? undefined : filters.dishType, dishTypes: (filters.dishTypes || []).filter(t => t !== name) });
-    }
+    setDeleteDishTypeTarget(null);
     try {
       await api.dishTypes.remove(name);
+      if (sameName(filters.dishType, name) || filters.dishTypes?.some(type => sameName(type, name))) {
+        handleFiltersChange({
+          ...filters,
+          dishType: sameName(filters.dishType, name) ? undefined : filters.dishType,
+          dishTypes: (filters.dishTypes || []).filter(type => !sameName(type, name)),
+        });
+      }
       await Promise.all([reloadDishTypes(), loadRecipes()]);
-      toast({ title: "Tipo de comida eliminado", description: "Las recetas siguen disponibles en tu lista." });
+      toast({ title: "Tipo de comida eliminado", description: "Se eliminó de la lista." });
     } catch (error) {
       toast({
         title: "No se pudo eliminar el tipo de comida",
@@ -1619,14 +1634,17 @@ const Index = () => {
   };
 
   const handleDeleteCategory = async (name: string) => {
-    setDeleteCategoryTarget(null); // cerrar el dialogo de inmediato
-    if (filters.recipeTypes?.includes(name)) {
-      handleFiltersChange({ ...filters, recipeTypes: filters.recipeTypes.filter(t => t !== name) });
-    }
+    setDeleteCategoryTarget(null);
     try {
       await api.categories.remove(name);
+      if (filters.recipeTypes?.some(category => sameName(category, name))) {
+        handleFiltersChange({
+          ...filters,
+          recipeTypes: filters.recipeTypes.filter(category => !sameName(category, name)),
+        });
+      }
       await Promise.all([reloadCategories(), loadRecipes()]);
-      toast({ title: "Categoria eliminada", description: "Las recetas siguen disponibles en tu lista." });
+      toast({ title: "Categoría eliminada", description: "Se eliminó de la lista." });
     } catch (error) {
       toast({ title: "No se pudo eliminar la categoria", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
@@ -1647,15 +1665,15 @@ const Index = () => {
   };
 
   const handleDeleteSource = async (name: string) => {
-    setDeleteSourceTarget(null); // cerrar el dialogo de inmediato
-    if (filters.sources?.includes(name)) {
-      const remaining = filters.sources.filter(s => s !== name);
-      handleFiltersChange({ ...filters, sources: remaining.length ? remaining : undefined });
-    }
+    setDeleteSourceTarget(null);
     try {
       await api.sources.remove(name);
+      if (filters.sources?.some(source => sameName(source, name))) {
+        const remaining = filters.sources.filter(source => !sameName(source, name));
+        handleFiltersChange({ ...filters, sources: remaining.length ? remaining : undefined });
+      }
       await Promise.all([reloadSources(), loadRecipes()]);
-      toast({ title: "Fuente eliminada", description: "Las recetas siguen disponibles en tu lista." });
+      toast({ title: "Fuente eliminada", description: "Se eliminó de la lista." });
     } catch (error) {
       toast({ title: "No se pudo eliminar la fuente", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
@@ -1677,13 +1695,16 @@ const Index = () => {
 
   const handleDeleteTag = async (name: string) => {
     setDeleteTagTarget(null);
-    if (filters.tags?.includes(name)) {
-      handleFiltersChange({ ...filters, tags: filters.tags.filter(t => t !== name) });
-    }
     try {
       await api.tags.remove(name);
+      if (filters.tags?.some(tag => sameName(tag, name))) {
+        handleFiltersChange({
+          ...filters,
+          tags: filters.tags.filter(tag => !sameName(tag, name)),
+        });
+      }
       await Promise.all([reloadTags(), loadRecipes()]);
-      toast({ title: "Etiqueta eliminada", description: "Las recetas siguen disponibles en tu lista." });
+      toast({ title: "Etiqueta eliminada", description: "Se eliminó de la lista." });
     } catch (error) {
       toast({ title: "No se pudo eliminar la etiqueta", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
@@ -3844,29 +3865,32 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       </button>
                     )}
                   </div>
-                  <Select
-                    value={filters.collectionId || "all"}
-                    onValueChange={(value) => handleFiltersChange({
-                      ...filters,
-                      collectionId: value === "all" ? undefined : value,
-                    })}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Todas las colecciones" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas las colecciones</SelectItem>
-                      {collections.map(collection => (
-                        <SelectItem key={collection.id} value={collection.id}>
-                          <span className="flex items-center gap-2">
-                            <Bookmark className="h-4 w-4" />
-                            {collection.name} ({collection.recipeCount})
-                          </span>
-                        </SelectItem>
-                      ))}
-                      <SelectItem value={EMPTY_FILTER_OPTIONS.collection}>{EMPTY_FILTER_OPTIONS.collection}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <MultiSelectCombobox
+                    options={[...collections.map(collection => collection.name), EMPTY_FILTER_OPTIONS.collection]}
+                    selected={filters.collectionId === EMPTY_FILTER_OPTIONS.collection
+                      ? [EMPTY_FILTER_OPTIONS.collection]
+                      : collections
+                          .filter(collection => collection.id === filters.collectionId)
+                          .map(collection => collection.name)}
+                    onChange={(next) => {
+                      const value = next[0];
+                      const collectionId = value === EMPTY_FILTER_OPTIONS.collection
+                        ? EMPTY_FILTER_OPTIONS.collection
+                        : collections.find(collection => sameName(collection.name, value))?.id;
+                      handleFiltersChange({ ...filters, collectionId });
+                    }}
+                    onDeleteOption={(name) => {
+                      const collection = collections.find(item => sameName(item.name, name));
+                      if (!collection || !canDeleteFilterOption(collection.recipeCount)) return false;
+                      void handleDeleteCollection(collection.id);
+                      return false;
+                    }}
+                    canDeleteOption={(value) => value !== EMPTY_FILTER_OPTIONS.collection}
+                    placeholder="Todas las colecciones"
+                    searchPlaceholder="Buscar colección..."
+                    singleSelect
+                    closeOnSelect
+                  />
                 </div>
 
                 <div>
@@ -3884,6 +3908,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     onChange={(newTypes) => handleFiltersChange({ ...filters, dishTypes: newTypes, dishType: undefined })}
                     placeholder="Filtrar por tipo de comida"
                     searchPlaceholder="Buscar tipo..."
+                    onDeleteOption={(name) => {
+                      const item = dishTypeList.find(type => sameName(type.name, name));
+                      if (!item || !canDeleteFilterOption(item.count)) return false;
+                      void handleDeleteDishType(item.name);
+                      return false;
+                    }}
+                    canDeleteOption={(value) => value !== EMPTY_FILTER_OPTIONS.dishType}
                     closeOnSelect
                   />
                 </div>
@@ -3898,11 +3929,18 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     )}
                   </div>
                   <MultiSelectCombobox
-                    options={[...categories, EMPTY_FILTER_OPTIONS.category]}
+                    options={[...categoryList.map(category => category.name), EMPTY_FILTER_OPTIONS.category]}
                     selected={filters.recipeTypes}
                     onChange={(newTypes) => handleFiltersChange({ ...filters, recipeTypes: newTypes })}
-                    placeholder="Filtrar por categoria"
-                    searchPlaceholder="Buscar categoria..."
+                    placeholder="Filtrar por categoría"
+                    searchPlaceholder="Buscar categoría..."
+                    onDeleteOption={(name) => {
+                      const item = categoryList.find(category => sameName(category.name, name));
+                      if (!item || !canDeleteFilterOption(item.count)) return false;
+                      void handleDeleteCategory(item.name);
+                      return false;
+                    }}
+                    canDeleteOption={(value) => value !== EMPTY_FILTER_OPTIONS.category}
                     closeOnSelect
                   />
                 </div>
@@ -3916,25 +3954,25 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       </button>
                     )}
                   </div>
-                  <Select
-                    value={filters.sources?.[0] || "all"}
-                    onValueChange={(value) => handleFiltersChange({ ...filters, sources: value === "all" ? undefined : [value] })}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Filtrar por fuente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas las fuentes</SelectItem>
-                      {Array.from(new Set(
-                        recipes
-                          .map(recipe => getRecipeSource(recipe))
-                          .filter(source => source.length > 0)
-                      )).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })).map(source => (
-                        <SelectItem key={source} value={source}>{source}</SelectItem>
-                      ))}
-                      <SelectItem value={EMPTY_FILTER_OPTIONS.source}>{EMPTY_FILTER_OPTIONS.source}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <MultiSelectCombobox
+                    options={[...sourceList.map(source => source.name), EMPTY_FILTER_OPTIONS.source]}
+                    selected={filters.sources || []}
+                    onChange={(next) => handleFiltersChange({
+                      ...filters,
+                      sources: next.length ? next : undefined,
+                    })}
+                    onDeleteOption={(name) => {
+                      const item = sourceList.find(source => sameName(source.name, name));
+                      if (!item || !canDeleteFilterOption(item.count)) return false;
+                      void handleDeleteSource(item.name);
+                      return false;
+                    }}
+                    canDeleteOption={(value) => value !== EMPTY_FILTER_OPTIONS.source}
+                    placeholder="Todas las fuentes"
+                    searchPlaceholder="Buscar fuente..."
+                    singleSelect
+                    closeOnSelect
+                  />
                 </div>
 
                 <div>
@@ -3947,15 +3985,18 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     )}
                   </div>
                   <MultiSelectCombobox
-                    options={[...Array.from(new Set(
-                      recipes.flatMap(recipe =>
-                        recipe.tags.map(tag => typeof tag === 'string' ? tag : tag.tag || tag.name || '')
-                      ).filter(tag => tag.length > 0)
-                    )).sort(), EMPTY_FILTER_OPTIONS.tag]}
+                    options={[...tagList.map(tag => tag.name), EMPTY_FILTER_OPTIONS.tag]}
                     selected={filters.tags}
                     onChange={(newTags) => handleFiltersChange({ ...filters, tags: newTags })}
                     placeholder="Filtrar por etiqueta"
                     searchPlaceholder="Buscar etiqueta..."
+                    onDeleteOption={(name) => {
+                      const item = tagList.find(tag => sameName(tag.name, name));
+                      if (!item || !canDeleteFilterOption(item.count)) return false;
+                      void handleDeleteTag(item.name);
+                      return false;
+                    }}
+                    canDeleteOption={(value) => value !== EMPTY_FILTER_OPTIONS.tag}
                     closeOnSelect
                   />
                 </div>
@@ -6026,7 +6067,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     className={`flex items-start gap-4 px-3 py-3 text-left transition-colors hover:bg-muted/50 ${ingSelected ? 'bg-accent/60' : ''}`}
                   >
                     {/* Imagen a la izquierda */}
-                    <span className="relative flex h-36 w-36 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                    <span className="relative flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                       {ingImg
                         ? <img src={ingImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
@@ -6209,10 +6250,16 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           {recipe.ingredients.map((ing, idx) => (
                             <li key={idx} className="flex gap-1.5">
                               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                              <span>
-                                {(ing.amount || ing.unit) && <span>{[ing.amount, ing.unit].filter(Boolean).join(' ')}</span>}{' '}
-                                <span className="font-semibold text-foreground">{ing.name}</span>
-                              </span>
+                              {(() => {
+                                const displayName = splitIngredientDisplayName(ing.name);
+                                return (
+                                  <span>
+                                    {(ing.amount || ing.unit) && <span>{[ing.amount, ing.unit].filter(Boolean).join(' ')}</span>}{' '}
+                                    <span className="font-semibold text-foreground">{displayName.name}</span>
+                                    {displayName.detail}
+                                  </span>
+                                );
+                              })()}
                             </li>
                           ))}
                         </ul>

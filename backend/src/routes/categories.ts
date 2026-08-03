@@ -101,8 +101,7 @@ router.patch('/:name', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// Eliminar una categoría: borra el registro guardado y la quita del campo
-// recipeType de las recetas (las recetas se mantienen).
+// Solo se puede eliminar una categoría que no esté asignada a una receta.
 router.delete('/:name', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const name = decodeURIComponent(req.params.name).trim();
@@ -116,25 +115,24 @@ router.delete('/:name', authenticateToken, async (req: AuthRequest, res) => {
     // Recetas que contienen esta categoría en su recipeType.
     const recipes = await prisma.recipe.findMany({
       where: { userId: req.user!.id, recipeType: { not: null } },
-      select: { id: true, recipeType: true }
+      select: { recipeType: true }
     });
 
-    const recipeUpdates = recipes
-      .map(recipe => {
-        const cats = (recipe.recipeType || '').split(separator).map(s => s.trim()).filter(Boolean);
-        if (!cats.some(c => c.toLocaleLowerCase() === lower)) return null;
-        const remaining = cats.filter(c => c.toLocaleLowerCase() !== lower);
-        return prisma.recipe.update({
-          where: { id: recipe.id },
-          data: { recipeType: remaining.length ? remaining.join(separator) : null }
-        });
-      })
-      .filter((u): u is NonNullable<typeof u> => u !== null);
+    const isAssigned = recipes.some(recipe =>
+      (recipe.recipeType || '').split(separator)
+        .some(category => category.trim().toLocaleLowerCase() === lower)
+    );
+    if (isAssigned) {
+      return res.status(409).json({
+        error: 'No se puede eliminar porque tiene una receta asociada.'
+      });
+    }
 
-    await prisma.$transaction([
-      ...saved.map(cat => prisma.recipeCategory.delete({ where: { id: cat.id } })),
-      ...recipeUpdates
-    ]);
+    if (saved.length) {
+      await prisma.$transaction(
+        saved.map(cat => prisma.recipeCategory.delete({ where: { id: cat.id } }))
+      );
+    }
 
     res.json({ success: true, name });
   } catch (error) {

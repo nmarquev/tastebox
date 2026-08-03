@@ -19,6 +19,29 @@ export const normalizeIngredientText = (value?: string | null) =>
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
 
+const INGREDIENT_DETAIL_PATTERN = new RegExp(
+  String.raw`^(.+?)(\s+(?:(?:en|con|sin|para|a)\s+.+|(?:picad[ao]s?|cortad[ao]s?|trocead[ao]s?|pelad[ao]s?|rallad[ao]s?|molid[ao]s?|triturad[ao]s?|desmenuzad[ao]s?|escurrid[ao]s?|laminad[ao]s?|filetead[ao]s?)\b.*))$`,
+  'i'
+);
+
+// Separa el ingrediente propiamente dicho de su corte, estado o aclaración.
+// Ej.: "tomates, en cuartos" => "tomates" + ", en cuartos".
+export const splitIngredientDisplayName = (value?: string | null) => {
+  const name = normalizeIngredientText(value);
+  const commaIndex = name.indexOf(',');
+  if (commaIndex > 0) {
+    return {
+      name: name.slice(0, commaIndex).trim(),
+      detail: name.slice(commaIndex),
+    };
+  }
+
+  const match = name.match(INGREDIENT_DETAIL_PATTERN);
+  return match
+    ? { name: match[1].trim(), detail: match[2] }
+    : { name, detail: '' };
+};
+
 const UNITS = new Set([
   'g',
   'gr',

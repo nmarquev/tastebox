@@ -23,7 +23,8 @@ interface MultiSelectComboboxProps {
   allowCreate?: boolean;
   createLabel?: string;
   onCreate?: (value: string) => void | Promise<void>;
-  onDeleteOption?: (value: string) => void;
+  onDeleteOption?: (value: string) => boolean | void;
+  canDeleteOption?: (value: string) => boolean;
   singleSelect?: boolean;
   closeOnSelect?: boolean;
 }
@@ -40,6 +41,7 @@ export const MultiSelectCombobox = ({
   createLabel = "Agregar",
   onCreate,
   onDeleteOption,
+  canDeleteOption,
   singleSelect = false,
   closeOnSelect = false,
 }: MultiSelectComboboxProps) => {
@@ -119,12 +121,27 @@ export const MultiSelectCombobox = ({
                 value={search}
                 onValueChange={setSearch}
                 onKeyDown={(event) => {
-                  if (event.key !== "Enter" || !canCreate) return;
+                  if (event.key !== "Enter") return;
+                  const query = normalizedSearch.toLocaleLowerCase();
+                  const matchingOption = normalizedSearch
+                    ? filteredOptions.find(option =>
+                        !selected.includes(option)
+                        && option.toLocaleLowerCase().startsWith(query)
+                      )
+                    : undefined;
+                  if (matchingOption) {
+                    event.preventDefault();
+                    toggle(matchingOption);
+                    window.requestAnimationFrame(() => inputRef.current?.focus());
+                    return;
+                  }
+                  if (!canCreate) return;
                   event.preventDefault();
                   onChange(singleSelect ? [normalizedSearch] : [...selected, normalizedSearch]);
                   void onCreate?.(normalizedSearch);
                   setSearch("");
                   if (closeOnSelect) setOpen(false);
+                  else window.requestAnimationFrame(() => inputRef.current?.focus());
                 }}
               />
               {search && (
@@ -175,7 +192,7 @@ export const MultiSelectCombobox = ({
                   <CommandItem key={opt} value={opt} onSelect={() => toggle(opt)} className="gap-2">
                     <Check className={cn("h-4 w-4", selected.includes(opt) ? "opacity-100" : "opacity-0")} />
                     <span className="min-w-0 flex-1 truncate">{opt}</span>
-                    {onDeleteOption && (
+                    {onDeleteOption && (canDeleteOption?.(opt) ?? true) && (
                       <button
                         type="button"
                         className="ml-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
@@ -188,8 +205,8 @@ export const MultiSelectCombobox = ({
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
-                          onDeleteOption(opt);
-                          if (selected.includes(opt)) {
+                          const shouldRemove = onDeleteOption(opt);
+                          if (shouldRemove !== false && selected.includes(opt)) {
                             onChange(selected.filter(value => value !== opt));
                           }
                         }}

@@ -134,7 +134,7 @@ router.patch('/:collectionId', authenticateToken, async (req: AuthRequest, res) 
   }
 });
 
-// Eliminar una colección (las recetas NO se eliminan, solo la colección y sus vínculos).
+// Solo se puede eliminar una colección que no tenga recetas asignadas.
 router.delete('/:collectionId', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const collection = await prisma.collection.findFirst({
@@ -145,8 +145,15 @@ router.delete('/:collectionId', authenticateToken, async (req: AuthRequest, res)
       return res.status(404).json({ error: 'Colección no encontrada' });
     }
 
-    // Al borrar la colección, CollectionRecipe se elimina en cascada,
-    // pero las recetas en sí permanecen intactas.
+    const assignedCount = await prisma.collectionRecipe.count({
+      where: { collectionId: collection.id }
+    });
+    if (assignedCount > 0) {
+      return res.status(409).json({
+        error: 'No se puede eliminar porque tiene una receta asociada.'
+      });
+    }
+
     await prisma.collection.delete({ where: { id: collection.id } });
 
     res.json({ success: true, collectionId: collection.id });

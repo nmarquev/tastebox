@@ -617,8 +617,8 @@ export const EditRecipeModal = ({
     const normalizedTag = tagToAdd.trim();
     if (normalizedTag && !tags.some(tag => tag.toLocaleLowerCase('es') === normalizedTag.toLocaleLowerCase('es'))) {
       setValue('tags', [...tags, normalizedTag], { shouldDirty: true });
-      setNewTag('');
     }
+    if (normalizedTag) setNewTag('');
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
