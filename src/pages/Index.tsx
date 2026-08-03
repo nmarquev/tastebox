@@ -6030,62 +6030,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       {ingImg
                         ? <img src={ingImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
-                      <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={(event) => event.stopPropagation()}
-                              className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/70 bg-white/80 text-gray-600 shadow-sm transition-colors hover:bg-white"
-                              title="Cambiar características"
-                              aria-label="Cambiar características"
-                            >
-                              <ChefHat className="h-5 w-5" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            align="start"
-                            className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5"
-                            onClick={(event) => event.stopPropagation()}
-                            onKeyDown={(event) => event.stopPropagation()}
-                          >
-                            <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
-                            <div className="space-y-0.5">
-                              {INGREDIENT_FEATURE_TOGGLES.map(({ field, label, icon }) => {
-                                const active = ingredientsEditDraft?.recipeId === recipe.id
-                                  ? ingredientsEditDraft.features[field]
-                                  : Boolean(recipe[field]);
-                                return (
-                                  <button
-                                    key={field}
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      if (ingredientsEditDraft?.recipeId === recipe.id) {
-                                        setIngredientsEditDraft(current => current ? {
-                                          ...current,
-                                          features: { ...current.features, [field]: !current.features[field] },
-                                        } : current);
-                                        return;
-                                      }
-                                      void handleToggleFeature(recipe, field, !active);
-                                    }}
-                                    className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
-                                  >
-                                    <span className="flex min-w-0 items-center gap-1.5">
-                                      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center [&>img]:h-4 [&>img]:w-4 [&>svg]:h-4 [&>svg]:w-4">
-                                        {icon}
-                                      </span>
-                                      <span className="truncate text-left">{label}</span>
-                                    </span>
-                                    <span className={`w-6 shrink-0 text-right text-[10px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>
-                                      {active ? 'ON' : 'OFF'}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
                     </span>
                     {/* Medio: titulo, fuente, iconos, tipo y categorias */}
                     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -6115,19 +6059,13 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         )}
                       </span>
                       {/* Iconos de caracteristicas */}
-                      {(recipe.thermomix || recipe.airFryer || recipe.cooked || recipe.featured || recipe.glutenFree || recipe.sugarFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.sweet || recipe.savory) && (
+                      {(recipe.thermomix || recipe.airFryer || recipe.glutenFree || recipe.sugarFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.sweet || recipe.savory || recipe.cooked || recipe.featured || recipe.checked) && (
                         <span className="order-last flex flex-wrap items-center gap-2">
                           {recipe.thermomix && (
                             <img src="/thermomix-logo.png" alt="" title="Thermomix" className="h-5 w-5 object-contain mix-blend-multiply" />
                           )}
                           {recipe.airFryer && (
                             <img src="/air-fryer.png" alt="" title="Air Fryer" className="h-5 w-5 object-contain mix-blend-multiply" />
-                          )}
-                          {recipe.cooked && (
-                            <RecipePreparedIcon style={{ width: 20, height: 20, color: '#8ebf4c' }} />
-                          )}
-                          {recipe.featured && (
-                            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
                           )}
                           {recipe.glutenFree && (
                             <WheatOff className="h-4 w-4 text-muted-foreground" />
@@ -6158,6 +6096,15 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           )}
                           {recipe.savory && (
                             <Utensils className="h-4 w-4 text-muted-foreground" aria-label="Receta salada" />
+                          )}
+                          {recipe.cooked && (
+                            <RecipePreparedIcon className="h-5 w-5 text-muted-foreground" />
+                          )}
+                          {recipe.featured && (
+                            <Heart className="h-4 w-4 fill-red-500 text-red-500" aria-label="Favorita" />
+                          )}
+                          {recipe.checked && (
+                            <Check className="h-4 w-4 text-[#6f9f32]" strokeWidth={3} aria-label="Chequeada" />
                           )}
                         </span>
                       )}
@@ -6274,31 +6221,89 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                     </span>
                     {activeBulkPanel === null && (
-                      <button
-                        type="button"
-                        disabled={savingIngredientsEdit}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          if (ingredientsEditDraft?.recipeId === recipe.id) {
-                            void saveIngredientsInlineEdit();
-                            return;
-                          }
-                          startIngredientsInlineEdit(recipe, ingCollections);
-                        }}
-                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors disabled:cursor-wait disabled:opacity-70 ${
-                          ingredientsEditDraft?.recipeId === recipe.id
-                            ? 'border-primary bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
-                            : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }`}
-                        title={ingredientsEditDraft?.recipeId === recipe.id ? "Guardar y cerrar edición" : "Editar datos de la receta"}
-                        aria-label={ingredientsEditDraft?.recipeId === recipe.id ? "Guardar y cerrar edición" : "Editar datos de la receta"}
-                        aria-pressed={ingredientsEditDraft?.recipeId === recipe.id}
-                      >
-                        {savingIngredientsEdit && ingredientsEditDraft?.recipeId === recipe.id
-                          ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : <Edit className="h-4 w-4" />}
-                      </button>
+                      <div className="flex shrink-0 flex-col items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={savingIngredientsEdit}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            if (ingredientsEditDraft?.recipeId === recipe.id) {
+                              void saveIngredientsInlineEdit();
+                              return;
+                            }
+                            startIngredientsInlineEdit(recipe, ingCollections);
+                          }}
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:cursor-wait disabled:opacity-70 ${
+                            ingredientsEditDraft?.recipeId === recipe.id
+                              ? 'border-primary bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
+                              : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                          }`}
+                          title={ingredientsEditDraft?.recipeId === recipe.id ? "Guardar y cerrar edición" : "Editar datos de la receta"}
+                          aria-label={ingredientsEditDraft?.recipeId === recipe.id ? "Guardar y cerrar edición" : "Editar datos de la receta"}
+                          aria-pressed={ingredientsEditDraft?.recipeId === recipe.id}
+                        >
+                          {savingIngredientsEdit && ingredientsEditDraft?.recipeId === recipe.id
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Edit className="h-4 w-4" />}
+                        </button>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={(event) => event.stopPropagation()}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                              title="Cambiar características"
+                              aria-label="Cambiar características"
+                            >
+                              <ChefHat className="h-4 w-4" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="end"
+                            className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5"
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => event.stopPropagation()}
+                          >
+                            <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
+                            <div className="space-y-0.5">
+                              {INGREDIENT_FEATURE_TOGGLES.map(({ field, label, icon }) => {
+                                const active = ingredientsEditDraft?.recipeId === recipe.id
+                                  ? ingredientsEditDraft.features[field]
+                                  : Boolean(recipe[field]);
+                                return (
+                                  <button
+                                    key={field}
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      if (ingredientsEditDraft?.recipeId === recipe.id) {
+                                        setIngredientsEditDraft(current => current ? {
+                                          ...current,
+                                          features: { ...current.features, [field]: !current.features[field] },
+                                        } : current);
+                                        return;
+                                      }
+                                      void handleToggleFeature(recipe, field, !active);
+                                    }}
+                                    className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                                  >
+                                    <span className="flex min-w-0 items-center gap-1.5">
+                                      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center [&>img]:h-4 [&>img]:w-4 [&>svg]:h-4 [&>svg]:w-4">
+                                        {icon}
+                                      </span>
+                                      <span className="truncate text-left">{label}</span>
+                                    </span>
+                                    <span className={`w-6 shrink-0 text-right text-[10px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>
+                                      {active ? 'ON' : 'OFF'}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     )}
                     {activeBulkPanel !== null && (
                       <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${ingSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 text-transparent'}`}>
@@ -6353,9 +6358,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           </span>
                         )}
                       </span>
-                      {/* Fila 2: iconos de caracteristicas (solo los activos), en orden:
-                          thermomix, air fryer, sin gluten, keto, low carb, proteica, vegetariana, cocinada, favorita */}
-                      {(recipe.thermomix || recipe.airFryer || recipe.glutenFree || recipe.sugarFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.sweet || recipe.savory || recipe.cooked || recipe.featured) && (
+                      {/* Fila 2: iconos de características activos; cocinada, favorita y chequeada van al final. */}
+                      {(recipe.thermomix || recipe.airFryer || recipe.glutenFree || recipe.sugarFree || recipe.keto || recipe.lowCarb || recipe.proteica || recipe.vegetarian || recipe.sweet || recipe.savory || recipe.cooked || recipe.featured || recipe.checked) && (
                         <span className="flex items-center gap-2">
                           {recipe.thermomix && (
                             <img src="/thermomix-logo.png" alt="" title="Thermomix" className="h-6 w-6 object-contain mix-blend-multiply" />
@@ -6395,11 +6399,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           )}
                           {recipe.cooked && (
                             <span title="Cocinada" className="flex items-center">
-                              <RecipePreparedIcon style={{ width: 24, height: 24, color: '#8ebf4c' }} />
+                              <RecipePreparedIcon className="h-6 w-6 text-muted-foreground" />
                             </span>
                           )}
                           {recipe.featured && (
                             <Heart className="h-5 w-5 fill-red-500 text-red-500" aria-label="Favorita" />
+                          )}
+                          {recipe.checked && (
+                            <Check className="h-5 w-5 text-[#6f9f32]" strokeWidth={3} aria-label="Chequeada" />
                           )}
                         </span>
                       )}

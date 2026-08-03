@@ -1492,14 +1492,20 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 )}
                 {localRecipe.cooked && (
                   <div className="flex items-center gap-2" title="Receta cocinada">
-                    <span className="feat-ico"><RecipePreparedIcon className="h-5 w-5" /></span>
+                    <span className="feat-ico text-muted-foreground"><RecipePreparedIcon className="h-5 w-5" /></span>
                     <span>Cocinada</span>
                   </div>
                 )}
                 {localRecipe.featured && (
                   <div className="flex items-center gap-2" title="Receta favorita">
-                    <span className="feat-ico"><Heart className="h-5 w-5 fill-current" /></span>
+                    <span className="feat-ico"><Heart className="h-5 w-5 fill-red-500 text-red-500" /></span>
                     <span>Favorita</span>
+                  </div>
+                )}
+                {localRecipe.checked && (
+                  <div className="flex items-center gap-2" title="Receta chequeada">
+                    <span className="feat-ico text-[#6f9f32]"><Check className="h-5 w-5" strokeWidth={3} /></span>
+                    <span>Chequeada</span>
                   </div>
                 )}
               </div>

@@ -219,13 +219,18 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
       </span>
     ) : null,
     recipe.cooked ? (
-      <span key="cooked" title="Cocinada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="cooked" title="Cocinada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70 text-muted-foreground">
         <RecipePreparedIcon className="cooked-ico" style={{ width: 22, height: 22 }} />
       </span>
     ) : null,
     recipe.featured ? (
       <span key="featured" title="Favorita" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
         <Heart className="h-[18px] w-[18px] fill-red-500 text-red-500" />
+      </span>
+    ) : null,
+    recipe.checked ? (
+      <span key="checked" title="Chequeada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70 text-[#6f9f32]">
+        <Check className="h-[18px] w-[18px]" strokeWidth={3} />
       </span>
     ) : null,
   ].filter((feature): feature is JSX.Element => feature !== null);
