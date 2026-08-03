@@ -97,7 +97,7 @@ interface RecipeFormData {
 
 const importSourceOptions = [
   { value: 'recetario', label: 'Recetario' },
-  { value: 'www', label: 'Pagina web' },
+  { value: 'www', label: 'Página web' },
   { value: 'instagram', label: 'Instagram' },
   { value: 'youtube', label: 'YouTube' },
   { value: 'doc', label: 'DOC' },
@@ -658,7 +658,7 @@ export const EditRecipeModal = ({
     } catch (error) {
       toast({
         title: 'No se pudo eliminar la etiqueta',
-        description: error instanceof Error ? error.message : 'Intenta nuevamente',
+        description: error instanceof Error ? error.message : 'Intentá nuevamente',
         variant: 'destructive',
       });
     } finally {
@@ -799,7 +799,7 @@ export const EditRecipeModal = ({
   const handleGenerateRecipeAudio = async () => {
     const data = getValues();
     if (!data.title?.trim()) {
-      toast({ title: 'Falta el titulo', description: 'Ingresa el titulo antes de generar el audio.', variant: 'destructive' });
+      toast({ title: 'Falta el título', description: 'Ingresá el título antes de generar el audio.', variant: 'destructive' });
       return;
     }
 
@@ -818,11 +818,11 @@ export const EditRecipeModal = ({
       })
       .join('\n');
 
-    const prompt = `Genera un guion natural y conversacional para escuchar esta receta de cocina. Empieza directamente con la receta, sin presentarte. Explica los ingredientes y la preparacion paso a paso, respetando las secciones cuando existan.
+    const prompt = `Genera un guion natural y conversacional para escuchar esta receta de cocina. Empieza directamente con la receta, sin presentarte. Explica los ingredientes y la preparación paso a paso, respetando las secciones cuando existan.
 
-Titulo: ${data.title}
-Descripcion: ${data.description || 'Sin descripcion'}
-Tiempo de preparacion: ${data.prepTime || 'No especificado'} minutos
+Título: ${data.title}
+Descripción: ${data.description || 'Sin descripción'}
+Tiempo de preparación: ${data.prepTime || 'No especificado'} minutos
 Tiempo de coccion: ${data.cookTime || 'No especificado'} minutos
 Porciones: ${data.servings || 'No especificado'}
 Dificultad: ${data.difficulty || 'No especificada'}
@@ -830,7 +830,7 @@ Dificultad: ${data.difficulty || 'No especificada'}
 Ingredientes:
 ${ingredientsText || 'No especificados'}
 
-Preparacion:
+Preparación:
 ${instructionsText || 'No especificada'}
 
 El resultado debe ser fluido, claro y agradable de escuchar.`;
@@ -840,11 +840,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
       const response = await api.llm.generateScript(prompt);
       if (!response.success || !response.script?.trim()) throw new Error(response.error || 'No se genero el audio');
       setValue('locution', response.script.trim(), { shouldDirty: true });
-      toast({ title: 'Audio de receta generado', description: 'Revisa la locucion antes de actualizar la receta.' });
+      toast({ title: 'Audio de receta generado', description: 'Revisá la locución antes de actualizar la receta.' });
     } catch (error) {
       toast({
         title: 'No se pudo generar el audio',
-        description: error instanceof Error ? error.message : 'Intenta nuevamente.',
+        description: error instanceof Error ? error.message : 'Intentá nuevamente.',
         variant: 'destructive',
       });
     } finally {
@@ -1197,9 +1197,9 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
             {mode !== 'create' && (
               <span
                 className="min-w-0 max-w-[50%] truncate text-right text-base font-semibold text-muted-foreground"
-                title={watch('title') || recipe.title || 'Sin titulo'}
+                title={watch('title') || recipe.title || 'Sin título'}
               >
-                {watch('title') || recipe.title || 'Sin titulo'}
+                {watch('title') || recipe.title || 'Sin título'}
               </span>
             )}
           </DialogTitle>
@@ -1210,12 +1210,12 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
             <div className="px-6 pt-4 flex-shrink-0">
               <TabsList className="grid h-auto w-full grid-cols-3 sm:grid-cols-6">
-                <TabsTrigger value="info">Informacion</TabsTrigger>
-                <TabsTrigger value="classification">Clasificacion</TabsTrigger>
+                <TabsTrigger value="info">Información</TabsTrigger>
+                <TabsTrigger value="classification">Clasificación</TabsTrigger>
                 <TabsTrigger value="ingredients">Ingredientes</TabsTrigger>
-                <TabsTrigger value="instructions">Preparacion</TabsTrigger>
+                <TabsTrigger value="instructions">Preparación</TabsTrigger>
                 <TabsTrigger value="suggestions">Sugerencias</TabsTrigger>
-                <TabsTrigger value="locution">Locucion</TabsTrigger>
+                <TabsTrigger value="locution">Locución</TabsTrigger>
               </TabsList>
             </div>
 
@@ -1265,7 +1265,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
 
             {activeTab === 'instructions' && (
               <div className="mx-6 mt-4 flex flex-shrink-0 items-center justify-between gap-3 border-b bg-background px-0 pb-3">
-                <Label>Preparacion</Label>
+                <Label>Preparación</Label>
                 <div className="flex flex-wrap justify-end gap-2">
                   <Button type="button" onClick={handlePasteInstructions} size="sm" variant="outline">
                     <ClipboardList className="mr-1 h-4 w-4" />
@@ -1312,10 +1312,10 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               <TabsContent value="info" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
               {/* a: Título */}
               <div>
-                <Label htmlFor="title">Titulo *</Label>
+                <Label htmlFor="title">Título *</Label>
                 <Input
                   id="title"
-                  {...register('title', { required: 'El titulo es requerido' })}
+                  {...register('title', { required: 'El título es requerido' })}
                   placeholder="Nombre de tu receta"
                 />
                 {errors.title && (
@@ -1325,11 +1325,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
 
               {/* b: Descripción */}
               <div>
-                <Label htmlFor="description">Descripcion</Label>
+                <Label htmlFor="description">Descripción</Label>
                 <Textarea
                   id="description"
                   {...register('description')}
-                  placeholder="Describi tu receta"
+                  placeholder="Describí tu receta"
                   rows={3}
                 />
               </div>
@@ -1342,7 +1342,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     options={sourceOptions}
                     selected={watch('source') ? [watch('source')] : []}
                     onChange={(next) => setValue('source', next[0] || '', { shouldDirty: true })}
-                    placeholder="Elegi una fuente"
+                    placeholder="Elegí una fuente"
                     searchPlaceholder="Buscar o escribir fuente..."
                     singleSelect
                     closeOnSelect
@@ -1356,7 +1356,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 </div>
                 <div>
                   <Label htmlFor="sourceUrl">URL</Label>
-                  <Input id="sourceUrl" {...register('sourceUrl')} placeholder="Ingresa la URL de la receta" />
+                  <Input id="sourceUrl" {...register('sourceUrl')} placeholder="Ingresá la URL de la receta" />
                 </div>
 
                 {/* d: Origen / Dificultad */}
@@ -1366,7 +1366,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     options={originOptions}
                     value={getImportSourceLabel(watch('importedFrom'))}
                     onChange={(value) => setValue('importedFrom', value ? getImportSourceValue(value) : undefined, { shouldDirty: true })}
-                    placeholder="Selecciona de donde proviene la receta"
+                    placeholder="Seleccioná de dónde proviene la receta"
                     searchPlaceholder="Buscar o escribir origen..."
                     createLabel="Agregar"
                     emptyOptionLabel="Receta propia"
@@ -1383,7 +1383,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   <Label>Dificultad</Label>
                   <Select value={watch('difficulty')} onValueChange={(value) => setValue('difficulty', value as any, { shouldDirty: true })}>
                     <SelectTrigger className="focus:!ring-0 focus:!ring-offset-2 focus:border-primary data-[state=open]:border-primary">
-                      <SelectValue placeholder="Selecciona dificultad de la receta" />
+                      <SelectValue placeholder="Seleccioná la dificultad de la receta" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Fácil">Fácil</SelectItem>
@@ -1400,7 +1400,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     options={languageOptions}
                     selected={watch('language') ? [watch('language')] : []}
                     onChange={(next) => setValue('language', next[0] || '', { shouldDirty: true })}
-                    placeholder="Elegi un idioma"
+                    placeholder="Elegí un idioma"
                     searchPlaceholder="Buscar o escribir idioma..."
                     singleSelect
                     closeOnSelect
@@ -1413,13 +1413,13 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   />
                 </div>
                 <div>
-                  <Label>Pais</Label>
+                  <Label>País</Label>
                   <MultiSelectCombobox
                     options={countryOptions}
                     selected={watch('country') ? [watch('country')] : []}
                     onChange={(next) => setValue('country', next[0] || '', { shouldDirty: true })}
-                    placeholder="Elegi un pais"
-                    searchPlaceholder="Buscar o escribir pais..."
+                    placeholder="Elegí un país"
+                    searchPlaceholder="Buscar o escribir país..."
                     singleSelect
                     closeOnSelect
                     allowCreate
@@ -1441,7 +1441,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               {/* f: Tiempo de preparación / Tiempo total / Porciones */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="prepTime">Tiempo de preparacion (min)</Label>
+                  <Label htmlFor="prepTime">Tiempo de preparación (min)</Label>
                   <Input id="prepTime" type="number" {...register('prepTime', { valueAsNumber: true })} />
                 </div>
                 <div>
@@ -1457,7 +1457,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               {/* Nutrition Section */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <Label className="text-lg font-semibold">Informacion Nutricional</Label>
+                  <Label className="text-lg font-semibold">Información Nutricional</Label>
                   <Button
                     type="button"
                     onClick={handleCalculateNutrition}
@@ -1482,11 +1482,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 {/* g.1: Calorías / Proteína / Carbohidratos / Grasa */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                      <Label htmlFor="calories">Calorias</Label>
+                      <Label htmlFor="calories">Calorías</Label>
                     <Input id="calories" type="text" inputMode="decimal" {...register('calories')} placeholder="kcal" />
                   </div>
                     <div>
-                      <Label htmlFor="protein">Proteina</Label>
+                      <Label htmlFor="protein">Proteína</Label>
                     <Input id="protein" type="text" inputMode="decimal" {...register('protein')} placeholder="g" />
                   </div>
                   <div>
@@ -1505,7 +1505,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     <Input id="fiber" type="text" inputMode="decimal" {...register('fiber')} placeholder="g" />
                   </div>
                   <div>
-                    <Label htmlFor="sugar">Azucar</Label>
+                    <Label htmlFor="sugar">Azúcar</Label>
                     <Input id="sugar" type="text" inputMode="decimal" {...register('sugar')} placeholder="g" />
                   </div>
                   <div>
@@ -1517,7 +1517,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
 
               {/* h: Imágenes (máximo 3) */}
               <div>
-                <Label>Imagenes (maximo 3)</Label>
+                <Label>Imágenes (máximo 3)</Label>
 
                 {/* h.1: mostrar las imágenes (actuales + nuevas) */}
                 {(existingImages.length > 0 || uploadedImages.length > 0) && (
@@ -1569,13 +1569,13 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   >
                     {addingWebImage ? <Loader2 className="h-6 w-6 animate-spin text-gray-400" /> : <Upload className="h-6 w-6 text-gray-400" />}
                     <span className="text-xs text-gray-600">
-                      {totalImages >= 3 ? 'Maximo 3 imagenes' : 'Arrastra aqui la imagen desde la pagina web o desde Mi PC'}
+                      {totalImages >= 3 ? 'Máximo 3 imágenes' : 'Arrastrá aquí la imagen desde la página web o desde Mi PC'}
                     </span>
                   </div>
                   <div className="flex flex-col items-stretch justify-center gap-2">
                     <Button type="button" variant="outline" size="sm" className="text-xs" disabled={totalImages >= 3} onClick={() => document.getElementById('image-upload')?.click()}>
                       <Upload className="mr-2 h-3.5 w-3.5" />
-                      Subir imagen de Mi PC
+                      Subir imagen desde Mi PC
                     </Button>
                     <Button type="button" variant="outline" size="sm" className="text-xs" disabled={totalImages >= 3 || addingWebImage} onClick={() => setShowWebImageInput(v => !v)}>
                       {addingWebImage ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Globe className="mr-2 h-3.5 w-3.5" />}
@@ -1589,7 +1589,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       value={webImageUrl}
                       onChange={(e) => setWebImageUrl(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addWebImageFromUrl(webImageUrl); } }}
-                      placeholder="Pega el enlace de la imagen (https://...)"
+                      placeholder="Pegá el enlace de la imagen (https://...)"
                       className="h-9"
                       autoFocus
                     />
@@ -1618,7 +1618,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       options={dishTypeOptions}
                       selected={(watch('dishType') || '').split(',').map(s => s.trim()).filter(Boolean)}
                       onChange={(next) => setValue('dishType', next.join(', '), { shouldDirty: true })}
-                      placeholder="Elegi uno o mas tipos de comida"
+                      placeholder="Elegí uno o más tipos de comida"
                       searchPlaceholder="Buscar o escribir tipo..."
                       closeOnSelect
                       allowCreate
@@ -1632,7 +1632,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label>Coleccion</Label>
+                      <Label>Colección</Label>
                       {selectedCollectionIds.length > 0 && (
                         <button type="button" onClick={() => setSelectedCollectionIds([])} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
                           <X className="h-3 w-3" />
@@ -1653,16 +1653,16 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                           const created = await api.collections.create(name);
                           setCollections(prev => [...prev, created]);
                           setSelectedCollectionIds(prev => [...prev, created.id]);
-                          toast({ title: 'Coleccion creada', description: `Se creo "${created.name}".` });
+                          toast({ title: 'Colección creada', description: `Se creó "${created.name}".` });
                         } catch (error: any) {
-                          toast({ title: 'No se pudo crear la coleccion', description: error?.message || 'Intenta nuevamente', variant: 'destructive' });
+                          toast({ title: 'No se pudo crear la colección', description: error?.message || 'Intentá nuevamente', variant: 'destructive' });
                         }
                       }}
-                      placeholder={isLoadingCollections ? 'Cargando colecciones...' : 'Elegi una o mas colecciones'}
-                      searchPlaceholder="Buscar o crear coleccion..."
+                      placeholder={isLoadingCollections ? 'Cargando colecciones...' : 'Elegí una o más colecciones'}
+                      searchPlaceholder="Buscar o crear colección..."
                       closeOnSelect
                       allowCreate
-                      createLabel="Crear coleccion"
+                      createLabel="Crear colección"
                       onDeleteOption={(value) => {
                         const collection = collections.find(c => c.name === value);
                         setCollections(prev => prev.filter(c => c.name !== value));
@@ -1677,7 +1677,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 {/* 2: Categoría */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>Categoria</Label>
+                    <Label>Categoría</Label>
                     {(watch('recipeType') || '').trim() && (
                       <button type="button" onClick={() => setValue('recipeType', '', { shouldDirty: true })} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
                         <X className="h-3 w-3" />
@@ -1688,8 +1688,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     options={categoryOptions}
                     selected={(watch('recipeType') || '').split(',').map(s => s.trim()).filter(Boolean)}
                     onChange={(next) => setValue('recipeType', next.join(', '), { shouldDirty: true })}
-                    placeholder="Elegi una o mas categorias"
-                    searchPlaceholder="Buscar o escribir categoria..."
+                    placeholder="Elegí una o más categorías"
+                    searchPlaceholder="Buscar o escribir categoría..."
                     closeOnSelect
                     allowCreate
                     createLabel="Agregar"
@@ -1745,7 +1745,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
                     { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
                     { field: 'glutenFree', label: 'Sin Gluten', icon: <WheatOff className="h-4 w-4" /> },
-                    { field: 'sugarFree', label: 'Sin Azucar', icon: <CandyOff className="h-4 w-4" /> },
+                    { field: 'sugarFree', label: 'Sin Azúcar', icon: <CandyOff className="h-4 w-4" /> },
                     { field: 'keto', label: 'Keto', icon: <AvocadoIcon className="h-4 w-4" /> },
                     { field: 'lowCarb', label: 'Low Carb', icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
                     { field: 'proteica', label: 'Proteica', icon: <Beef className="h-4 w-4" /> },
@@ -1954,7 +1954,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       )}
                       {!bulkEditingIngredients && !isPastedBlock && (
                       <div className="w-full space-y-2">
-                        <Label className="text-xs">Seccion (opcional)</Label>
+                        <Label className="text-xs">Sección (opcional)</Label>
                         {!showNewIngredientSection[index] ? (
                           <div className="flex gap-2">
                           <Select
@@ -1971,14 +1971,14 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                             }}
                           >
                             <SelectTrigger className="min-w-0 flex-1 text-sm">
-                              <SelectValue placeholder="Sin seccion" />
+                              <SelectValue placeholder="Sin sección" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__none__">Sin seccion</SelectItem>
+                              <SelectItem value="__none__">Sin sección</SelectItem>
                               {ingredientSectionOptions.map(section => (
                                 <SelectItem key={section} value={section}>{section}</SelectItem>
                               ))}
-                              <SelectItem value="__new__">+ Nueva seccion</SelectItem>
+                              <SelectItem value="__new__">+ Nueva sección</SelectItem>
                             </SelectContent>
                           </Select>
                           <Button
@@ -1998,7 +1998,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                           <div className="flex gap-2">
                             <Input
                               {...register(`ingredients.${index}.section`)}
-                              placeholder="Nombre de la nueva seccion"
+                              placeholder="Nombre de la nueva sección"
                               className="text-sm"
                               autoFocus
                               onKeyDown={(event) => {
@@ -2182,7 +2182,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                             className="mb-2"
                           />
                           <div className="mb-2">
-                            <Label className="text-xs">Seccion (opcional)</Label>
+                            <Label className="text-xs">Sección (opcional)</Label>
                             {!showNewInstructionSection[index] ? (
                               <div className="flex gap-2">
                               <Select
@@ -2200,14 +2200,14 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                                 }}
                               >
                                 <SelectTrigger className="min-w-0 flex-1 text-sm">
-                                  <SelectValue placeholder="Sin seccion" />
+                                  <SelectValue placeholder="Sin sección" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="__none__">Sin seccion</SelectItem>
+                                  <SelectItem value="__none__">Sin sección</SelectItem>
                                   {ingredientSectionOptions.map(section => (
                                     <SelectItem key={section} value={section}>{section}</SelectItem>
                                   ))}
-                                  <SelectItem value="__new__">+ Nueva seccion</SelectItem>
+                                  <SelectItem value="__new__">+ Nueva sección</SelectItem>
                                 </SelectContent>
                               </Select>
                               <Button
@@ -2227,7 +2227,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               <div className="mb-2 flex gap-2">
                                 <Input
                                   {...register(`instructions.${index}.section`)}
-                                  placeholder="Nombre de la nueva seccion"
+                                  placeholder="Nombre de la nueva sección"
                                   className="text-sm"
                                   autoFocus
                                 />
@@ -2261,7 +2261,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                             <>
                               <div className="mb-2 grid grid-cols-2 gap-2">
                                 <div>
-                                  <Label className="text-xs">Funcion Thermomix</Label>
+                                  <Label className="text-xs">Función Thermomix</Label>
                                   <Input
                                     {...register(`instructions.${index}.function`)}
                                     placeholder="ej: Amasar, Batir, Picar"
@@ -2331,7 +2331,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               <TabsContent value="locution" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
               {/* Locution */}
               <div>
-                <Label htmlFor="locution">Locucion (Script para TTS)</Label>
+                <Label htmlFor="locution">Locución (Script para TTS)</Label>
                 <Textarea
                   id="locution"
                   {...register('locution')}
@@ -2340,7 +2340,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   className="resize-none"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Texto que se reproducira cuando se use la funcion de voz. Si esta vacio, se generara automaticamente.
+                  Texto que se reproducirá cuando se use la función de voz. Si está vacío, se generará automáticamente.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button
@@ -2456,12 +2456,12 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               Agregar
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">Para agregar etiqueta pulsar el +</p>
+              <p className="text-xs text-muted-foreground">Para agregar una etiqueta, pulsá el +</p>
 
           {/* Lista de etiquetas existentes (orden alfabético) para marcar */}
           <div className="max-h-60 overflow-y-auto rounded-md border divide-y">
             {tagOptions.length === 0 && (
-              <p className="px-3 py-4 text-sm text-muted-foreground">Todavia no hay etiquetas. Crea una arriba.</p>
+              <p className="px-3 py-4 text-sm text-muted-foreground">Todavía no hay etiquetas. Creá una arriba.</p>
             )}
             {tagOptions.map((tag) => {
               const checked = tags.includes(tag);
@@ -2505,7 +2505,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
           <div>
             <p className="mb-1 text-xs font-medium text-muted-foreground">Seleccionadas ({tags.length})</p>
             <div className="flex flex-wrap gap-1">
-              {tags.length === 0 && <span className="text-xs text-muted-foreground">Ninguna todavia.</span>}
+              {tags.length === 0 && <span className="text-xs text-muted-foreground">Ninguna todavía.</span>}
               {tags.map((tag, index) => (
                 <Badge key={index} variant="secondary" className="flex items-center gap-1">
                   {tag}

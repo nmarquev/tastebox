@@ -6030,18 +6030,16 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       {ingImg
                         ? <img src={ingImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
-                      {ingredientsEditDraft?.recipeId === recipe.id && (
-                        <Popover>
+                      <Popover>
                           <PopoverTrigger asChild>
                             <button
                               type="button"
                               onClick={(event) => event.stopPropagation()}
-                              className="absolute inset-x-1 bottom-1 inline-flex h-7 items-center justify-center gap-0.5 rounded-md border border-white/70 bg-white/90 px-0.5 text-[9px] font-semibold text-gray-700 shadow-sm transition-colors hover:bg-white"
+                              className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/70 bg-white/80 text-gray-600 shadow-sm transition-colors hover:bg-white"
                               title="Cambiar características"
                               aria-label="Cambiar características"
                             >
-                              <ChefHat className="h-3 w-3" />
-                              Características
+                              <ChefHat className="h-5 w-5" />
                             </button>
                           </PopoverTrigger>
                           <PopoverContent
@@ -6053,17 +6051,23 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
                             <div className="space-y-0.5">
                               {INGREDIENT_FEATURE_TOGGLES.map(({ field, label, icon }) => {
-                                const active = ingredientsEditDraft.features[field];
+                                const active = ingredientsEditDraft?.recipeId === recipe.id
+                                  ? ingredientsEditDraft.features[field]
+                                  : Boolean(recipe[field]);
                                 return (
                                   <button
                                     key={field}
                                     type="button"
                                     onClick={(event) => {
                                       event.stopPropagation();
-                                      setIngredientsEditDraft(current => current ? {
-                                        ...current,
-                                        features: { ...current.features, [field]: !current.features[field] },
-                                      } : current);
+                                      if (ingredientsEditDraft?.recipeId === recipe.id) {
+                                        setIngredientsEditDraft(current => current ? {
+                                          ...current,
+                                          features: { ...current.features, [field]: !current.features[field] },
+                                        } : current);
+                                        return;
+                                      }
+                                      void handleToggleFeature(recipe, field, !active);
                                     }}
                                     className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
                                   >
@@ -6082,7 +6086,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             </div>
                           </PopoverContent>
                         </Popover>
-                      )}
                     </span>
                     {/* Medio: titulo, fuente, iconos, tipo y categorias */}
                     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
