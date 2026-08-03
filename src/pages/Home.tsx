@@ -319,6 +319,11 @@ const Home = () => {
               />
             </div>
           </div>
+          <Link
+            to="/buscar"
+            aria-label="Ver todas las recetas"
+            className="absolute inset-0 z-10 cursor-pointer"
+          />
           <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2">
             {[0, 1, 2].map((bannerIndex) => {
               const active = activeBanner === bannerIndex;
