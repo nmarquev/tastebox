@@ -6403,30 +6403,61 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     </span>
                     )}
                     {activeBulkPanel === null && (
-                      <span
-                        role="checkbox"
-                        tabIndex={0}
-                        aria-checked={Boolean(recipe.checked)}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          handleToggleFeature(recipe, 'checked', !recipe.checked);
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key !== 'Enter' && event.key !== ' ') return;
-                          event.preventDefault();
-                          event.stopPropagation();
-                          handleToggleFeature(recipe, 'checked', !recipe.checked);
-                        }}
-                        className={`inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors ${
-                          recipe.checked
-                            ? 'border-transparent bg-transparent text-[#6f9f32] hover:bg-muted'
-                            : 'border-muted-foreground/40 text-muted-foreground hover:border-[#8ebf4c] hover:text-[#5f852c]'
-                        }`}
-                        title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
-                      >
-                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                      </span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter' && event.key !== ' ') return;
+                              event.stopPropagation();
+                            }}
+                            className="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                            title="Características"
+                            aria-label="Características"
+                          >
+                            <ChefHat className="h-4 w-4" />
+                          </span>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="end"
+                          className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5"
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        >
+                          <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
+                          <div className="space-y-0.5">
+                            {INGREDIENT_FEATURE_TOGGLES.map(({ field, label, icon }) => {
+                              const active = Boolean(recipe[field]);
+                              return (
+                                <button
+                                  key={field}
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    void handleToggleFeature(recipe, field, !active);
+                                  }}
+                                  className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                                >
+                                  <span className="flex min-w-0 items-center gap-1.5">
+                                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center [&>img]:h-4 [&>img]:w-4 [&>svg]:h-4 [&>svg]:w-4">
+                                      {icon}
+                                    </span>
+                                    <span className="truncate text-left">{label}</span>
+                                  </span>
+                                  <span className={`w-6 shrink-0 text-right text-[10px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>
+                                    {active ? 'ON' : 'OFF'}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     )}
                     {viewMode === 'list' && (
                       <span
