@@ -6113,13 +6113,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <WheatOff className="h-4 w-4 text-muted-foreground" />
                           )}
                           {recipe.sugarFree && (
-                            <span
-                              title="Sin Azucar"
-                              aria-label="Sin Azucar"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70"
-                            >
-                              <CandyOff className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                            </span>
+                            <CandyOff
+                              className="h-4 w-4 text-muted-foreground"
+                              title="Sin Azúcar"
+                              aria-label="Sin Azúcar"
+                            />
                           )}
                           {recipe.keto && (
                             <AvocadoIcon className="h-5 w-5 text-muted-foreground" />
@@ -6419,13 +6417,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <WheatOff className="h-5 w-5 text-muted-foreground" />
                           )}
                           {recipe.sugarFree && (
-                            <span
-                              title="Sin Azucar"
-                              aria-label="Sin Azucar"
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-muted/70"
-                            >
-                              <CandyOff className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
-                            </span>
+                            <CandyOff
+                              className="h-5 w-5 text-muted-foreground"
+                              title="Sin Azúcar"
+                              aria-label="Sin Azúcar"
+                            />
                           )}
                           {recipe.keto && (
                             <AvocadoIcon className="h-6 w-6 text-muted-foreground" />

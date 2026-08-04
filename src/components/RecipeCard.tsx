@@ -169,67 +169,67 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
   const hasNutritionData = recipe.calories !== null && recipe.calories !== undefined && recipe.calories > 0;
   const activeCardFeatures = [
     (recipe.thermomix || isThermomixRecipe(recipe)) ? (
-      <span key="thermomix" title="Thermomix" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="thermomix" title="Thermomix" className="inline-flex h-7 w-7 items-center justify-center">
         <img src="/thermomix-logo.png" alt="" aria-hidden="true" className="h-6 w-6 object-contain mix-blend-multiply" />
       </span>
     ) : null,
     recipe.airFryer ? (
-      <span key="airFryer" title="Air Fryer" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="airFryer" title="Air Fryer" className="inline-flex h-7 w-7 items-center justify-center">
         <img src="/air-fryer.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain mix-blend-multiply" />
       </span>
     ) : null,
     recipe.glutenFree ? (
-      <span key="glutenFree" title="Sin Gluten" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="glutenFree" title="Sin Gluten" className="inline-flex h-7 w-7 items-center justify-center">
         <WheatOff className="h-4 w-4" />
       </span>
     ) : null,
     recipe.sugarFree ? (
-      <span key="sugarFree" title="Sin Azucar" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="sugarFree" title="Sin Azucar" className="inline-flex h-7 w-7 items-center justify-center">
         <CandyOff className="h-4 w-4" />
       </span>
     ) : null,
     recipe.keto ? (
-      <span key="keto" title="Keto" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="keto" title="Keto" className="inline-flex h-7 w-7 items-center justify-center">
         <AvocadoIcon className="h-[26px] w-[26px] keto-ico" />
       </span>
     ) : null,
     recipe.lowCarb ? (
-      <span key="lowCarb" title="Low Carb" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="lowCarb" title="Low Carb" className="inline-flex h-7 w-7 items-center justify-center">
         <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain grayscale opacity-70" />
       </span>
     ) : null,
     recipe.proteica ? (
-      <span key="proteica" title="Proteica" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="proteica" title="Proteica" className="inline-flex h-7 w-7 items-center justify-center">
         <Beef className="h-[18px] w-[18px]" />
       </span>
     ) : null,
     recipe.vegetarian ? (
-      <span key="vegetarian" title="Vegetariana" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="vegetarian" title="Vegetariana" className="inline-flex h-7 w-7 items-center justify-center">
         <Leaf className="h-[18px] w-[18px]" />
       </span>
     ) : null,
     recipe.sweet ? (
-      <span key="sweet" title="Receta dulce" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="sweet" title="Receta dulce" className="inline-flex h-7 w-7 items-center justify-center">
         <CakeSlice className="h-[18px] w-[18px]" />
       </span>
     ) : null,
     recipe.savory ? (
-      <span key="savory" title="Receta salada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="savory" title="Receta salada" className="inline-flex h-7 w-7 items-center justify-center">
         <Utensils className="h-[18px] w-[18px]" />
       </span>
     ) : null,
     recipe.cooked ? (
-      <span key="cooked" title="Cocinada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70 text-muted-foreground">
+      <span key="cooked" title="Cocinada" className="inline-flex h-7 w-7 items-center justify-center text-muted-foreground">
         <RecipePreparedIcon className="cooked-ico" style={{ width: 22, height: 22 }} />
       </span>
     ) : null,
     recipe.featured ? (
-      <span key="featured" title="Favorita" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70">
+      <span key="featured" title="Favorita" className="inline-flex h-7 w-7 items-center justify-center">
         <Heart className="h-[18px] w-[18px] fill-red-500 text-red-500" />
       </span>
     ) : null,
     recipe.checked ? (
-      <span key="checked" title="Chequeada" className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted/70 text-[#6f9f32]">
+      <span key="checked" title="Chequeada" className="inline-flex h-7 w-7 items-center justify-center text-[#6f9f32]">
         <Check className="h-[18px] w-[18px]" strokeWidth={3} />
       </span>
     ) : null,
