@@ -45,7 +45,7 @@ import { DebugAuth } from "@/components/DebugAuth";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { isThermomixRecipe } from "@/utils/recipeUtils";
 import { MultiSelectCombobox } from "@/components/MultiSelectCombobox";
-import { parseCategories } from "@/constants/categories";
+import { joinCategories, parseCategories } from "@/constants/categories";
 import { useRecipeCategories } from "@/hooks/useRecipeCategories";
 import { useRecipeDishTypes } from "@/hooks/useRecipeDishTypes";
 import { useRecipeSources } from "@/hooks/useRecipeSources";
@@ -1091,7 +1091,7 @@ const Index = () => {
       const saved = await handleInlineSaveFields(ingredientsEditDraft.recipeId, {
         source: ingredientsEditDraft.source[0] || '',
         dishType: ingredientsEditDraft.dishTypes.join(', '),
-        recipeType: ingredientsEditDraft.categories.join(', '),
+        recipeType: joinCategories(ingredientsEditDraft.categories),
         tags: ingredientsEditDraft.tags,
         collections: ingredientsEditDraft.collections,
         features: ingredientsEditDraft.features,
@@ -6028,7 +6028,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 const ingImg = recipe.images?.[0]?.url ? resolveImageUrl(recipe.images[0].url) : '';
                 const ingSelected = selectedRecipeIds.has(recipe.id);
                 const ingSource = getRecipeSource(recipe);
-                const ingCategories = recipe.recipeType ? recipe.recipeType.split(',').map(c => c.trim()).filter(Boolean) : [];
+                const ingCategories = parseCategories(recipe.recipeType);
                 const ingCollections = collections
                   .filter(collection => collection.recipeIds.includes(recipe.id))
                   .map(collection => collection.name)
@@ -6461,61 +6461,83 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     </span>
                     )}
                     {activeBulkPanel === null && (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                            }}
-                            onKeyDown={(event) => {
-                              if (event.key !== 'Enter' && event.key !== ' ') return;
-                              event.stopPropagation();
-                            }}
-                            className="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
-                            title="Características"
-                            aria-label="Características"
-                          >
-                            <ChefHat className="h-4 w-4" />
-                          </span>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          align="end"
-                          className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5"
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
+                      <>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleEditRecipe(recipe);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter' && event.key !== ' ') return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleEditRecipe(recipe);
+                          }}
+                          className="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                          title="Editar"
+                          aria-label="Editar receta"
                         >
-                          <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
-                          <div className="space-y-0.5">
-                            {INGREDIENT_FEATURE_TOGGLES.map(({ field, label, icon }) => {
-                              const active = Boolean(recipe[field]);
-                              return (
-                                <button
-                                  key={field}
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    void handleToggleFeature(recipe, field, !active);
-                                  }}
-                                  className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
-                                >
-                                  <span className="flex min-w-0 items-center gap-1.5">
-                                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center [&>img]:h-4 [&>img]:w-4 [&>svg]:h-4 [&>svg]:w-4">
-                                      {icon}
+                          <Edit className="h-4 w-4" />
+                        </span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key !== 'Enter' && event.key !== ' ') return;
+                                event.stopPropagation();
+                              }}
+                              className="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                              title="Características"
+                              aria-label="Características"
+                            >
+                              <ChefHat className="h-4 w-4" />
+                            </span>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="end"
+                            className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5"
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => event.stopPropagation()}
+                          >
+                            <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
+                            <div className="space-y-0.5">
+                              {INGREDIENT_FEATURE_TOGGLES.map(({ field, label, icon }) => {
+                                const active = Boolean(recipe[field]);
+                                return (
+                                  <button
+                                    key={field}
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      event.stopPropagation();
+                                      void handleToggleFeature(recipe, field, !active);
+                                    }}
+                                    className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                                  >
+                                    <span className="flex min-w-0 items-center gap-1.5">
+                                      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center [&>img]:h-4 [&>img]:w-4 [&>svg]:h-4 [&>svg]:w-4">
+                                        {icon}
+                                      </span>
+                                      <span className="truncate text-left">{label}</span>
                                     </span>
-                                    <span className="truncate text-left">{label}</span>
-                                  </span>
-                                  <span className={`w-6 shrink-0 text-right text-[10px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>
-                                    {active ? 'ON' : 'OFF'}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                                    <span className={`w-6 shrink-0 text-right text-[10px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>
+                                      {active ? 'ON' : 'OFF'}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </>
                     )}
                     {viewMode === 'list' && (
                       <span

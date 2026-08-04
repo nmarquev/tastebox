@@ -11,6 +11,7 @@ import { api, RecipeCollection } from '@/services/api';
 import { Recipe } from '@/types/recipe';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { Loader2 } from 'lucide-react';
+import { joinCategories, parseCategories } from '@/constants/categories';
 
 interface BulkEditModalProps {
   isOpen: boolean;
@@ -120,7 +121,7 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
         if (r.language?.trim()) languages.push(r.language.trim());
         if (r.country?.trim()) countries.push(r.country.trim());
         if (r.dishType?.trim()) r.dishType.split(',').map(c => c.trim()).filter(Boolean).forEach(c => dishTypes.add(c));
-        if (r.recipeType?.trim()) r.recipeType.split(',').map(c => c.trim()).filter(Boolean).forEach(c => categories.add(c));
+        parseCategories(r.recipeType).forEach(category => categories.add(category));
         (r.tags || []).forEach((t: any) => { const n = (typeof t === 'string' ? t : (t?.tag?.name || t?.name || t?.tag || '')).toString().trim(); if (n) tagSet.add(n); });
       });
       srcs.forEach(s => { const n = (s.name || '').trim(); if (n) sources.add(n); });
@@ -150,7 +151,7 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
     if (country.trim()) update.country = country.trim();
     if (createdAt) update.createdAt = new Date(`${createdAt}T12:00:00`).toISOString();
     if (dishType.length) update.dishType = dishType.join(', ');
-    if (recipeType.length) update.recipeType = recipeType.join(', ');
+    if (recipeType.length) update.recipeType = joinCategories(recipeType);
     if (tags.length) update.tags = tags;
     FEATURE_FIELDS.forEach(({ field }) => {
       const tri = features[field];

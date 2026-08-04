@@ -2,10 +2,10 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { parseRecipeCategories } from '../utils/recipeCategories';
 
 const router = express.Router();
 const prisma = new PrismaClient();
-const separator = '|';
 
 router.get('/', authenticateToken, async (req: AuthRequest, res) => {
   try {
@@ -37,9 +37,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
     };
 
     savedCategories.forEach(category => addName(category.name, category.coverImage));
-    recipes.forEach(recipe => {
-      (recipe.recipeType || '').split(separator).forEach(value => addName(value));
-    });
+    recipes.forEach(recipe => parseRecipeCategories(recipe.recipeType).forEach(value => addName(value)));
 
     res.json(
       Array.from(byKey.values()).sort((a, b) => a.name.localeCompare(b.name, 'es'))
@@ -119,7 +117,7 @@ router.delete('/:name', authenticateToken, async (req: AuthRequest, res) => {
     });
 
     const isAssigned = recipes.some(recipe =>
-      (recipe.recipeType || '').split(separator)
+      parseRecipeCategories(recipe.recipeType)
         .some(category => category.trim().toLocaleLowerCase() === lower)
     );
     if (isAssigned) {

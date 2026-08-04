@@ -11,7 +11,7 @@ import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { PreparationTimeIcon } from "@/components/icons/PreparationTimeIcon";
 import { resolveImageUrl } from "@/utils/api";
 import { isThermomixRecipe } from "@/utils/recipeUtils";
-import { parseCategories } from "@/constants/categories";
+import { joinCategories, parseCategories } from "@/constants/categories";
 import { getSourceFromUrl, isValidUrl, getRecipeSource } from "@/utils/siteUtils";
 import { downloadRecipePdf, printRecipePdf, shareRecipePdf } from "@/utils/pdfUtils";
 import { useState } from "react";
@@ -105,7 +105,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
       const saved = await onInlineSave(recipe.id, {
         source: editSource[0] || '',
         dishType: editDishType.join(', '),
-        recipeType: editCategories.join(', '),
+        recipeType: joinCategories(editCategories),
         tags: editTags,
         collections: editCollections,
       });

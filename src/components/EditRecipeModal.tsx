@@ -24,6 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import { AvocadoIcon } from '@/components/icons/AvocadoIcon';
 import { RecipePreparedIcon } from '@/components/icons/RecipePreparedIcon';
 import { useDraggableDialog } from '@/hooks/useDraggableDialog';
+import { joinCategories, parseCategories } from '@/constants/categories';
 
 interface EditRecipeModalProps {
   isOpen: boolean;
@@ -595,7 +596,7 @@ export const EditRecipeModal = ({
           if (r.language?.trim()) languages.push(r.language.trim());
           if (r.country?.trim()) countries.push(r.country.trim());
           if (r.dishType?.trim()) r.dishType.split(',').map(c => c.trim()).filter(Boolean).forEach(c => dishTypes.add(c));
-          if (r.recipeType?.trim()) r.recipeType.split(',').map(c => c.trim()).filter(Boolean).forEach(c => categories.add(c));
+          parseCategories(r.recipeType).forEach(category => categories.add(category));
           (r.tags || []).forEach((t: any) => { const n = (typeof t === 'string' ? t : (t?.tag?.name || t?.name || t?.tag || '')).toString().trim(); if (n) tagSet.add(n); });
         });
         customSources.forEach(s => { const n = (s.name || '').trim(); if (n) sources.add(n); });
@@ -1686,8 +1687,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   </div>
                   <MultiSelectCombobox
                     options={categoryOptions}
-                    selected={(watch('recipeType') || '').split(',').map(s => s.trim()).filter(Boolean)}
-                    onChange={(next) => setValue('recipeType', next.join(', '), { shouldDirty: true })}
+                    selected={parseCategories(watch('recipeType'))}
+                    onChange={(next) => setValue('recipeType', joinCategories(next), { shouldDirty: true })}
                     placeholder="Elegí una o más categorías"
                     searchPlaceholder="Buscar o escribir categoría..."
                     closeOnSelect
@@ -1695,8 +1696,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     createLabel="Agregar"
                     onDeleteOption={(value) => {
                       setCategoryOptions(prev => prev.filter(option => option !== value));
-                      const next = (watch('recipeType') || '').split(',').map(s => s.trim()).filter(Boolean).filter(option => option !== value);
-                      setValue('recipeType', next.join(', '), { shouldDirty: true });
+                      const next = parseCategories(watch('recipeType')).filter(option => option !== value);
+                      setValue('recipeType', joinCategories(next), { shouldDirty: true });
                     }}
                   />
                 </div>

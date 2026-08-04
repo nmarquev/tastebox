@@ -16,6 +16,7 @@ import { Recipe } from '@/types/recipe';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { Beef, CakeSlice, CandyOff, Loader2, Check, X, Globe, Heart, WheatOff, Leaf, ClipboardPaste, Utensils } from 'lucide-react';
 import { IMPORT_ERROR_TOAST_DURATION_MS } from '@/constants/toastDurations';
+import { parseCategories } from '@/constants/categories';
 
 interface BulkUrlImportModalProps {
   isOpen: boolean;
@@ -130,7 +131,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
         if (r.language?.trim()) languages.push(r.language.trim());
         if (r.country?.trim()) countries.push(r.country.trim());
         if (r.dishType?.trim()) dishTypes.add(r.dishType.trim());
-        if (r.recipeType?.trim()) r.recipeType.split(',').map(c => c.trim()).filter(Boolean).forEach(c => categories.add(c));
+        parseCategories(r.recipeType).forEach(category => categories.add(category));
       });
       srcs.forEach(s => { const n = (s.name || '').trim(); if (n) sources.add(n); });
       dts.forEach(s => { const n = (s.name || '').trim(); if (n) dishTypes.add(n); });
