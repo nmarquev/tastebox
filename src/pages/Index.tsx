@@ -36,6 +36,7 @@ import { Beef, CakeSlice, CandyOff, Grid3X3, Grid2X2, Grid, Columns, Filter, Fil
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
+import { UncheckedIcon } from "@/components/icons/UncheckedIcon";
 import { PreparationTimeIcon } from "@/components/icons/PreparationTimeIcon";
 import { api, RecipeCollection } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
@@ -4173,7 +4174,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   })}
                   className="h-8"
                 >
-                  <Square className="mr-2 h-4 w-4" />
+                  <UncheckedIcon className="mr-2 h-4 w-4" />
                   Unchecked
                 </Button>
               </div>
@@ -6074,7 +6075,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
                       {activeBulkPanel === null && (
                         <span
-                          className="absolute inset-x-1 bottom-1 z-10 flex items-center gap-0.5"
+                          className="absolute inset-x-1 top-1 z-10 flex items-center gap-0.5"
                           onClick={(event) => event.stopPropagation()}
                           onKeyDown={(event) => event.stopPropagation()}
                         >
@@ -6426,62 +6427,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             ? <Loader2 className="h-4 w-4 animate-spin" />
                             : <Edit className="h-4 w-4" />}
                         </button>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={(event) => event.stopPropagation()}
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
-                              title="Cambiar características"
-                              aria-label="Cambiar características"
-                            >
-                              <ChefHat className="h-4 w-4" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            align="end"
-                            className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5"
-                            onClick={(event) => event.stopPropagation()}
-                            onKeyDown={(event) => event.stopPropagation()}
-                          >
-                            <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
-                            <div className="space-y-0.5">
-                              {INGREDIENT_FEATURE_TOGGLES.map(({ field, label, icon }) => {
-                                const active = ingredientsEditDraft?.recipeId === recipe.id
-                                  ? ingredientsEditDraft.features[field]
-                                  : Boolean(recipe[field]);
-                                return (
-                                  <button
-                                    key={field}
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      if (ingredientsEditDraft?.recipeId === recipe.id) {
-                                        setIngredientsEditDraft(current => current ? {
-                                          ...current,
-                                          features: { ...current.features, [field]: !current.features[field] },
-                                        } : current);
-                                        return;
-                                      }
-                                      void handleToggleFeature(recipe, field, !active);
-                                    }}
-                                    className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
-                                  >
-                                    <span className="flex min-w-0 items-center gap-1.5">
-                                      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center [&>img]:h-4 [&>img]:w-4 [&>svg]:h-4 [&>svg]:w-4">
-                                        {icon}
-                                      </span>
-                                      <span className="truncate text-left">{label}</span>
-                                    </span>
-                                    <span className={`w-6 shrink-0 text-right text-[10px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>
-                                      {active ? 'ON' : 'OFF'}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
                       </div>
                     )}
                     {activeBulkPanel !== null && (
