@@ -1534,13 +1534,14 @@ const Index = () => {
   };
 
   const handleDeleteCollection = async (id: string) => {
+    const collectionName = collections.find(collection => collection.id === id)?.name || "la colección";
     try {
       await api.collections.remove(id);
       setCollections(prev => prev.filter(col => col.id !== id));
       if (filters.collectionId === id) {
         handleFiltersChange({ ...filters, collectionId: undefined });
       }
-      toast({ title: "Colección eliminada", description: "Se eliminó de la lista." });
+      toast({ title: "Opción eliminada", description: `Se ha eliminado “${collectionName}”.` });
     } catch (error) {
       toast({
         title: "No se pudo eliminar la coleccion",
@@ -1609,7 +1610,7 @@ const Index = () => {
         });
       }
       await Promise.all([reloadDishTypes(), loadRecipes()]);
-      toast({ title: "Tipo de comida eliminado", description: "Se eliminó de la lista." });
+      toast({ title: "Opción eliminada", description: `Se ha eliminado “${name}”.` });
     } catch (error) {
       toast({
         title: "No se pudo eliminar el tipo de comida",
@@ -1644,7 +1645,7 @@ const Index = () => {
         });
       }
       await Promise.all([reloadCategories(), loadRecipes()]);
-      toast({ title: "Categoría eliminada", description: "Se eliminó de la lista." });
+      toast({ title: "Opción eliminada", description: `Se ha eliminado “${name}”.` });
     } catch (error) {
       toast({ title: "No se pudo eliminar la categoria", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
@@ -1673,7 +1674,7 @@ const Index = () => {
         handleFiltersChange({ ...filters, sources: remaining.length ? remaining : undefined });
       }
       await Promise.all([reloadSources(), loadRecipes()]);
-      toast({ title: "Fuente eliminada", description: "Se eliminó de la lista." });
+      toast({ title: "Opción eliminada", description: `Se ha eliminado “${name}”.` });
     } catch (error) {
       toast({ title: "No se pudo eliminar la fuente", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
@@ -1704,7 +1705,7 @@ const Index = () => {
         });
       }
       await Promise.all([reloadTags(), loadRecipes()]);
-      toast({ title: "Etiqueta eliminada", description: "Se eliminó de la lista." });
+      toast({ title: "Opción eliminada", description: `Se ha eliminado “${name}”.` });
     } catch (error) {
       toast({ title: "No se pudo eliminar la etiqueta", description: error instanceof Error ? error.message : "Intenta nuevamente", variant: "destructive" });
     }
