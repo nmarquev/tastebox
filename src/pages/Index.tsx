@@ -53,7 +53,7 @@ import { useRecipeTags } from "@/hooks/useRecipeTags";
 import { useRecipeAuthors } from "@/hooks/useRecipeAuthors";
 import { useVoiceSettings } from "@/hooks/useVoiceSettings";
 import { SaveToCollectionModal } from "@/components/SaveToCollectionModal";
-import { getRecipeSource } from "@/utils/siteUtils";
+import { getRecipeSource, getSourceFromUrl, isValidUrl } from "@/utils/siteUtils";
 import { FilterAutocompleteInput } from "@/components/FilterAutocompleteInput";
 import { printRecipesPdf } from "@/utils/pdfUtils";
 import { printRecipeCards } from "@/utils/printCards";
@@ -6072,6 +6072,139 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       {ingImg
                         ? <img src={ingImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
+                      {activeBulkPanel === null && (
+                        <span
+                          className="absolute inset-x-1 bottom-1 z-10 flex items-center gap-0.5"
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleToggleFavorite(recipe);
+                            }}
+                            className="inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
+                            title={recipe.featured ? "Quitar de Favoritos" : "Agregar a Favoritos"}
+                            aria-label={recipe.featured ? "Quitar de Favoritos" : "Agregar a Favoritos"}
+                          >
+                            <Heart className={`h-4 w-4 ${recipe.featured ? 'fill-red-500 text-red-500' : ''}`} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void handleToggleFeature(recipe, 'checked', !recipe.checked);
+                            }}
+                            className={`inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 shadow-sm transition-colors hover:bg-white/90 ${recipe.checked ? 'text-[#6f9f32]' : 'text-gray-600'}`}
+                            title={recipe.checked ? "Receta chequeada" : "Marcar receta como chequeada"}
+                            aria-label={recipe.checked ? "Marcar como pendiente de revisión" : "Marcar como chequeada"}
+                          >
+                            <Check className="h-4 w-4" strokeWidth={3} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setCollectionRecipe(recipe);
+                            }}
+                            className="inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
+                            title="Guardar en una colección"
+                            aria-label="Guardar en una colección"
+                          >
+                            <Bookmark className={`h-4 w-4 ${collectionRecipeIds.has(recipe.id) ? 'fill-primary text-primary' : ''}`} />
+                          </button>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={(event) => event.stopPropagation()}
+                                className="inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
+                                title="Características"
+                                aria-label="Características"
+                              >
+                                <ChefHat className="h-4 w-4" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              align="start"
+                              className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
+                              <div className="space-y-0.5">
+                                {INGREDIENT_FEATURE_TOGGLES.map(({ field, label, icon }) => {
+                                  const active = Boolean(recipe[field]);
+                                  return (
+                                    <button
+                                      key={field}
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        void handleToggleFeature(recipe, field, !active);
+                                      }}
+                                      className={`flex w-full items-center justify-between gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${active ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                                    >
+                                      <span className="flex min-w-0 items-center gap-1.5">
+                                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center [&>img]:h-4 [&>img]:w-4 [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+                                        <span className="truncate text-left">{label}</span>
+                                      </span>
+                                      <span className={`w-6 shrink-0 text-right text-[10px] font-bold ${active ? 'text-primary' : 'text-muted-foreground/50'}`}>{active ? 'ON' : 'OFF'}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                          {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) && (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                window.open(recipe.sourceUrl, '_blank', 'noopener,noreferrer');
+                              }}
+                              className="inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
+                              title={`Ver receta original en ${getSourceFromUrl(recipe.sourceUrl)}`}
+                              aria-label="Ver receta original"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={(event) => event.stopPropagation()}
+                                className="inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
+                                title="Más opciones"
+                                aria-label="Más opciones"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" onClick={(event) => event.stopPropagation()}>
+                              <DropdownMenuItem onSelect={() => window.open(`${window.location.origin}/receta/${recipe.id}`, '_blank', 'noopener,noreferrer')}>
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                Abrir en una nueva pestaña
+                              </DropdownMenuItem>
+                              {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) && (
+                                <DropdownMenuItem onSelect={() => window.open(recipe.sourceUrl!, '_blank', 'noopener,noreferrer')}>
+                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                  Ver en {getSourceFromUrl(recipe.sourceUrl)}
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onSelect={() => handleEditRecipe(recipe)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => handleDeleteRecipe(recipe)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </span>
+                      )}
                     </span>
                     {/* Medio: titulo, fuente, iconos, tipo y categorias */}
                     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
