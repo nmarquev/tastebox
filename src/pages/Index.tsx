@@ -6934,7 +6934,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Trash2 className="h-5 w-5 text-destructive" />
-              ?Eliminar recetasi
+              Eliminar recetas
             </AlertDialogTitle>
             <AlertDialogDescription>
               Vas a eliminar {selectedRecipeIds.size} receta{selectedRecipeIds.size > 1 ? "s" : ""}.
