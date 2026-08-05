@@ -24,7 +24,6 @@ import { EditRecipeModal } from "@/components/EditRecipeModal";
 import { useDraggableDialog } from "@/hooks/useDraggableDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { splitIngredientDisplayName } from "@/utils/ingredientText";
 
 interface RecipeModalProps {
   recipe: Recipe | null;
@@ -1776,15 +1775,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               {(ingredient.amount || ingredient.unit) && (
                                 <span>{ingredient.amount} {ingredient.unit}</span>
                               )}{' '}
-                              {(() => {
-                                const displayName = splitIngredientDisplayName(ingredient.name);
-                                return (
-                                  <>
-                                    <span className="font-semibold text-foreground">{displayName.name}</span>
-                                    {displayName.detail}
-                                  </>
-                                );
-                              })()}
+                              {ingredient.name}
                             </span>
                           </li>
                         ))}

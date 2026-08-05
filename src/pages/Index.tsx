@@ -65,7 +65,6 @@ import { saveRecentCategory } from "@/utils/recentCategories";
 import { saveRecentRecipe } from "@/utils/recentRecipes";
 import { saveRecentSource } from "@/utils/recentSources";
 import { EMPTY_FILTER_OPTIONS } from "@/constants/emptyFilterOptions";
-import { splitIngredientDisplayName } from "@/utils/ingredientText";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type RecipeSort = 'title' | 'category' | 'date' | 'collection' | 'source' | 'dishType' | 'difficulty' | 'prepTime' | 'totalTime';
@@ -334,7 +333,10 @@ const Index = () => {
       dishTypes: [],
       author: undefined,
     });
-  }, [location.search]);
+  // location.key tambien cambia cuando se vuelve a elegir desde el menu el mismo
+  // filtro que ya figura en la URL. De ese modo se reaplica el estado solicitado
+  // aunque el usuario haya quitado o modificado el filtro dentro de la pantalla.
+  }, [location.search, location.key]);
 
   const [gridColumns, setGridColumns] = useState<1 | 2 | 3 | 4 | 5>(3); // Default to 3 columns
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'detail' | 'ingredients'>('grid'); // Grilla, lista, detalle o ingredientes
@@ -6383,16 +6385,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           {recipe.ingredients.map((ing, idx) => (
                             <li key={idx} className="flex gap-1.5">
                               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                              {(() => {
-                                const displayName = splitIngredientDisplayName(ing.name);
-                                return (
-                                  <span>
-                                    {(ing.amount || ing.unit) && <span>{[ing.amount, ing.unit].filter(Boolean).join(' ')}</span>}{' '}
-                                    <span className="font-semibold text-foreground">{displayName.name}</span>
-                                    {displayName.detail}
-                                  </span>
-                                );
-                              })()}
+                              <span>
+                                {[ing.amount, ing.unit, ing.name].filter(Boolean).join(' ')}
+                              </span>
                             </li>
                           ))}
                         </ul>
