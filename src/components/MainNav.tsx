@@ -10,11 +10,15 @@ import {
   ClipboardPaste,
   Copy,
   Download,
+  Edit,
+  Filter,
   Heart,
   Leaf,
   PlusCircle,
+  Printer,
   Search,
   Sparkles,
+  Trash2,
   Utensils,
   WheatOff,
 } from "lucide-react";
@@ -75,10 +79,22 @@ export const MainNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const showingDuplicateRecipes = new URLSearchParams(location.search).get('view') === 'duplicadas';
+  const panelPath = (panel: 'search' | 'filter' | 'edit' | 'print' | 'delete') => {
+    const params = new URLSearchParams(location.search);
+    params.delete('accion');
+    params.delete('_');
+    params.set('panel', panel);
+    return `${location.pathname}?${params.toString()}`;
+  };
   const optionItems = [
     showingDuplicateRecipes
       ? { label: "Mostrar todas las recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> }
       : { label: "Mostrar recetas repetidas", to: "/app?view=duplicadas", icon: <Copy className="h-4 w-4" /> },
+    { label: "Buscar", to: panelPath('search'), icon: <Search className="h-4 w-4" /> },
+    { label: "Filtrar", to: panelPath('filter'), icon: <Filter className="h-4 w-4" /> },
+    { label: "Editar", to: panelPath('edit'), icon: <Edit className="h-4 w-4" /> },
+    { label: "Imprimir", to: panelPath('print'), icon: <Printer className="h-4 w-4" /> },
+    { label: "Eliminar", to: panelPath('delete'), icon: <Trash2 className="h-4 w-4" /> },
   ];
 
   const openAction = (action: string) => {
@@ -142,7 +158,7 @@ export const MainNav = () => {
             type="button"
             className="inline-flex h-10 items-center justify-center gap-1 rounded-md px-2 text-[11px] font-semibold tracking-wide text-[#6f6965] transition-colors hover:bg-pink-50 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 lg:px-3 lg:text-xs xl:px-4 xl:text-sm"
           >
-            OPCIONES
+            ACCIONES
             <ChevronDown className="h-4 w-4" />
           </button>
         </DropdownMenuTrigger>

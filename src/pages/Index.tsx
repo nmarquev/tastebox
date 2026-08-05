@@ -165,6 +165,7 @@ const Index = () => {
     ? new URLSearchParams(window.location.search).get('filtro')
     : null;
   const recipeToolbarRef = useRef<HTMLDivElement>(null);
+  const recipeSearchInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -302,6 +303,7 @@ const Index = () => {
     const keyword = keywords.length <= 1 ? (keywords[0] || "") : "";
     const typeFilter = params.get('filtro');
     const categoria = params.get('categoria');
+    const panel = params.get('panel');
 
     setSearchTerm(keyword);
     setSearchTerms(keywords.length > 1 ? keywords : []);
@@ -311,9 +313,14 @@ const Index = () => {
     setShowDishTypesGallery(view === 'tipo-comida');
     setShowTagsGallery(false);
     setShowAuthorsGallery(false);
-    setShowFilters(false);
-    setActiveBulkPanel(null);
-    setSelectedRecipeIds(new Set());
+    setShowFilters(panel === 'filter');
+    setActiveBulkPanel(
+      panel === 'edit' || panel === 'print' || panel === 'delete' ? panel : null
+    );
+    if (!panel) setSelectedRecipeIds(new Set());
+    if (panel === 'search') {
+      window.requestAnimationFrame(() => recipeSearchInputRef.current?.focus());
+    }
     if (view === 'duplicadas') {
       setViewMode('list');
       setRecipeSort('title');
@@ -3384,6 +3391,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <div className={`toolbar-search-field relative rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'md:w-full xl:w-[330px]' : 'md:w-full xl:w-[330px]'}`}>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
+                  ref={recipeSearchInputRef}
                   placeholder={showCollectionsGallery ? "Buscar coleccion" : showDishTypesGallery ? "Buscar tipo de comida" : showCategoriesGallery ? "Buscar categoria" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar por receta, ingrediente, etc"}
                   title="Escribi una palabra o frase y pulsa Enter para agregarla. Podes sumar varias."
                   value={searchTerm}
@@ -6121,7 +6129,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     className={`flex items-start gap-4 px-3 py-3 text-left transition-colors hover:bg-muted/50 ${ingSelected ? 'bg-accent/60' : ''}`}
                   >
                     {/* Imagen a la izquierda */}
-                    <span className="relative flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                    <span className="relative flex h-44 w-44 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                       {ingImg
                         ? <img src={ingImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
