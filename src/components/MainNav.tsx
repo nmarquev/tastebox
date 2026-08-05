@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Check,
   CheckCircle2,
@@ -32,10 +32,6 @@ const menuItems = [
   { label: "COLECCIONES", to: "/app?view=colecciones" },
   { label: "FUENTE", to: "/app?view=fuentes" },
   { label: "TIPO DE COMIDA", to: "/app?view=tipo-comida" },
-];
-
-const optionItems = [
-  { label: "Detectar recetas repetidas", to: "/app?view=duplicadas", icon: <Copy className="h-4 w-4" /> },
 ];
 
 const recipeTypeItems = [
@@ -76,7 +72,14 @@ const actionItems = [
 ];
 
 export const MainNav = () => {
+  const location = useLocation();
   const navigate = useNavigate();
+  const showingDuplicateRecipes = new URLSearchParams(location.search).get('view') === 'duplicadas';
+  const optionItems = [
+    showingDuplicateRecipes
+      ? { label: "Mostrar todas las recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> }
+      : { label: "Mostrar recetas repetidas", to: "/app?view=duplicadas", icon: <Copy className="h-4 w-4" /> },
+  ];
 
   const openAction = (action: string) => {
     navigate(`/app?accion=${action}&_=${Date.now()}`);
