@@ -44,34 +44,36 @@ const menuItems = [
   { label: "TIPO DE COMIDA", to: "/app?view=tipo-comida" },
 ];
 
+const recipeFilterPath = (filter: string) => `/app?filtro=${filter}&conservarFiltros=1`;
+
 const recipeTypeItems = [
   { label: "Todas las Recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> },
-  { label: "Favoritas", to: "/app?filtro=favoritas", icon: <Heart className="h-4 w-4" /> },
-  { label: "Checked", to: "/app?filtro=checked", icon: <Check className="h-4 w-4" strokeWidth={3} /> },
-  { label: "Unchecked", to: "/app?filtro=unchecked", icon: <UncheckedIcon className="h-4 w-4" /> },
-  { label: "Cocinadas", to: "/app?filtro=cocinadas", icon: <CheckCircle2 className="h-4 w-4" /> },
+  { label: "Favoritas", to: recipeFilterPath('favoritas'), icon: <Heart className="h-4 w-4" /> },
+  { label: "Checked", to: recipeFilterPath('checked'), icon: <Check className="h-4 w-4" strokeWidth={3} /> },
+  { label: "Unchecked", to: recipeFilterPath('unchecked'), icon: <UncheckedIcon className="h-4 w-4" /> },
+  { label: "Cocinadas", to: recipeFilterPath('cocinadas'), icon: <CheckCircle2 className="h-4 w-4" /> },
   {
     label: "Thermomix",
-    to: "/app?filtro=thermomix",
+    to: recipeFilterPath('thermomix'),
     icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain" />,
   },
   {
     label: "Air Fryer",
-    to: "/app?filtro=air-fryer",
+    to: recipeFilterPath('air-fryer'),
     icon: <img src="/air-fryer.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />,
   },
-  { label: "Sin Gluten", to: "/app?filtro=sin-gluten", icon: <WheatOff className="h-4 w-4" /> },
-  { label: "Sin Azucar", to: "/app?filtro=sin-azucar", icon: <CandyOff className="h-4 w-4" /> },
-  { label: "Keto", to: "/app?filtro=keto", icon: <AvocadoIcon className="h-[18px] w-[18px]" /> },
+  { label: "Sin Gluten", to: recipeFilterPath('sin-gluten'), icon: <WheatOff className="h-4 w-4" /> },
+  { label: "Sin Azucar", to: recipeFilterPath('sin-azucar'), icon: <CandyOff className="h-4 w-4" /> },
+  { label: "Keto", to: recipeFilterPath('keto'), icon: <AvocadoIcon className="h-[18px] w-[18px]" /> },
   {
     label: "Low Carb",
-    to: "/app?filtro=low-carb",
+    to: recipeFilterPath('low-carb'),
     icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />,
   },
-  { label: "Proteicas", to: "/app?filtro=proteicas", icon: <Beef className="h-4 w-4" /> },
-  { label: "Vegetarianas", to: "/app?filtro=vegetarianas", icon: <Leaf className="h-4 w-4" /> },
-  { label: "Recetas Dulces", to: "/app?filtro=dulces", icon: <CakeSlice className="h-4 w-4" /> },
-  { label: "Recetas Saladas", to: "/app?filtro=saladas", icon: <Utensils className="h-4 w-4" /> },
+  { label: "Proteicas", to: recipeFilterPath('proteicas'), icon: <Beef className="h-4 w-4" /> },
+  { label: "Vegetarianas", to: recipeFilterPath('vegetarianas'), icon: <Leaf className="h-4 w-4" /> },
+  { label: "Recetas Dulces", to: recipeFilterPath('dulces'), icon: <CakeSlice className="h-4 w-4" /> },
+  { label: "Recetas Saladas", to: recipeFilterPath('saladas'), icon: <Utensils className="h-4 w-4" /> },
 ];
 
 const actionItems = [

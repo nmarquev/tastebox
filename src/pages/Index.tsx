@@ -309,10 +309,13 @@ const Index = () => {
     const typeFilter = params.get('filtro');
     const categoria = params.get('categoria');
     const panel = params.get('panel');
+    const preserveFilters = params.get('conservarFiltros') === '1';
 
-    setSearchTerm(keyword);
-    setSearchTerms(keywords.length > 1 ? keywords : []);
-    setSearchMatchMode(matchMode);
+    if (!preserveFilters) {
+      setSearchTerm(keyword);
+      setSearchTerms(keywords.length > 1 ? keywords : []);
+      setSearchMatchMode(matchMode);
+    }
     setShowCollectionsGallery(view === 'colecciones');
     setShowCategoriesGallery(view === 'categorias');
     setShowSourcesGallery(view === 'fuentes');
@@ -330,7 +333,27 @@ const Index = () => {
       setSortDirection('asc');
     }
 
-    setFilters({
+    setFilters(previousFilters => {
+      if (preserveFilters) {
+        const nextFilters = { ...previousFilters };
+        if (typeFilter === 'favoritas') nextFilters.featured = true;
+        if (typeFilter === 'checked') nextFilters.checkedStatus = 'checked';
+        if (typeFilter === 'unchecked') nextFilters.checkedStatus = 'unchecked';
+        if (typeFilter === 'cocinadas') nextFilters.cookedOnly = true;
+        if (typeFilter === 'thermomix') nextFilters.thermomixOnly = true;
+        if (typeFilter === 'air-fryer') nextFilters.airFryerOnly = true;
+        if (typeFilter === 'sin-gluten') nextFilters.glutenFreeOnly = true;
+        if (typeFilter === 'sin-azucar') nextFilters.sugarFreeOnly = true;
+        if (typeFilter === 'keto') nextFilters.ketoOnly = true;
+        if (typeFilter === 'low-carb') nextFilters.lowCarbOnly = true;
+        if (typeFilter === 'proteicas') nextFilters.proteicaOnly = true;
+        if (typeFilter === 'vegetarianas') nextFilters.vegetarianOnly = true;
+        if (typeFilter === 'dulces') nextFilters.sweetOnly = true;
+        if (typeFilter === 'saladas') nextFilters.savoryOnly = true;
+        return nextFilters;
+      }
+
+      return {
       difficulty: [],
       prepTimeRange: [0, 180],
       recipeTypes: categoria ? [categoria] : [],
@@ -356,6 +379,7 @@ const Index = () => {
       dishType: undefined,
       dishTypes: [],
       author: undefined,
+      };
     });
   // location.key tambien cambia cuando se vuelve a elegir desde el menu el mismo
   // filtro que ya figura en la URL. De ese modo se reaplica el estado solicitado
