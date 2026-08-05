@@ -699,9 +699,17 @@ const Index = () => {
     const matchesDifficulty = filters.difficulty.length === 0 ||
       filters.difficulty.includes(recipe.difficulty);
 
-    // Prep time filter
-    const matchesPrepTime = recipe.prepTime >= (filters.prepTimeRange?.[0] ?? 0) &&
-      recipe.prepTime <= (filters.prepTimeRange?.[1] ?? 180);
+    // El rango inicial representa "sin filtro". Las importaciones antiguas usan
+    // null o -1 cuando no conocen el tiempo; no deben desaparecer del listado.
+    const prepTimeMin = filters.prepTimeRange?.[0] ?? 0;
+    const prepTimeMax = filters.prepTimeRange?.[1] ?? 180;
+    const hasPrepTimeFilter = prepTimeMin > 0 || prepTimeMax !== 180;
+    const matchesPrepTime = !hasPrepTimeFilter || (
+      typeof recipe.prepTime === 'number'
+      && recipe.prepTime >= 0
+      && recipe.prepTime >= prepTimeMin
+      && recipe.prepTime <= prepTimeMax
+    );
 
 
     // Recipe type filter
