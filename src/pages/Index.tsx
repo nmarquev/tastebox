@@ -161,6 +161,10 @@ const Index = () => {
     ? new URLSearchParams(window.location.search).getAll('buscar').map(term => term.trim()).filter(Boolean)
     : [];
   const initialSearch = initialSearchValues.length <= 1 ? (initialSearchValues[0] || "") : "";
+  const initialSearchMatchMode = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('coincidencia') === 'alguna'
+    ? 'any'
+    : 'all';
   const initialRecipeTypeFilter = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('filtro')
     : null;
@@ -178,6 +182,7 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   // Palabras clave confirmadas (con Enter) para buscar recetas por varios terminos (AND).
   const [searchTerms, setSearchTerms] = useState<string[]>(initialSearchValues.length > 1 ? initialSearchValues : []);
+  const [searchMatchMode, setSearchMatchMode] = useState<'all' | 'any'>(initialSearchMatchMode);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   // El banner (Hero) ya no se muestra: una sola pagina.
   const [showHero, setShowHero] = useState(false);
@@ -300,12 +305,14 @@ const Index = () => {
     const view = params.get('view');
     const keywords = params.getAll('buscar').map(term => term.trim()).filter(Boolean);
     const keyword = keywords.length <= 1 ? (keywords[0] || "") : "";
+    const matchMode = params.get('coincidencia') === 'alguna' ? 'any' : 'all';
     const typeFilter = params.get('filtro');
     const categoria = params.get('categoria');
     const panel = params.get('panel');
 
     setSearchTerm(keyword);
     setSearchTerms(keywords.length > 1 ? keywords : []);
+    setSearchMatchMode(matchMode);
     setShowCollectionsGallery(view === 'colecciones');
     setShowCategoriesGallery(view === 'categorias');
     setShowSourcesGallery(view === 'fuentes');
@@ -672,8 +679,8 @@ const Index = () => {
 
   // Apply search and filters, then sort alphabetically (only when user is logged in)
   const allFilteredRecipes = user ? recipes.filter(recipe => {
-    // Busqueda - por varias palabras clave (AND): titulo, descripcion, ingredientes,
-    // instrucciones, etiquetas, categoria, fuente y colecciones.
+    // Busqueda por varias palabras clave (todas/AND o alguna/OR): titulo,
+    // descripcion, ingredientes, instrucciones, etiquetas, categoria, fuente y colecciones.
     const matchesTerm = (q: string) =>
       (recipe.title || '').toLowerCase().includes(q) ||
       (recipe.description || '').toLowerCase().includes(q) ||
@@ -694,9 +701,10 @@ const Index = () => {
       collections.some(col => col.recipeIds.includes(recipe.id) && (col.name || '').toLowerCase().includes(q));
 
     const allSearchTerms = [...searchTerms, searchTerm]
-      .map(t => t.trim().toLowerCase())
+      .flatMap(t => t.trim().toLowerCase().split(/\s+/))
       .filter(Boolean);
-    const matchesSearch = allSearchTerms.length === 0 || allSearchTerms.every(matchesTerm);
+    const matchesSearch = allSearchTerms.length === 0
+      || (searchMatchMode === 'any' ? allSearchTerms.some(matchesTerm) : allSearchTerms.every(matchesTerm));
 
     // Difficulty filter
     const matchesDifficulty = filters.difficulty.length === 0 ||
@@ -959,7 +967,7 @@ const Index = () => {
   useEffect(() => {
     if (!user) return; // Skip if not logged in
     setDisplayedCount(24);
-  }, [user, searchTerm, searchTerms, filters, recipeSort, sortDirection]);
+  }, [user, searchTerm, searchTerms, searchMatchMode, filters, recipeSort, sortDirection]);
 
   // If user is not logged in, show auth page
   if (!user) {
@@ -2483,6 +2491,7 @@ const Index = () => {
   const handleClearFilters = () => {
     setSearchTerm('');
     setSearchTerms([]);
+    setSearchMatchMode('all');
     setFilters({
       difficulty: [],
       prepTimeRange: [0, 180],

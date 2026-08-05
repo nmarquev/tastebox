@@ -22,6 +22,7 @@ import {
   Trash2,
   Utensils,
   WheatOff,
+  X,
 } from "lucide-react";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -35,6 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const menuItems = [
   { label: "COLECCIONES", to: "/app?view=colecciones" },
@@ -84,6 +86,7 @@ export const MainNav = () => {
   const navigate = useNavigate();
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [recipeSearch, setRecipeSearch] = useState('');
+  const [recipeSearchMode, setRecipeSearchMode] = useState<'all' | 'any'>('all');
   const showingDuplicateRecipes = new URLSearchParams(location.search).get('view') === 'duplicadas';
   const panelPath = (panel: 'filter' | 'edit' | 'print' | 'delete') => {
     const params = new URLSearchParams(location.search);
@@ -94,7 +97,7 @@ export const MainNav = () => {
   };
   const duplicateOption = showingDuplicateRecipes
     ? { label: "Mostrar todas las recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> }
-    : { label: "Mostrar recetas repetidas", to: "/app?view=duplicadas", icon: <Copy className="h-4 w-4" /> };
+    : { label: "Mostrar recetas duplicadas", to: "/app?view=duplicadas", icon: <Copy className="h-4 w-4" /> };
   const optionItems = [
     { label: "Filtrar", to: panelPath('filter'), icon: <Filter className="h-4 w-4" /> },
     { label: "Editar", to: panelPath('edit'), icon: <Edit className="h-4 w-4" /> },
@@ -109,8 +112,19 @@ export const MainNav = () => {
   const submitRecipeSearch = () => {
     const term = recipeSearch.trim();
     if (!term) return;
+    const keywords = term.split(/\s+/).filter(Boolean);
+    const params = new URLSearchParams();
+    keywords.forEach(keyword => params.append('buscar', keyword));
+    params.set('coincidencia', recipeSearchMode === 'any' ? 'alguna' : 'todas');
     setSearchDialogOpen(false);
-    navigate(`/app?buscar=${encodeURIComponent(term)}`);
+    navigate(`/app?${params.toString()}`);
+  };
+
+  const openRecipeSearch = () => {
+    // Radix devuelve el foco al cerrar el desplegable. Abrir el dialogo en el
+    // siguiente ciclo evita que ese cierre lo descarte inmediatamente.
+    setRecipeSearchMode('all');
+    window.setTimeout(() => setSearchDialogOpen(true), 0);
   };
 
   return (
@@ -183,7 +197,7 @@ export const MainNav = () => {
               {duplicateOption.label}
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSearchDialogOpen(true)}>
+          <DropdownMenuItem onSelect={openRecipeSearch}>
             <Search className="mr-2 h-4 w-4" />
             Buscar
           </DropdownMenuItem>
@@ -203,21 +217,55 @@ export const MainNav = () => {
       <Dialog open={searchDialogOpen} onOpenChange={setSearchDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Buscar receta</DialogTitle>
+            <DialogTitle>Buscar por una o más palabras clave</DialogTitle>
           </DialogHeader>
-          <Input
-            autoFocus
-            value={recipeSearch}
-            onChange={(event) => setRecipeSearch(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                submitRecipeSearch();
-              }
-            }}
-            placeholder="Escribir nombre de la receta..."
-            aria-label="Nombre de la receta"
-          />
+          <div className="relative">
+            <Input
+              autoFocus
+              value={recipeSearch}
+              onChange={(event) => setRecipeSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  submitRecipeSearch();
+                }
+              }}
+              placeholder="Escribir nombre de la receta o ingredientes..."
+              aria-label="Nombre de la receta o ingredientes"
+              className="pr-10"
+            />
+            {recipeSearch && (
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => setRecipeSearch('')}
+                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Borrar texto de búsqueda"
+                title="Borrar texto"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <RadioGroup
+            value={recipeSearchMode}
+            onValueChange={(value) => setRecipeSearchMode(value as 'all' | 'any')}
+            className="gap-3"
+            aria-label="Coincidencia de palabras clave"
+          >
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="all" id="search-all-words" />
+              <label htmlFor="search-all-words" className="cursor-pointer text-sm text-foreground">
+                Incluir todas las palabras
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="any" id="search-any-word" />
+              <label htmlFor="search-any-word" className="cursor-pointer text-sm text-foreground">
+                Incluir alguna de las palabras
+              </label>
+            </div>
+          </RadioGroup>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setSearchDialogOpen(false)}>
               Cancelar

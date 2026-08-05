@@ -161,10 +161,12 @@ function setupEventListeners() {
   // Login form
   document.getElementById('login-form')?.addEventListener('submit', handleLogin);
 
-  // Open app button
-  document.getElementById('open-app-button')?.addEventListener('click', () => {
-    chrome.tabs.create({ url: CONFIG.getFrontendUrl() });
-  });
+  document.getElementById('google-login-button')?.addEventListener('click', handleGoogleLogin);
+  document.getElementById('register-button')?.addEventListener('click', handleOpenRegister);
+  document.getElementById('forgot-password-button')?.addEventListener('click', showForgotPasswordView);
+  document.getElementById('back-to-login-button')?.addEventListener('click', showLoginView);
+  document.getElementById('forgot-password-form')?.addEventListener('submit', handleForgotPassword);
+  document.getElementById('toggle-password-button')?.addEventListener('click', togglePasswordVisibility);
 
   // Logout button
   document.getElementById('logout-button')?.addEventListener('click', handleLogout);
@@ -200,6 +202,61 @@ function setupEventListeners() {
 
   // Save config button (login view)
   document.getElementById('save-config-button-login')?.addEventListener('click', handleSaveConfigLogin);
+}
+
+function showForgotPasswordView() {
+  const email = document.getElementById('email')?.value || '';
+  document.getElementById('forgot-email').value = email;
+  document.getElementById('login-view').style.display = 'none';
+  document.getElementById('forgot-password-view').style.display = 'flex';
+  document.getElementById('forgot-email').focus();
+}
+
+function showLoginView() {
+  document.getElementById('forgot-password-view').style.display = 'none';
+  document.getElementById('login-view').style.display = 'flex';
+}
+
+function togglePasswordVisibility() {
+  const passwordInput = document.getElementById('password');
+  const toggleButton = document.getElementById('toggle-password-button');
+  const showingPassword = passwordInput.type === 'text';
+  passwordInput.type = showingPassword ? 'password' : 'text';
+  toggleButton.querySelector('.eye-open').style.display = showingPassword ? 'block' : 'none';
+  toggleButton.querySelector('.eye-closed').style.display = showingPassword ? 'none' : 'block';
+  toggleButton.setAttribute('aria-label', showingPassword ? 'Mostrar contraseña' : 'Ocultar contraseña');
+  toggleButton.title = showingPassword ? 'Mostrar contraseña' : 'Ocultar contraseña';
+}
+
+function handleGoogleLogin() {
+  const returnTo = new URL('/app?extension_login=success', CONFIG.getFrontendUrl()).toString();
+  const googleLoginUrl = `${CONFIG.getEndpoint('googleLogin')}?returnTo=${encodeURIComponent(returnTo)}`;
+  chrome.tabs.create({ url: googleLoginUrl });
+}
+
+function handleOpenRegister() {
+  const registerUrl = new URL('/?auth=register', CONFIG.getFrontendUrl()).toString();
+  chrome.tabs.create({ url: registerUrl });
+}
+
+function handleForgotPassword(event) {
+  event.preventDefault();
+  const email = document.getElementById('forgot-email').value.trim();
+  const submitButton = document.getElementById('forgot-submit-button');
+  if (!email) return;
+
+  submitButton.disabled = true;
+  submitButton.textContent = 'Enviando...';
+  chrome.runtime.sendMessage({ action: 'forgotPassword', email }, (response) => {
+    submitButton.disabled = false;
+    submitButton.textContent = 'Enviar instrucciones';
+    if (response?.success) {
+      showNotification(response.message || 'Revisá tu email para recuperar tu contraseña.', 'success');
+      showLoginView();
+    } else {
+      showNotification(response?.error || 'No se pudo enviar el email.', 'error');
+    }
+  });
 }
 
 // Toggle dev ports configuration visibility

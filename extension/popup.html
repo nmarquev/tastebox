@@ -14,14 +14,16 @@
         <img src="icons/logo-white.png" alt="TasteBox" width="26" height="26" />
         <h1>TasteBox</h1>
       </div>
-      <div class="version">v1.0.4</div>
+      <div class="version">v1.0.5</div>
     </div>
 
     <!-- Not Authenticated View -->
     <div id="not-authenticated" class="view" style="display: none;">
-      <div class="auth-card">
-        <h2>Iniciar Sesión</h2>
-        <p class="subtitle">Ingresa con tu cuenta de TasteBox</p>
+      <div class="auth-card" id="login-view">
+        <div class="auth-heading">
+          <h2>Iniciar Sesión</h2>
+          <p class="subtitle">Accede a tus recetas favoritas</p>
+        </div>
 
         <form id="login-form" class="auth-form">
           <div class="form-group">
@@ -30,8 +32,24 @@
           </div>
 
           <div class="form-group">
-            <label for="password">Contraseña</label>
-            <input type="password" id="password" name="password" placeholder="••••••••" required>
+            <div class="label-row">
+              <label for="password">Contraseña</label>
+              <button type="button" class="text-button" id="forgot-password-button">¿Olvidaste tu contraseña?</button>
+            </div>
+            <div class="password-field">
+              <input type="password" id="password" name="password" placeholder="••••••••" required>
+              <button type="button" class="password-toggle" id="toggle-password-button" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+                <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                  <path d="m2 2 20 20"></path>
+                  <path d="M6.7 6.7C3.8 8.5 2 12 2 12s3.5 7 10 7c1.6 0 3-.4 4.3-1"></path>
+                  <path d="M10.7 5.1c.4-.1.8-.1 1.3-.1 6.5 0 10 7 10 7s-.7 1.4-2 2.9"></path>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <button type="submit" class="btn btn-primary" id="login-button">
@@ -43,17 +61,20 @@
           <span>o</span>
         </div>
 
-        <button class="btn btn-secondary" id="open-app-button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <line x1="10" y1="14" x2="21" y2="3"></line>
-          </svg>
-          <span>Abrir TasteBox</span>
+        <button class="btn btn-secondary google-button" id="google-login-button">
+          <span class="google-mark" aria-hidden="true">G</span>
+          <span>Continuar con Google</span>
         </button>
 
+        <p class="register-copy">
+          ¿No tienes cuenta?
+          <button type="button" class="text-button register-button" id="register-button">Regístrate aquí</button>
+        </p>
+
         <!-- Settings for Not Authenticated -->
-        <div class="settings" style="margin-top: 16px;">
+        <details class="login-development-settings">
+          <summary>Configuración de desarrollo</summary>
+          <div class="settings login-settings">
           <div class="setting-item">
             <label for="environment-toggle-login">Modo Desarrollo</label>
             <label class="toggle">
@@ -84,7 +105,23 @@
               Guardar Configuración
             </button>
           </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="auth-card" id="forgot-password-view" style="display: none;">
+        <div class="auth-heading">
+          <h2>Recuperar contraseña</h2>
+          <p class="subtitle">Te enviaremos una contraseña temporal a tu email</p>
         </div>
+        <form id="forgot-password-form" class="auth-form">
+          <div class="form-group">
+            <label for="forgot-email">Email</label>
+            <input type="email" id="forgot-email" name="forgot-email" placeholder="tu@email.com" required>
+          </div>
+          <button type="submit" class="btn btn-primary" id="forgot-submit-button">Enviar instrucciones</button>
+        </form>
+        <button type="button" class="text-button back-to-login" id="back-to-login-button">Volver a iniciar sesión</button>
       </div>
     </div>
 

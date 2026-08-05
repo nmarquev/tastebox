@@ -46,6 +46,7 @@ async function checkAuthStatus() {
         const userData = await response.json();
         await chrome.storage.local.set({ user: userData });
         updateIcon(true);
+        return;
       } else {
         // Token invalid, clear it
         isAuthenticated = false;
@@ -53,7 +54,12 @@ async function checkAuthStatus() {
         await chrome.storage.local.remove(['authToken', 'user']);
         updateIcon(false);
       }
-    } else {
+    }
+
+    // El acceso con Google crea una cookie HTTP-only en el dominio de TasteBox.
+    // La convertimos en el token que usa la extensión cuando vuelve a abrirse.
+    const restored = await restoreGoogleSession();
+    if (!restored) {
       isAuthenticated = false;
       updateIcon(false);
     }
@@ -61,6 +67,28 @@ async function checkAuthStatus() {
     console.error('Auth check failed:', error);
     isAuthenticated = false;
     updateIcon(false);
+  }
+}
+
+async function restoreGoogleSession() {
+  try {
+    const response = await fetch(CONFIG.getEndpoint('googleSession'), {
+      method: 'GET',
+      credentials: 'include'
+    });
+    if (!response.ok) return false;
+
+    const data = await response.json();
+    if (!data.token || !data.user) return false;
+
+    authToken = data.token;
+    isAuthenticated = true;
+    await chrome.storage.local.set({ authToken: data.token, user: data.user });
+    updateIcon(true);
+    return true;
+  } catch (error) {
+    console.error('Google session restore failed:', error);
+    return false;
   }
 }
 
@@ -104,6 +132,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true; // Keep channel open for async response
 
+    case 'forgotPassword':
+      handleForgotPassword(request.email)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+
     case 'logout':
       handleLogout()
         .then(() => sendResponse({ success: true }))
@@ -120,6 +154,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ error: 'Unknown action' });
   }
 });
+
+async function handleForgotPassword(email) {
+  const response = await fetch(CONFIG.getEndpoint('forgotPassword'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return { success: false, error: data.error || 'No se pudo procesar la solicitud' };
+  }
+  return { success: true, message: data.message };
+}
 
 // Handle login
 async function handleLogin(email, password) {

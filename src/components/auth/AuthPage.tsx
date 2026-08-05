@@ -6,7 +6,9 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { THEME_LOGOS } from '@/utils/themeLogos';
 
 export const AuthPage = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(() => {
+    return new URLSearchParams(window.location.search).get('auth') !== 'register';
+  });
   const { theme } = useTheme();
 
   return (
