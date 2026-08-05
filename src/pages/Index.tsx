@@ -2442,6 +2442,20 @@ const Index = () => {
   // Chips de filtros activos para mostrar en la barra "Recetas de Pauli".
   // Cada chip incluye onRemove para quitar solo ese filtro.
   const activeFilterChips: { label?: string; value: string; onRemove: () => void }[] = [];
+  if (searchTerm.trim()) {
+    activeFilterChips.push({
+      label: 'Buscar',
+      value: searchTerm.trim(),
+      onRemove: () => setSearchTerm(''),
+    });
+  }
+  searchTerms.forEach((term, index) => {
+    activeFilterChips.push({
+      label: 'Buscar',
+      value: term,
+      onRemove: () => setSearchTerms(previous => previous.filter((_, termIndex) => termIndex !== index)),
+    });
+  });
   if (filters.collectionId) {
     activeFilterChips.push({ label: 'Coleccion', value: filters.collectionId === EMPTY_FILTER_OPTIONS.collection ? EMPTY_FILTER_OPTIONS.collection : collections.find(c => c.id === filters.collectionId)?.name || '', onRemove: () => handleFiltersChange({ ...filters, collectionId: undefined }) });
   }
@@ -2467,6 +2481,8 @@ const Index = () => {
   if (filters.savoryOnly) activeFilterChips.push({ value: 'Recetas Saladas', onRemove: () => handleFiltersChange({ ...filters, savoryOnly: undefined }) });
 
   const handleClearFilters = () => {
+    setSearchTerm('');
+    setSearchTerms([]);
     setFilters({
       difficulty: [],
       prepTimeRange: [0, 180],
