@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Check,
@@ -31,6 +32,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 const menuItems = [
   { label: "COLECCIONES", to: "/app?view=colecciones" },
@@ -78,19 +82,20 @@ const actionItems = [
 export const MainNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [recipeSearch, setRecipeSearch] = useState('');
   const showingDuplicateRecipes = new URLSearchParams(location.search).get('view') === 'duplicadas';
-  const panelPath = (panel: 'search' | 'filter' | 'edit' | 'print' | 'delete') => {
+  const panelPath = (panel: 'filter' | 'edit' | 'print' | 'delete') => {
     const params = new URLSearchParams(location.search);
     params.delete('accion');
     params.delete('_');
     params.set('panel', panel);
     return `${location.pathname}?${params.toString()}`;
   };
+  const duplicateOption = showingDuplicateRecipes
+    ? { label: "Mostrar todas las recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> }
+    : { label: "Mostrar recetas repetidas", to: "/app?view=duplicadas", icon: <Copy className="h-4 w-4" /> };
   const optionItems = [
-    showingDuplicateRecipes
-      ? { label: "Mostrar todas las recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> }
-      : { label: "Mostrar recetas repetidas", to: "/app?view=duplicadas", icon: <Copy className="h-4 w-4" /> },
-    { label: "Buscar", to: panelPath('search'), icon: <Search className="h-4 w-4" /> },
     { label: "Filtrar", to: panelPath('filter'), icon: <Filter className="h-4 w-4" /> },
     { label: "Editar", to: panelPath('edit'), icon: <Edit className="h-4 w-4" /> },
     { label: "Imprimir", to: panelPath('print'), icon: <Printer className="h-4 w-4" /> },
@@ -99,6 +104,13 @@ export const MainNav = () => {
 
   const openAction = (action: string) => {
     navigate(`/app?accion=${action}&_=${Date.now()}`);
+  };
+
+  const submitRecipeSearch = () => {
+    const term = recipeSearch.trim();
+    if (!term) return;
+    setSearchDialogOpen(false);
+    navigate(`/app?buscar=${encodeURIComponent(term)}`);
   };
 
   return (
@@ -163,6 +175,18 @@ export const MainNav = () => {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link to={duplicateOption.to} className="flex items-center gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                {duplicateOption.icon}
+              </span>
+              {duplicateOption.label}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setSearchDialogOpen(true)}>
+            <Search className="mr-2 h-4 w-4" />
+            Buscar
+          </DropdownMenuItem>
           {optionItems.map((item) => (
             <DropdownMenuItem key={item.label} asChild>
               <Link to={item.to} className="flex items-center gap-2">
@@ -175,6 +199,36 @@ export const MainNav = () => {
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Dialog open={searchDialogOpen} onOpenChange={setSearchDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Buscar receta</DialogTitle>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={recipeSearch}
+            onChange={(event) => setRecipeSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                submitRecipeSearch();
+              }
+            }}
+            placeholder="Escribir nombre de la receta..."
+            aria-label="Nombre de la receta"
+          />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setSearchDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={submitRecipeSearch} disabled={!recipeSearch.trim()}>
+              <Search className="mr-2 h-4 w-4" />
+              Buscar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

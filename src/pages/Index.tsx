@@ -165,7 +165,6 @@ const Index = () => {
     ? new URLSearchParams(window.location.search).get('filtro')
     : null;
   const recipeToolbarRef = useRef<HTMLDivElement>(null);
-  const recipeSearchInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -318,9 +317,6 @@ const Index = () => {
       panel === 'edit' || panel === 'print' || panel === 'delete' ? panel : null
     );
     if (!panel) setSelectedRecipeIds(new Set());
-    if (panel === 'search') {
-      window.requestAnimationFrame(() => recipeSearchInputRef.current?.focus());
-    }
     if (view === 'duplicadas') {
       setViewMode('list');
       setRecipeSort('title');
@@ -3391,7 +3387,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <div className={`toolbar-search-field relative rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'md:w-full xl:w-[330px]' : 'md:w-full xl:w-[330px]'}`}>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  ref={recipeSearchInputRef}
                   placeholder={showCollectionsGallery ? "Buscar coleccion" : showDishTypesGallery ? "Buscar tipo de comida" : showCategoriesGallery ? "Buscar categoria" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar por receta, ingrediente, etc"}
                   title="Escribi una palabra o frase y pulsa Enter para agregarla. Podes sumar varias."
                   value={searchTerm}
