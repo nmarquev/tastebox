@@ -185,6 +185,8 @@ export const EditRecipeModal = ({
   const [bulkEditingInstructions, setBulkEditingInstructions] = useState(false);
   const [selectedInstructionIndexes, setSelectedInstructionIndexes] = useState<Set<number>>(new Set());
   const [bulkInstructionSection, setBulkInstructionSection] = useState('__none__');
+  const [draggedInstructionIndex, setDraggedInstructionIndex] = useState<number | null>(null);
+  const [instructionDropIndex, setInstructionDropIndex] = useState<number | null>(null);
   const { toast } = useToast();
   const { calculateNutrition, isCalculating } = useNutritionCalculator();
 
@@ -267,7 +269,7 @@ export const EditRecipeModal = ({
     });
   };
 
-  const { fields: instructionFields, append: appendInstruction, remove: removeInstruction, replace: replaceInstructions } = useFieldArray({
+  const { fields: instructionFields, append: appendInstruction, remove: removeInstruction, replace: replaceInstructions, move: moveInstruction } = useFieldArray({
     control,
     name: 'instructions'
   });
@@ -282,6 +284,28 @@ export const EditRecipeModal = ({
     setSelectedInstructionIndexes(new Set());
     setBulkEditingInstructions(false);
     setBulkInstructionSection('__none__');
+    setDraggedInstructionIndex(null);
+    setInstructionDropIndex(null);
+    lastSelectedInstructionIndex.current = null;
+  };
+
+  const handleInstructionDrop = (targetIndex: number) => {
+    const sourceIndex = draggedInstructionIndex;
+    setDraggedInstructionIndex(null);
+    setInstructionDropIndex(null);
+    if (sourceIndex === null || sourceIndex === targetIndex) return;
+
+    moveInstruction(sourceIndex, targetIndex);
+    setSelectedInstructionIndexes(previous => {
+      const next = new Set<number>();
+      previous.forEach(index => {
+        if (index === sourceIndex) next.add(targetIndex);
+        else if (sourceIndex < targetIndex && index > sourceIndex && index <= targetIndex) next.add(index - 1);
+        else if (sourceIndex > targetIndex && index >= targetIndex && index < sourceIndex) next.add(index + 1);
+        else next.add(index);
+      });
+      return next;
+    });
     lastSelectedInstructionIndex.current = null;
   };
 
@@ -477,6 +501,8 @@ export const EditRecipeModal = ({
       setSelectedInstructionIndexes(new Set());
       setBulkEditingInstructions(false);
       setBulkInstructionSection('__none__');
+      setDraggedInstructionIndex(null);
+      setInstructionDropIndex(null);
       lastSelectedInstructionIndex.current = null;
       setExistingImages(recipe.images || []);
       setUploadedImages([]);
@@ -1287,6 +1313,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       setBulkEditingInstructions(prev => !prev);
                       setSelectedInstructionIndexes(new Set());
                       setBulkInstructionSection('__none__');
+                      setDraggedInstructionIndex(null);
+                      setInstructionDropIndex(null);
                       lastSelectedInstructionIndex.current = null;
                     }}
                     size="sm"
@@ -1754,8 +1782,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     { field: 'sweet', label: 'Receta dulce', icon: <CakeSlice className="h-4 w-4" /> },
                     { field: 'savory', label: 'Receta salada', icon: <Utensils className="h-4 w-4" /> },
                     { field: 'cooked', label: 'Cocinada', icon: <RecipePreparedIcon className="h-4 w-4" /> },
-                    { field: 'checked', label: 'Chequeada', icon: <Check className="h-4 w-4" /> },
                     { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
+                    { field: 'checked', label: 'Chequeada', icon: <Check className="h-4 w-4" /> },
                   ] as const).map(({ field, label, icon }) => {
                     const active = Boolean(watch(field as any));
                     return (
@@ -2113,8 +2141,19 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     return (
                     <div
                       key={field.id}
+                      onDragOver={(event) => {
+                        if (!bulkEditingInstructions || draggedInstructionIndex === null) return;
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = 'move';
+                        setInstructionDropIndex(index);
+                      }}
+                      onDrop={(event) => {
+                        if (!bulkEditingInstructions) return;
+                        event.preventDefault();
+                        handleInstructionDrop(index);
+                      }}
                       className={bulkEditingInstructions
-                        ? 'py-1'
+                        ? `rounded-md py-1 transition-colors ${instructionDropIndex === index && draggedInstructionIndex !== index ? 'bg-primary/10 ring-1 ring-primary/40' : ''}`
                         : 'rounded-lg border p-4'}
                     >
                       {bulkEditingInstructions ? (
@@ -2129,7 +2168,22 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               className="h-4 w-4 cursor-pointer accent-primary"
                             />
                           </label>
-                          <span className="flex h-9 items-center justify-end text-sm font-medium">
+                          <span
+                            draggable
+                            onDragStart={(event) => {
+                              setDraggedInstructionIndex(index);
+                              setInstructionDropIndex(index);
+                              event.dataTransfer.effectAllowed = 'move';
+                              event.dataTransfer.setData('text/plain', String(index));
+                            }}
+                            onDragEnd={() => {
+                              setDraggedInstructionIndex(null);
+                              setInstructionDropIndex(null);
+                            }}
+                            className="flex h-9 cursor-grab select-none items-center justify-end rounded-md px-1 text-sm font-semibold text-primary hover:bg-primary/10 active:cursor-grabbing"
+                            title={`Arrastrar paso ${index + 1}`}
+                            aria-label={`Arrastrar paso ${index + 1}`}
+                          >
                             {index + 1}
                           </span>
                           <div className="min-w-0">
