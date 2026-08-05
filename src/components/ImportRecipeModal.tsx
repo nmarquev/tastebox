@@ -563,7 +563,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                         )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {ingredients.map((ingredient, index) => (
-                            <div key={index} className="flex items-center gap-2 text-sm">
+                            <div key={index} className="flex items-center gap-2 text-sm font-normal">
                               <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
                               <span>{ingredient.amount} {ingredient.unit}</span>
                               <span>{ingredient.name}</span>

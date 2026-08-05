@@ -1767,11 +1767,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                       <ul className="space-y-2 text-muted-foreground text-sm">
                         {ingredients.map((ingredient, index) => (
-                          <li key={index} className="flex gap-2 break-inside-avoid">
+                          <li key={index} className="flex gap-2 break-inside-avoid font-normal">
                             <span className="flex h-6 items-center shrink-0">
                               <span className="w-1 h-1 bg-primary rounded-full" />
                             </span>
-                            <span className={!ingredient.amount && !ingredient.unit && ingredient.name.includes('\n') ? 'whitespace-pre-wrap' : undefined}>
+                            <span className={`font-normal ${!ingredient.amount && !ingredient.unit && ingredient.name.includes('\n') ? 'whitespace-pre-wrap' : ''}`}>
                               {(ingredient.amount || ingredient.unit) && (
                                 <span>{ingredient.amount} {ingredient.unit}</span>
                               )}{' '}

@@ -110,6 +110,14 @@ const sameValues = (left: string[], right: string[]) => {
     && normalizedLeft.every((value, index) => value === normalizedRight[index]);
 };
 
+const normalizeRecipeTitle = (title?: string | null) =>
+  (title || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 const INGREDIENT_FEATURE_TOGGLES: { field: RecipeFeatureField; label: string; icon: ReactNode }[] = [
   { field: 'checked', label: 'Chequeada', icon: <Check className="h-4 w-4" strokeWidth={3} /> },
   { field: 'featured', label: 'Favorita', icon: <Heart className="h-4 w-4" /> },
@@ -148,6 +156,7 @@ const Index = () => {
   const initialAppView = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('view')
     : null;
+  const showDuplicateRecipes = initialAppView === 'duplicadas';
   const initialSearchValues = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).getAll('buscar').map(term => term.trim()).filter(Boolean)
     : [];
@@ -305,6 +314,11 @@ const Index = () => {
     setShowFilters(false);
     setActiveBulkPanel(null);
     setSelectedRecipeIds(new Set());
+    if (view === 'duplicadas') {
+      setViewMode('list');
+      setRecipeSort('title');
+      setSortDirection('asc');
+    }
 
     setFilters({
       difficulty: [],
@@ -645,6 +659,14 @@ const Index = () => {
     .map(([name, { count, cover }]) => ({ name, count, cover }))
     .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
 
+  const duplicateRecipeTitleCounts = recipes.reduce((counts, recipe) => {
+    const title = normalizeRecipeTitle(recipe.title);
+    if (title) counts.set(title, (counts.get(title) || 0) + 1);
+    return counts;
+  }, new Map<string, number>());
+  const duplicateRecipeGroupCount = Array.from(duplicateRecipeTitleCounts.values())
+    .filter(count => count > 1).length;
+
   // Apply search and filters, then sort alphabetically (only when user is logged in)
   const allFilteredRecipes = user ? recipes.filter(recipe => {
     // Busqueda - por varias palabras clave (AND): titulo, descripcion, ingredientes,
@@ -769,8 +791,10 @@ const Index = () => {
       (wantsNoDishType && recipeDishTypes.length === 0) ||
       recipeDishTypes.some(dt => selectedDishTypeValues.includes(dt));
     const matchesAuthor = !filters.author || (recipe.author || '').trim() === filters.author;
+    const matchesDuplicateTitle = !showDuplicateRecipes
+      || (duplicateRecipeTitleCounts.get(normalizeRecipeTitle(recipe.title)) || 0) > 1;
 
-    return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesChecked && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesSugarFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesSweet && matchesSavory && matchesCollection && matchesSource && matchesDishType && matchesAuthor;
+    return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesChecked && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesSugarFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesSweet && matchesSavory && matchesCollection && matchesSource && matchesDishType && matchesAuthor && matchesDuplicateTitle;
   }).sort((a, b) => {
     const directionFactor = sortDirection === 'asc' ? 1 : -1;
     const compareText = (left: string, right: string) =>
@@ -3267,7 +3291,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </button>
             <div className="min-w-0">
             <h2 className="truncate whitespace-nowrap text-lg font-bold text-foreground xl:text-2xl">
-              {showCollectionsGallery
+              {showDuplicateRecipes
+                ? 'Recetas repetidas'
+                : showCollectionsGallery
                 ? 'Mis Colecciones'
                 : showCategoriesGallery
                   ? 'Categorias'
@@ -3284,7 +3310,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           : `Recetas de ${user?.alias || user?.name || 'Usuario'}`}
             </h2>
             <p className="truncate whitespace-nowrap text-xs text-muted-foreground mt-0.5">
-              {showCollectionsGallery
+              {showDuplicateRecipes
+                ? `${allFilteredRecipes.length} receta${allFilteredRecipes.length !== 1 ? 's' : ''} en ${duplicateRecipeGroupCount} grupo${duplicateRecipeGroupCount !== 1 ? 's' : ''} repetido${duplicateRecipeGroupCount !== 1 ? 's' : ''}`
+                : showCollectionsGallery
                 ? `${collections.length} coleccion${collections.length !== 1 ? 'es' : ''}`
                 : showCategoriesGallery
                   ? `${categoryList.length} categoria${categoryList.length !== 1 ? 's' : ''}`
@@ -6383,9 +6411,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       {recipe.ingredients && recipe.ingredients.length > 0 ? (
                         <ul className="space-y-1 text-[11px] leading-snug text-muted-foreground">
                           {recipe.ingredients.map((ing, idx) => (
-                            <li key={idx} className="flex gap-1.5">
+                            <li key={idx} className="flex gap-1.5 font-normal">
                               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                              <span>
+                              <span className="font-normal">
                                 {[ing.amount, ing.unit, ing.name].filter(Boolean).join(' ')}
                               </span>
                             </li>
@@ -6683,11 +6711,15 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <div className="text-center py-12">
             <Search className="mx-auto mb-4 h-14 w-14 text-muted-foreground" />
             <h3 className="text-xl font-semibold text-foreground mb-2">
-              {recipes.length === 0 ? 'No tienes recetas aun' : 'No se encontraron recetas'}
+              {recipes.length === 0
+                ? 'No tienes recetas aun'
+                : showDuplicateRecipes ? 'No hay recetas repetidas' : 'No se encontraron recetas'}
             </h3>
             <p className="text-muted-foreground">
               {recipes.length === 0
                 ? 'Comienza creando tu primera receta o importando desde una URL'
+                : showDuplicateRecipes
+                  ? 'No se encontraron recetas guardadas con el mismo nombre'
                 : 'Intenta con otros terminos de busqueda o agrega una nueva receta'
               }
             </p>

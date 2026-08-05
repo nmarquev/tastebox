@@ -8,6 +8,7 @@ import {
   ChefHat,
   ChevronDown,
   ClipboardPaste,
+  Copy,
   Download,
   Heart,
   Leaf,
@@ -29,9 +30,12 @@ import {
 
 const menuItems = [
   { label: "COLECCIONES", to: "/app?view=colecciones" },
-  { label: "CATEGORIAS", to: "/app?view=categorias" },
   { label: "FUENTE", to: "/app?view=fuentes" },
   { label: "TIPO DE COMIDA", to: "/app?view=tipo-comida" },
+];
+
+const optionItems = [
+  { label: "Detectar recetas repetidas", to: "/app?view=duplicadas", icon: <Copy className="h-4 w-4" /> },
 ];
 
 const recipeTypeItems = [
@@ -117,6 +121,30 @@ export const MainNav = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {recipeTypeItems.map((item) => (
+            <DropdownMenuItem key={item.label} asChild>
+              <Link to={item.to} className="flex items-center gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                  {item.icon}
+                </span>
+                {item.label}
+              </Link>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex h-10 items-center justify-center gap-1 rounded-md px-2 text-[11px] font-semibold tracking-wide text-[#6f6965] transition-colors hover:bg-pink-50 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 lg:px-3 lg:text-xs xl:px-4 xl:text-sm"
+          >
+            OPCIONES
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {optionItems.map((item) => (
             <DropdownMenuItem key={item.label} asChild>
               <Link to={item.to} className="flex items-center gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center">
