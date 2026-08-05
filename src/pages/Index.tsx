@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Beef, CakeSlice, CandyOff, Grid3X3, Grid2X2, Grid, Columns, Filter, FilterX, ChevronDown, Trash2, Play, Pause, Search, ChefHat, Heart, Bookmark, WheatOff, Leaf, ArrowUpDown, ArrowUp, ArrowDown, Check, ListChecks, Printer, Loader2, X, ExternalLink, Utensils, UtensilsCrossed, MoreVertical, ImageIcon, User, List, Square, Clock, Plus, Tag, Edit, Menu, Download, Sparkles, PlusCircle, ClipboardPaste } from "lucide-react";
+import { Beef, CakeSlice, Calculator, CandyOff, Grid3X3, Grid2X2, Grid, Columns, Filter, FilterX, ChevronDown, Trash2, Play, Pause, Search, ChefHat, Heart, Bookmark, WheatOff, Leaf, ArrowUpDown, ArrowUp, ArrowDown, Check, ListChecks, Printer, Loader2, X, ExternalLink, Utensils, UtensilsCrossed, MoreVertical, ImageIcon, User, List, Square, Clock, Plus, Tag, Edit, Menu, Download, Send, Sparkles, PlusCircle, ClipboardPaste } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
@@ -56,7 +56,7 @@ import { useVoiceSettings } from "@/hooks/useVoiceSettings";
 import { SaveToCollectionModal } from "@/components/SaveToCollectionModal";
 import { getRecipeSource, getSourceFromUrl, isValidUrl } from "@/utils/siteUtils";
 import { FilterAutocompleteInput } from "@/components/FilterAutocompleteInput";
-import { printRecipesPdf } from "@/utils/pdfUtils";
+import { downloadRecipePdf, printRecipePdf, printRecipesPdf, shareRecipePdf } from "@/utils/pdfUtils";
 import { printRecipeCards } from "@/utils/printCards";
 import { printRecipeList } from "@/utils/printList";
 import { printCollectionCards, printCollectionList, PrintCollectionItem } from "@/utils/printCollections";
@@ -2036,6 +2036,20 @@ const Index = () => {
   const handleShowNutrition = (recipe: Recipe) => {
     setNutritionRecipe(recipe);
     setShowNutritionModal(true);
+  };
+
+  const handleRecipePdfAction = async (recipe: Recipe, action: 'download' | 'print' | 'share') => {
+    try {
+      if (action === 'download') await downloadRecipePdf(recipe);
+      if (action === 'print') await printRecipePdf(recipe);
+      if (action === 'share') await shareRecipePdf(recipe);
+    } catch (error) {
+      toast({
+        title: "No se pudo generar el PDF",
+        description: error instanceof Error ? error.message : "Intenta nuevamente",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleNutritionUpdate = (updatedRecipe: Recipe) => {
@@ -6634,6 +6648,60 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             </div>
                           </PopoverContent>
                         </Popover>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(event) => event.stopPropagation()}
+                              onKeyDown={(event) => {
+                                if (event.key !== 'Enter' && event.key !== ' ') return;
+                                event.stopPropagation();
+                              }}
+                              className="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                              title="Más opciones"
+                              aria-label="Más opciones"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </span>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+                            <DropdownMenuItem onSelect={() => window.open(`${window.location.origin}/receta/${recipe.id}`, '_blank', 'noopener,noreferrer')}>
+                              <ExternalLink className="mr-2 h-4 w-4" />
+                              Abrir en una nueva pestaña
+                            </DropdownMenuItem>
+                            {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) && (
+                              <DropdownMenuItem onSelect={() => window.open(recipe.sourceUrl!, '_blank', 'noopener,noreferrer')}>
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                Ver en {getSourceFromUrl(recipe.sourceUrl)}
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onSelect={() => handleEditRecipe(recipe)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => void handleRecipePdfAction(recipe, 'download')}>
+                              <Download className="mr-2 h-4 w-4" />
+                              Descargar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => void handleRecipePdfAction(recipe, 'print')}>
+                              <Printer className="mr-2 h-4 w-4" />
+                              Imprimir
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => void handleRecipePdfAction(recipe, 'share')}>
+                              <Send className="mr-2 h-4 w-4" />
+                              Compartir
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleShowNutrition(recipe)}>
+                              <Calculator className="mr-2 h-4 w-4" />
+                              Ver Nutrición
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => handleDeleteRecipe(recipe)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </>
                     )}
                     {viewMode === 'list' && (
