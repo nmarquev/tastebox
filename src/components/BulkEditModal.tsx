@@ -38,7 +38,6 @@ const getImportSourceValue = (label: string) =>
   importSourceOptions.find(option => option.label.toLocaleLowerCase('es') === label.toLocaleLowerCase('es'))?.value || label;
 
 const FEATURE_FIELDS = [
-  { field: 'checked', label: 'Chequeada' },
   { field: 'featured', label: 'Favorita' },
   { field: 'cooked', label: 'Cocinada' },
   { field: 'thermomix', label: 'Thermomix' },
@@ -51,6 +50,7 @@ const FEATURE_FIELDS = [
   { field: 'vegetarian', label: 'Vegetariana' },
   { field: 'sweet', label: 'Receta dulce' },
   { field: 'savory', label: 'Receta salada' },
+  { field: 'checked', label: 'Checked' },
 ] as const;
 
 const emptyFeatures = (): Record<string, Tri> =>
