@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Check, ChevronsUpDown, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,6 +37,7 @@ export const CreatableCombobox = ({
 }: CreatableComboboxProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const listRef = useRef<HTMLDivElement>(null);
   const normalizedSearch = search.trim();
   const availableOptions = Array.from(new Set(value ? [...options, value] : options));
   const filteredOptions = availableOptions.filter(option =>
@@ -60,8 +61,15 @@ export const CreatableCombobox = ({
     setOpen(false);
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) return;
+    setSearch('');
+    window.requestAnimationFrame(() => listRef.current?.scrollTo({ top: 0 }));
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -86,7 +94,7 @@ export const CreatableCombobox = ({
             value={search}
             onValueChange={setSearch}
           />
-          <CommandList>
+          <CommandList ref={listRef}>
             {!filteredOptions.length && !canCreate && !showEmptyOption && (
               <CommandEmpty>Sin resultados.</CommandEmpty>
             )}

@@ -49,6 +49,7 @@ export const MultiSelectCombobox = ({
   const [search, setSearch] = useState("");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const previousSelectedRef = useRef(selected);
   const normalizedSearch = search.trim();
   const filteredOptions = options.filter((option) =>
@@ -93,9 +94,16 @@ export const MultiSelectCombobox = ({
     onChange(next);
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) return;
+    setSearch("");
+    window.requestAnimationFrame(() => listRef.current?.scrollTo({ top: 0 }));
+  };
+
   return (
     <div className="space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -156,7 +164,7 @@ export const MultiSelectCombobox = ({
                 </button>
               )}
             </div>
-            <CommandList>
+            <CommandList ref={listRef}>
               {!filteredOptions.length && !canCreate && (
                 <CommandEmpty>Sin resultados.</CommandEmpty>
               )}

@@ -44,7 +44,9 @@ const menuItems = [
   { label: "TIPO DE COMIDA", to: "/app?view=tipo-comida" },
 ];
 
-const recipeFilterPath = (filter: string) => `/app?filtro=${filter}&conservarFiltros=1`;
+// Usar una URL relativa conserva la ruta actual (/buscar o /app) y evita que
+// React desmonte la pantalla, lo que borraría los filtros acumulados en memoria.
+const recipeFilterPath = (filter: string) => `?filtro=${filter}&conservarFiltros=1`;
 
 const recipeTypeItems = [
   { label: "Todas las Recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> },
