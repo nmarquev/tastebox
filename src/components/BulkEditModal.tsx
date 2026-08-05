@@ -38,6 +38,7 @@ const getImportSourceValue = (label: string) =>
   importSourceOptions.find(option => option.label.toLocaleLowerCase('es') === label.toLocaleLowerCase('es'))?.value || label;
 
 const FEATURE_FIELDS = [
+  { field: 'checked', label: 'Chequeada' },
   { field: 'featured', label: 'Favorita' },
   { field: 'cooked', label: 'Cocinada' },
   { field: 'thermomix', label: 'Thermomix' },
@@ -289,6 +290,9 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
             <Label htmlFor="bulk-date">Fecha</Label>
             <Input id="bulk-date" type="date" value={createdAt} onChange={(e) => setCreatedAt(e.target.value)} />
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2">
           <div>
             <Label>Tipo de comida</Label>
             <MultiSelectCombobox
@@ -297,17 +301,6 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
               onChange={setDishType}
               placeholder="Elegí uno o más tipos"
               searchPlaceholder="Buscar o escribir tipo..."
-              closeOnSelect allowCreate createLabel="Agregar"
-            />
-          </div>
-          <div>
-            <Label>Categoría</Label>
-            <MultiSelectCombobox
-              options={categoryOptions}
-              selected={recipeType}
-              onChange={setRecipeType}
-              placeholder="Elegí una o más categorías"
-              searchPlaceholder="Buscar o escribir categoría..."
               closeOnSelect allowCreate createLabel="Agregar"
             />
           </div>
@@ -344,6 +337,17 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
               closeOnSelect
               allowCreate
               createLabel="Crear colección"
+            />
+          </div>
+          <div>
+            <Label>Categoría</Label>
+            <MultiSelectCombobox
+              options={categoryOptions}
+              selected={recipeType}
+              onChange={setRecipeType}
+              placeholder="Elegí una o más categorías"
+              searchPlaceholder="Buscar o escribir categoría..."
+              closeOnSelect allowCreate createLabel="Agregar"
             />
           </div>
           <div>
