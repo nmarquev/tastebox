@@ -123,6 +123,7 @@ export const MainNav = () => {
   const openRecipeSearch = () => {
     // Radix devuelve el foco al cerrar el desplegable. Abrir el dialogo en el
     // siguiente ciclo evita que ese cierre lo descarte inmediatamente.
+    setRecipeSearch('');
     setRecipeSearchMode('all');
     window.setTimeout(() => setSearchDialogOpen(true), 0);
   };
