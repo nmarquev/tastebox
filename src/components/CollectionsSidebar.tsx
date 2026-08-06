@@ -395,7 +395,7 @@ export const CollectionsSidebar = ({
             }`}
             aria-expanded={dishTypesOpen}
           >
-            <span>Tipo de comida</span>
+            <span>Tipos de comida</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${dishTypesOpen ? "" : "-rotate-90"}`} />
           </button>
           {dishTypesOpen && (
@@ -558,7 +558,7 @@ export const CollectionsSidebar = ({
             }`}
             aria-expanded={sourcesOpen}
           >
-            <span>Fuente</span>
+            <span>Fuentes</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${sourcesOpen ? "" : "-rotate-90"}`} />
           </button>
           {sourcesOpen && (

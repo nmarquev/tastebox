@@ -4132,7 +4132,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   />
                 </div>
 
-                <div>
+                <div className="md:col-span-2">
                   <div className="-mb-1.5 flex items-center justify-between">
                     <Label className="text-[13px] font-medium">Ingredientes</Label>
                     {!!filters.ingredients?.length && (
@@ -5272,7 +5272,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         <div className={!showHero ? "flex flex-col gap-6 lg:flex-row lg:items-start" : ""}>
           {!showHero && !isItemWindow && (
             <aside
-              className={`hidden ${showDesktopSidebar ? 'xl:block' : 'xl:hidden'} xl:w-64 xl:flex-shrink-0 xl:sticky xl:self-start xl:overflow-y-auto`}
+              className={`hidden ${showDesktopSidebar ? 'xl:block' : 'xl:hidden'} xl:-ml-8 xl:w-72 xl:flex-shrink-0 xl:sticky xl:self-start xl:overflow-y-auto`}
               style={{
                 top: 'calc(var(--tastebox-header-height, 113px) + var(--tastebox-recipe-toolbar-height, 101px) + 0.75rem)',
                 maxHeight: 'calc(100vh - var(--tastebox-header-height, 113px) - var(--tastebox-recipe-toolbar-height, 101px) - 1.5rem)'

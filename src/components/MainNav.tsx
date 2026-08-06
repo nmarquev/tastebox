@@ -40,8 +40,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const menuItems = [
   { label: "COLECCIONES", to: "/app?view=colecciones" },
-  { label: "FUENTE", to: "/app?view=fuentes" },
-  { label: "TIPO DE COMIDA", to: "/app?view=tipo-comida" },
+  { label: "FUENTES", to: "/app?view=fuentes" },
+  { label: "TIPOS DE COMIDA", to: "/app?view=tipo-comida" },
 ];
 
 const recipeTypeItems = [
