@@ -16,8 +16,6 @@ import { Recipe } from '@/types/recipe';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { Beef, CakeSlice, CandyOff, Loader2, Check, X, Globe, Heart, WheatOff, Leaf, ClipboardPaste, Utensils } from 'lucide-react';
 import { IMPORT_ERROR_TOAST_DURATION_MS } from '@/constants/toastDurations';
-import { parseCategories } from '@/constants/categories';
-import { CATEGORIES_ENABLED } from '@/constants/features';
 
 interface BulkUrlImportModalProps {
   isOpen: boolean;
@@ -47,7 +45,6 @@ interface CommonFields {
   country: string;
   dishType: string;
   collectionId: string;
-  recipeType: string;
   featured: boolean;
   cooked: boolean;
   thermomix: boolean;
@@ -80,7 +77,7 @@ const getImportSourceValue = (label: string) =>
 const MAX_URLS = 20;
 
 const EMPTY_COMMON: CommonFields = {
-  source: '', importedFrom: '', difficulty: '', language: '', country: '', dishType: '', collectionId: '', recipeType: '',
+  source: '', importedFrom: '', difficulty: '', language: '', country: '', dishType: '', collectionId: '',
   featured: false, cooked: false, thermomix: false, airFryer: false, glutenFree: false, sugarFree: false, keto: false, lowCarb: false, proteica: false, vegetarian: false, sweet: false, savory: false,
 };
 
@@ -103,7 +100,6 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
   const [languageOptions, setLanguageOptions] = useState<string[]>([]);
   const [countryOptions, setCountryOptions] = useState<string[]>([]);
   const [dishTypeOptions, setDishTypeOptions] = useState<string[]>([]);
-  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [collections, setCollections] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -116,33 +112,28 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
       api.recipes.getAll().catch(() => [] as Recipe[]),
       api.sources.getAll().catch(() => [] as Array<{ name: string }>),
       api.dishTypes.getAll().catch(() => [] as Array<{ name: string }>),
-      api.categories.getAll().catch(() => [] as Array<{ name: string }>),
       api.collections.getAll().catch(() => [] as Array<{ id: string; name: string }>),
-    ]).then(([recipes, srcs, dts, cats, cols]) => {
+    ]).then(([recipes, srcs, dts, cols]) => {
       if (cancelled) return;
       const sources = new Set<string>();
       const origins = [...importSourceOptions.map(option => option.label)];
       const languages = [...DEFAULT_LANGUAGES];
       const countries = [...DEFAULT_COUNTRIES];
       const dishTypes = new Set<string>();
-      const categories = new Set<string>();
       recipes.forEach(r => {
         const s = getRecipeSource(r); if (s) sources.add(s);
         if (r.importedFrom?.trim()) origins.push(getImportSourceLabel(r.importedFrom.trim()));
         if (r.language?.trim()) languages.push(r.language.trim());
         if (r.country?.trim()) countries.push(r.country.trim());
         if (r.dishType?.trim()) dishTypes.add(r.dishType.trim());
-        parseCategories(r.recipeType).forEach(category => categories.add(category));
       });
       srcs.forEach(s => { const n = (s.name || '').trim(); if (n) sources.add(n); });
       dts.forEach(s => { const n = (s.name || '').trim(); if (n) dishTypes.add(n); });
-      cats.forEach(s => { const n = (s.name || '').trim(); if (n) categories.add(n); });
       setSourceOptions(sortEs(Array.from(sources)));
       setOriginOptions(sortEs(origins));
       setLanguageOptions(sortEs(languages));
       setCountryOptions(sortEs(countries));
       setDishTypeOptions(sortEs(Array.from(dishTypes)));
-      setCategoryOptions(sortEs(Array.from(categories)));
       setCollections(cols.map(c => ({ id: c.id, name: c.name })));
     });
     return () => { cancelled = true; };
@@ -199,8 +190,8 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
           source: common.source || (recipe as any).source || undefined,
           author: recipe.author,
           importedFrom: (common.importedFrom || recipe.importedFrom) as any,
-          // Categoría, país e idioma: solo lo que el usuario indique en el Paso 2 (no autocompletar con la IA).
-          recipeType: common.recipeType || undefined,
+          // País e idioma: solo lo que el usuario indique en el Paso 2 (no autocompletar con la IA).
+          recipeType: undefined,
           dishType: common.dishType || undefined,
           country: common.country || recipe.country || undefined,
           language: common.language || undefined,
@@ -589,17 +580,6 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                       singleSelect closeOnSelect allowCreate createLabel="Agregar"
                     />
                   </div>
-                  {CATEGORIES_ENABLED && <div>
-                    <Label>Categoría</Label>
-                    <MultiSelectCombobox
-                      options={categoryOptions}
-                      selected={common.recipeType ? [common.recipeType] : []}
-                      onChange={(next) => setCommon(c => ({ ...c, recipeType: next[0] || '' }))}
-                      placeholder="Elegí una categoría"
-                      searchPlaceholder="Buscar o escribir categoría..."
-                      singleSelect closeOnSelect allowCreate createLabel="Agregar"
-                    />
-                  </div>}
                   <div>
                     <Label>Colección</Label>
                     <MultiSelectCombobox
