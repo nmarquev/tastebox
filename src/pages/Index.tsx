@@ -93,6 +93,25 @@ const SORT_LABELS: Partial<Record<RecipeSort, string>> = {
   dishType: 'Tipo de comida',
 };
 
+const applyRecipeMenuFilter = (currentFilters: RecipeFilters, typeFilter: string) => {
+  const nextFilters = { ...currentFilters };
+  if (typeFilter === 'favoritas') nextFilters.featured = true;
+  if (typeFilter === 'checked') nextFilters.checkedStatus = 'checked';
+  if (typeFilter === 'unchecked') nextFilters.checkedStatus = 'unchecked';
+  if (typeFilter === 'cocinadas') nextFilters.cookedOnly = true;
+  if (typeFilter === 'thermomix') nextFilters.thermomixOnly = true;
+  if (typeFilter === 'air-fryer') nextFilters.airFryerOnly = true;
+  if (typeFilter === 'sin-gluten') nextFilters.glutenFreeOnly = true;
+  if (typeFilter === 'sin-azucar') nextFilters.sugarFreeOnly = true;
+  if (typeFilter === 'keto') nextFilters.ketoOnly = true;
+  if (typeFilter === 'low-carb') nextFilters.lowCarbOnly = true;
+  if (typeFilter === 'proteicas') nextFilters.proteicaOnly = true;
+  if (typeFilter === 'vegetarianas') nextFilters.vegetarianOnly = true;
+  if (typeFilter === 'dulces') nextFilters.sweetOnly = true;
+  if (typeFilter === 'saladas') nextFilters.savoryOnly = true;
+  return nextFilters;
+};
+
 const uniqueRecipesById = (recipes: Recipe[]): Recipe[] => {
   const seenIds = new Set<string>();
   return recipes.filter(recipe => {
@@ -335,22 +354,7 @@ const Index = () => {
 
     setFilters(previousFilters => {
       if (preserveFilters) {
-        const nextFilters = { ...previousFilters };
-        if (typeFilter === 'favoritas') nextFilters.featured = true;
-        if (typeFilter === 'checked') nextFilters.checkedStatus = 'checked';
-        if (typeFilter === 'unchecked') nextFilters.checkedStatus = 'unchecked';
-        if (typeFilter === 'cocinadas') nextFilters.cookedOnly = true;
-        if (typeFilter === 'thermomix') nextFilters.thermomixOnly = true;
-        if (typeFilter === 'air-fryer') nextFilters.airFryerOnly = true;
-        if (typeFilter === 'sin-gluten') nextFilters.glutenFreeOnly = true;
-        if (typeFilter === 'sin-azucar') nextFilters.sugarFreeOnly = true;
-        if (typeFilter === 'keto') nextFilters.ketoOnly = true;
-        if (typeFilter === 'low-carb') nextFilters.lowCarbOnly = true;
-        if (typeFilter === 'proteicas') nextFilters.proteicaOnly = true;
-        if (typeFilter === 'vegetarianas') nextFilters.vegetarianOnly = true;
-        if (typeFilter === 'dulces') nextFilters.sweetOnly = true;
-        if (typeFilter === 'saladas') nextFilters.savoryOnly = true;
-        return nextFilters;
+        return typeFilter ? applyRecipeMenuFilter(previousFilters, typeFilter) : previousFilters;
       }
 
       return {
@@ -385,6 +389,23 @@ const Index = () => {
   // filtro que ya figura en la URL. De ese modo se reaplica el estado solicitado
   // aunque el usuario haya quitado o modificado el filtro dentro de la pantalla.
   }, [location.search, location.key]);
+
+  useEffect(() => {
+    const applySelectedRecipeFilter = (event: Event) => {
+      const typeFilter = (event as CustomEvent<{ filter?: string }>).detail?.filter;
+      if (!typeFilter) return;
+      setFilters(previousFilters => applyRecipeMenuFilter(previousFilters, typeFilter));
+      setShowCollectionsGallery(false);
+      setShowCategoriesGallery(false);
+      setShowSourcesGallery(false);
+      setShowDishTypesGallery(false);
+      setShowTagsGallery(false);
+      setShowAuthorsGallery(false);
+    };
+
+    window.addEventListener('tastebox:recipe-filter', applySelectedRecipeFilter);
+    return () => window.removeEventListener('tastebox:recipe-filter', applySelectedRecipeFilter);
+  }, []);
 
   const [gridColumns, setGridColumns] = useState<1 | 2 | 3 | 4 | 5>(3); // Default to 3 columns
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'detail' | 'ingredients'>('grid'); // Grilla, lista, detalle o ingredientes

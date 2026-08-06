@@ -44,38 +44,34 @@ const menuItems = [
   { label: "TIPO DE COMIDA", to: "/app?view=tipo-comida" },
 ];
 
-// Usar una URL relativa conserva la ruta actual (/buscar o /app) y evita que
-// React desmonte la pantalla, lo que borraría los filtros acumulados en memoria.
-const recipeFilterPath = (filter: string) => `?filtro=${filter}&conservarFiltros=1`;
-
 const recipeTypeItems = [
-  { label: "Todas las Recetas", to: "/app", icon: <ChefHat className="h-4 w-4" /> },
-  { label: "Favoritas", to: recipeFilterPath('favoritas'), icon: <Heart className="h-4 w-4" /> },
-  { label: "Checked", to: recipeFilterPath('checked'), icon: <Check className="h-4 w-4" strokeWidth={3} /> },
-  { label: "Unchecked", to: recipeFilterPath('unchecked'), icon: <UncheckedIcon className="h-4 w-4" /> },
-  { label: "Cocinadas", to: recipeFilterPath('cocinadas'), icon: <CheckCircle2 className="h-4 w-4" /> },
+  { label: "Todas las Recetas", filter: null, icon: <ChefHat className="h-4 w-4" /> },
+  { label: "Favoritas", filter: 'favoritas', icon: <Heart className="h-4 w-4" /> },
+  { label: "Checked", filter: 'checked', icon: <Check className="h-4 w-4" strokeWidth={3} /> },
+  { label: "Unchecked", filter: 'unchecked', icon: <UncheckedIcon className="h-4 w-4" /> },
+  { label: "Cocinadas", filter: 'cocinadas', icon: <CheckCircle2 className="h-4 w-4" /> },
   {
     label: "Thermomix",
-    to: recipeFilterPath('thermomix'),
+    filter: 'thermomix',
     icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-5 w-5 object-contain" />,
   },
   {
     label: "Air Fryer",
-    to: recipeFilterPath('air-fryer'),
+    filter: 'air-fryer',
     icon: <img src="/air-fryer.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />,
   },
-  { label: "Sin Gluten", to: recipeFilterPath('sin-gluten'), icon: <WheatOff className="h-4 w-4" /> },
-  { label: "Sin Azucar", to: recipeFilterPath('sin-azucar'), icon: <CandyOff className="h-4 w-4" /> },
-  { label: "Keto", to: recipeFilterPath('keto'), icon: <AvocadoIcon className="h-[18px] w-[18px]" /> },
+  { label: "Sin Gluten", filter: 'sin-gluten', icon: <WheatOff className="h-4 w-4" /> },
+  { label: "Sin Azucar", filter: 'sin-azucar', icon: <CandyOff className="h-4 w-4" /> },
+  { label: "Keto", filter: 'keto', icon: <AvocadoIcon className="h-[18px] w-[18px]" /> },
   {
     label: "Low Carb",
-    to: recipeFilterPath('low-carb'),
+    filter: 'low-carb',
     icon: <img src="/logo-saludable.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />,
   },
-  { label: "Proteicas", to: recipeFilterPath('proteicas'), icon: <Beef className="h-4 w-4" /> },
-  { label: "Vegetarianas", to: recipeFilterPath('vegetarianas'), icon: <Leaf className="h-4 w-4" /> },
-  { label: "Recetas Dulces", to: recipeFilterPath('dulces'), icon: <CakeSlice className="h-4 w-4" /> },
-  { label: "Recetas Saladas", to: recipeFilterPath('saladas'), icon: <Utensils className="h-4 w-4" /> },
+  { label: "Proteicas", filter: 'proteicas', icon: <Beef className="h-4 w-4" /> },
+  { label: "Vegetarianas", filter: 'vegetarianas', icon: <Leaf className="h-4 w-4" /> },
+  { label: "Recetas Dulces", filter: 'dulces', icon: <CakeSlice className="h-4 w-4" /> },
+  { label: "Recetas Saladas", filter: 'saladas', icon: <Utensils className="h-4 w-4" /> },
 ];
 
 const actionItems = [
@@ -111,6 +107,25 @@ export const MainNav = () => {
 
   const openAction = (action: string) => {
     navigate(`/app?accion=${action}&_=${Date.now()}`);
+  };
+
+  const selectRecipeType = (filter: string | null) => {
+    if (!filter) {
+      navigate('/app');
+      return;
+    }
+
+    const isRecipesPage = location.pathname === '/app' || location.pathname === '/buscar';
+    if (isRecipesPage) {
+      window.dispatchEvent(new CustomEvent('tastebox:recipe-filter', { detail: { filter } }));
+      const params = new URLSearchParams(location.search);
+      params.set('filtro', filter);
+      params.set('conservarFiltros', '1');
+      navigate({ pathname: location.pathname, search: `?${params.toString()}` });
+      return;
+    }
+
+    navigate(`/app?filtro=${encodeURIComponent(filter)}&conservarFiltros=1`);
   };
 
   const submitRecipeSearch = () => {
@@ -171,13 +186,15 @@ export const MainNav = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {recipeTypeItems.map((item) => (
-            <DropdownMenuItem key={item.label} asChild>
-              <Link to={item.to} className="flex items-center gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                  {item.icon}
-                </span>
-                {item.label}
-              </Link>
+            <DropdownMenuItem
+              key={item.label}
+              onSelect={() => selectRecipeType(item.filter)}
+              className="flex items-center gap-2"
+            >
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                {item.icon}
+              </span>
+              {item.label}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
