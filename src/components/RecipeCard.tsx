@@ -12,6 +12,7 @@ import { PreparationTimeIcon } from "@/components/icons/PreparationTimeIcon";
 import { resolveImageUrl } from "@/utils/api";
 import { isThermomixRecipe } from "@/utils/recipeUtils";
 import { joinCategories, parseCategories } from "@/constants/categories";
+import { CATEGORIES_ENABLED } from "@/constants/features";
 import { getSourceFromUrl, isValidUrl, getRecipeSource } from "@/utils/siteUtils";
 import { downloadRecipePdf, printRecipePdf, shareRecipePdf } from "@/utils/pdfUtils";
 import { useState } from "react";
@@ -662,7 +663,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   closeOnSelect allowCreate createLabel="Agregar"
                 />
               </div>
-              <div>
+              {CATEGORIES_ENABLED && <div>
                 <p className="mb-1 font-semibold text-foreground">Categoria</p>
                 <MultiSelectCombobox
                   options={categoryOptions}
@@ -672,7 +673,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   searchPlaceholder="Buscar o escribir..."
                   closeOnSelect allowCreate createLabel="Agregar"
                 />
-              </div>
+              </div>}
               <div>
                 <p className="mb-1 font-semibold text-foreground">Etiquetas</p>
                 <MultiSelectCombobox
@@ -715,7 +716,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   <p className="text-muted-foreground">{collectionNames.filter(n => n && n.trim()).join(', ')}</p>
                 </div>
               )}
-              {categories.length > 0 && (
+              {CATEGORIES_ENABLED && categories.length > 0 && (
                 <div>
                   <p className="font-semibold text-foreground">Categoria</p>
                   <p className="text-muted-foreground">{categories.join(', ')}</p>

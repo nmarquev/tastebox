@@ -65,6 +65,7 @@ import { saveRecentCategory } from "@/utils/recentCategories";
 import { saveRecentRecipe } from "@/utils/recentRecipes";
 import { saveRecentSource } from "@/utils/recentSources";
 import { EMPTY_FILTER_OPTIONS } from "@/constants/emptyFilterOptions";
+import { CATEGORIES_ENABLED } from "@/constants/features";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type RecipeSort = 'title' | 'category' | 'date' | 'collection' | 'source' | 'dishType' | 'difficulty' | 'prepTime' | 'totalTime';
@@ -236,7 +237,7 @@ const Index = () => {
   // en lugar de la grilla de recetas.
   const [showCollectionsGallery, setShowCollectionsGallery] = useState(initialAppView === 'colecciones');
   // Igual que la anterior pero para la galeria de categorias.
-  const [showCategoriesGallery, setShowCategoriesGallery] = useState(initialAppView === 'categorias');
+  const [showCategoriesGallery, setShowCategoriesGallery] = useState(CATEGORIES_ENABLED && initialAppView === 'categorias');
   // Igual pero para la galeria de fuentes.
   const [showSourcesGallery, setShowSourcesGallery] = useState(initialAppView === 'fuentes');
   const [showTagsGallery, setShowTagsGallery] = useState(false);
@@ -288,7 +289,7 @@ const Index = () => {
     // /?collection=<id> | /?categoria=<nombre> | /?fuente=<nombre> | /?tipo=<nombre>
     const params = new URLSearchParams(window.location.search);
     const collectionId = params.get('collection') || undefined;
-    const categoria = params.get('categoria') || undefined;
+    const categoria = CATEGORIES_ENABLED ? params.get('categoria') || undefined : undefined;
     const fuente = params.get('fuente') || undefined;
     const tipo = params.get('tipo') || undefined;
     const etiqueta = params.get('etiqueta') || undefined;
@@ -326,7 +327,7 @@ const Index = () => {
     const keyword = keywords.length <= 1 ? (keywords[0] || "") : "";
     const matchMode = params.get('coincidencia') === 'alguna' ? 'any' : 'all';
     const typeFilter = params.get('filtro');
-    const categoria = params.get('categoria');
+    const categoria = CATEGORIES_ENABLED ? params.get('categoria') : null;
     const panel = params.get('panel');
     const preserveFilters = params.get('conservarFiltros') === '1';
 
@@ -336,7 +337,7 @@ const Index = () => {
       setSearchMatchMode(matchMode);
     }
     setShowCollectionsGallery(view === 'colecciones');
-    setShowCategoriesGallery(view === 'categorias');
+    setShowCategoriesGallery(CATEGORIES_ENABLED && view === 'categorias');
     setShowSourcesGallery(view === 'fuentes');
     setShowDishTypesGallery(view === 'tipo-comida');
     setShowTagsGallery(false);
@@ -420,7 +421,8 @@ const Index = () => {
   } | null>(null);
   const [savingIngredientsEdit, setSavingIngredientsEdit] = useState(false);
   const [recipeSort, setRecipeSort] = useState<RecipeSort>(() => {
-    return (localStorage.getItem('recipe-sort') as RecipeSort) || 'date';
+    const savedSort = (localStorage.getItem('recipe-sort') as RecipeSort) || 'date';
+    return !CATEGORIES_ENABLED && savedSort === 'category' ? 'date' : savedSort;
   });
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => {
     return (localStorage.getItem('recipe-sort-direction') as 'asc' | 'desc') || 'desc';
@@ -772,7 +774,7 @@ const Index = () => {
     const recipeCategories = parseCategories(recipe.recipeType);
     const wantsNoCategory = filters.recipeTypes.includes(EMPTY_FILTER_OPTIONS.category);
     const selectedCategories = filters.recipeTypes.filter(c => c !== EMPTY_FILTER_OPTIONS.category);
-    const matchesRecipeType = filters.recipeTypes.length === 0 ||
+    const matchesRecipeType = !CATEGORIES_ENABLED || filters.recipeTypes.length === 0 ||
       (wantsNoCategory && recipeCategories.length === 0) ||
       selectedCategories.some(c => recipeCategories.includes(c));
 
@@ -2466,7 +2468,7 @@ const Index = () => {
 
   const hasActiveFilters =
     filters.difficulty.length > 0
-    || filters.recipeTypes.length > 0
+    || (CATEGORIES_ENABLED && filters.recipeTypes.length > 0)
     || filters.tags.length > 0
     || Boolean(filters.ingredients?.length)
     || (filters.prepTimeRange?.[0] ?? 0) > 0
@@ -2514,7 +2516,7 @@ const Index = () => {
   }
   const activeDishTypes = [...(filters.dishTypes || []), ...(filters.dishType ? [filters.dishType] : [])];
   if (activeDishTypes.length) activeFilterChips.push({ label: 'Tipo de comida', value: activeDishTypes.join(', '), onRemove: () => handleFiltersChange({ ...filters, dishTypes: [], dishType: undefined }) });
-  if (filters.recipeTypes?.length) activeFilterChips.push({ label: 'Categoria', value: filters.recipeTypes.join(', '), onRemove: () => handleFiltersChange({ ...filters, recipeTypes: [] }) });
+  if (CATEGORIES_ENABLED && filters.recipeTypes?.length) activeFilterChips.push({ label: 'Categoria', value: filters.recipeTypes.join(', '), onRemove: () => handleFiltersChange({ ...filters, recipeTypes: [] }) });
   if (filters.sources?.length) activeFilterChips.push({ label: 'Fuente', value: filters.sources.join(', '), onRemove: () => handleFiltersChange({ ...filters, sources: undefined }) });
   if (filters.tags?.length) activeFilterChips.push({ label: 'Etiquetas', value: filters.tags.join(', '), onRemove: () => handleFiltersChange({ ...filters, tags: [] }) });
   if (filters.ingredients?.length) activeFilterChips.push({ label: 'Ingredientes', value: filters.ingredients.join(', '), onRemove: () => handleFiltersChange({ ...filters, ingredients: [] }) });
@@ -3788,7 +3790,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     );
                   })
                 ) : (
-                  (Object.keys(SORT_LABELS) as RecipeSort[]).map((sort) => {
+                  (Object.keys(SORT_LABELS) as RecipeSort[])
+                    .filter(sort => CATEGORIES_ENABLED || sort !== 'category')
+                    .map((sort) => {
                   const isActive = recipeSort === sort;
                   return (
                     <DropdownMenuItem
@@ -4046,7 +4050,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   />
                 </div>
 
-                <div>
+                {CATEGORIES_ENABLED && <div>
                   <div className="-mb-1.5 flex items-center justify-between">
                     <Label className="text-[13px] font-medium">Categoría</Label>
                     {filters.recipeTypes.length > 0 && (
@@ -4070,7 +4074,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     canDeleteOption={(value) => value !== EMPTY_FILTER_OPTIONS.category}
                     closeOnSelect
                   />
-                </div>
+                </div>}
 
                 <div>
                   <div className="-mb-1.5 flex items-center justify-between">
@@ -6446,7 +6450,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               closeOnSelect allowCreate createLabel="Agregar"
                             />
                           </div>
-                          <div>
+                          {CATEGORIES_ENABLED && <div>
                             <p className="mb-1 text-xs font-semibold text-foreground">Categoria</p>
                             <MultiSelectCombobox
                               options={categoryList.map(item => item.name)}
@@ -6456,7 +6460,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               searchPlaceholder="Buscar o escribir..."
                               closeOnSelect allowCreate createLabel="Agregar"
                             />
-                          </div>
+                          </div>}
                           <div>
                             <p className="mb-1 text-xs font-semibold text-foreground">Etiquetas</p>
                             <MultiSelectCombobox
@@ -6492,7 +6496,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           {ingCollections.length > 0 && (
                             <span><span className="font-semibold text-foreground">Coleccion:</span> {ingCollections.join(', ')}</span>
                           )}
-                          {ingCategories.length > 0 && (
+                          {CATEGORIES_ENABLED && ingCategories.length > 0 && (
                             <span><span className="font-semibold text-foreground">Categoria:</span> {ingCategories.join(', ')}</span>
                           )}
                           {recipe.tags?.length > 0 && (
@@ -7860,7 +7864,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   { key: 'collection', label: 'Coleccion' },
                   { key: 'difficulty', label: 'Dificultad' },
                   { key: 'dishType', label: 'Tipo de comida' },
-                  { key: 'category', label: 'Categoria' },
+                  ...(CATEGORIES_ENABLED ? [{ key: 'category' as const, label: 'Categoria' }] : []),
                   { key: 'times', label: 'Tiempos y porciones' },
                   { key: 'icons', label: 'Iconos' },
                 ] as const).map(({ key, label }) => {

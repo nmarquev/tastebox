@@ -17,6 +17,7 @@ import { getRecipeSource } from '@/utils/siteUtils';
 import { Beef, CakeSlice, CandyOff, Loader2, Check, X, Globe, Heart, WheatOff, Leaf, ClipboardPaste, Utensils } from 'lucide-react';
 import { IMPORT_ERROR_TOAST_DURATION_MS } from '@/constants/toastDurations';
 import { parseCategories } from '@/constants/categories';
+import { CATEGORIES_ENABLED } from '@/constants/features';
 
 interface BulkUrlImportModalProps {
   isOpen: boolean;
@@ -588,7 +589,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                       singleSelect closeOnSelect allowCreate createLabel="Agregar"
                     />
                   </div>
-                  <div>
+                  {CATEGORIES_ENABLED && <div>
                     <Label>Categoría</Label>
                     <MultiSelectCombobox
                       options={categoryOptions}
@@ -598,7 +599,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                       searchPlaceholder="Buscar o escribir categoría..."
                       singleSelect closeOnSelect allowCreate createLabel="Agregar"
                     />
-                  </div>
+                  </div>}
                   <div>
                     <Label>Colección</Label>
                     <MultiSelectCombobox

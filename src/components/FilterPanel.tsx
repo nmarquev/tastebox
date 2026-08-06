@@ -10,6 +10,7 @@ import { Filter, ChevronDown, X, Heart, ChefHat, WheatOff, CandyOff, CakeSlice, 
 import { Recipe } from "@/components/RecipeCard";
 import { getSourceFromUrl } from "@/utils/siteUtils";
 import { EMPTY_FILTER_OPTIONS } from "@/constants/emptyFilterOptions";
+import { CATEGORIES_ENABLED } from "@/constants/features";
 
 export interface RecipeFilters {
   difficulty: string[];
@@ -148,7 +149,7 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
   const hasActiveFilters =
     filters.difficulty.length > 0 ||
     filters.tags.length > 0 ||
-    filters.recipeTypes.length > 0 ||
+    (CATEGORIES_ENABLED && filters.recipeTypes.length > 0) ||
     (filters.prepTimeRange?.[0] ?? 0) > 0 ||
     (filters.prepTimeRange?.[1] ?? 180) < maxPrepTime ||
     (filters.cookTimeRange?.[0] ?? 0) > 0 ||
@@ -342,7 +343,7 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
             </div>
 
             {/* Category Filter */}
-            <div>
+            {CATEGORIES_ENABLED && <div>
               <Label className="text-xs font-medium mb-2 block">Categoría</Label>
               <div className="flex flex-wrap gap-1">
                 {[...allRecipeTypes, EMPTY_FILTER_OPTIONS.category].map((recipeType) => (
@@ -414,7 +415,7 @@ export const FilterPanel = ({ recipes, filters, onFiltersChange, onClearFilters 
                   </div>
                 ))}
               </div>
-            </div>
+            </div>}
           </CardContent>
         </CollapsibleContent>
       </Collapsible>

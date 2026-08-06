@@ -15,6 +15,7 @@ import { StepDescription, hasInlineThermomix } from '@/components/StepDescriptio
 import { EditRecipeModal } from '@/components/EditRecipeModal';
 import { useDraggableDialog } from '@/hooks/useDraggableDialog';
 import { SINGLE_IMPORT_ERROR_TOAST_DURATION_MS } from '@/constants/toastDurations';
+import { CATEGORIES_ENABLED } from '@/constants/features';
 import { normalizeIngredient } from '@/utils/ingredientText';
 
 interface ImportRecipeModalProps {
@@ -489,7 +490,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                     </div>
                   </div>
 
-                  {importedRecipe.recipeType && (
+                  {CATEGORIES_ENABLED && importedRecipe.recipeType && (
                     <div>
                       <Label>Tipo de receta</Label>
                       <p className="text-sm text-muted-foreground">{importedRecipe.recipeType}</p>

@@ -17,6 +17,7 @@ import { MultiSelectCombobox } from "./MultiSelectCombobox";
 import { joinCategories, RECIPE_DISH_TYPES } from "@/constants/categories";
 import { toast } from "sonner";
 import { IMPORT_ERROR_TOAST_DURATION_MS } from "@/constants/toastDurations";
+import { CATEGORIES_ENABLED } from "@/constants/features";
 
 interface DocxImportModalProps {
   isOpen: boolean;
@@ -563,7 +564,7 @@ export const DocxImportModal = ({ isOpen, onClose, onRecipeSaved }: DocxImportMo
                   />
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
+                  {CATEGORIES_ENABLED && <div>
                     <Label className="text-xs">Categoría</Label>
                     <MultiSelectCombobox
                       options={existingCategories}
@@ -574,7 +575,7 @@ export const DocxImportModal = ({ isOpen, onClose, onRecipeSaved }: DocxImportMo
                       allowCreate
                       createLabel="Crear categoría"
                     />
-                  </div>
+                  </div>}
                   <div>
                     <Label className="text-xs">Tipo de comida</Label>
                     <Select

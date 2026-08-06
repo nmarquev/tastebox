@@ -25,6 +25,7 @@ import { AvocadoIcon } from '@/components/icons/AvocadoIcon';
 import { RecipePreparedIcon } from '@/components/icons/RecipePreparedIcon';
 import { useDraggableDialog } from '@/hooks/useDraggableDialog';
 import { joinCategories, parseCategories } from '@/constants/categories';
+import { CATEGORIES_ENABLED } from '@/constants/features';
 
 interface EditRecipeModalProps {
   isOpen: boolean;
@@ -1704,7 +1705,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 </div>
 
                 {/* 2: Categoría */}
-                <div className="space-y-2">
+                {CATEGORIES_ENABLED && <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label>Categoría</Label>
                     {(watch('recipeType') || '').trim() && (
@@ -1728,7 +1729,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       setValue('recipeType', joinCategories(next), { shouldDirty: true });
                     }}
                   />
-                </div>
+                </div>}
 
                 {/* 3: Etiquetas */}
                 <div className="space-y-2">

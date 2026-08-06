@@ -12,6 +12,7 @@ import { Recipe } from '@/types/recipe';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { Loader2 } from 'lucide-react';
 import { joinCategories, parseCategories } from '@/constants/categories';
+import { CATEGORIES_ENABLED } from '@/constants/features';
 
 interface BulkEditModalProps {
   isOpen: boolean;
@@ -339,7 +340,7 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
               createLabel="Crear colección"
             />
           </div>
-          <div>
+          {CATEGORIES_ENABLED && <div>
             <Label>Categoría</Label>
             <MultiSelectCombobox
               options={categoryOptions}
@@ -349,7 +350,7 @@ export const BulkEditModal = ({ isOpen, onClose, recipes, onApplied }: BulkEditM
               searchPlaceholder="Buscar o escribir categoría..."
               closeOnSelect allowCreate createLabel="Agregar"
             />
-          </div>
+          </div>}
           <div>
             <Label>Etiquetas <span className="text-xs font-normal text-muted-foreground">(se agregan a las existentes)</span></Label>
             <MultiSelectCombobox

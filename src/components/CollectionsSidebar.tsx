@@ -3,6 +3,7 @@ import { Beef, CakeSlice, CandyOff, ChevronRight, ChevronDown, ImageIcon, Plus, 
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { RecipeCollection } from "@/services/api";
+import { CATEGORIES_ENABLED } from "@/constants/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -464,7 +465,7 @@ export const CollectionsSidebar = ({
         </>
       )}
 
-      {((categories && categories.length > 0) || onCreateCategory) && (
+      {CATEGORIES_ENABLED && ((categories && categories.length > 0) || onCreateCategory) && (
         <>
           <button
             type="button"

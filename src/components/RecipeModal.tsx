@@ -18,6 +18,7 @@ import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { PreparationTimeIcon } from "@/components/icons/PreparationTimeIcon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseCategories } from "@/constants/categories";
+import { CATEGORIES_ENABLED } from "@/constants/features";
 import { useNutritionCalculator } from "@/hooks/useNutritionCalculator";
 import { downloadRecipePdf, printRecipePdf, shareRecipePdf } from "@/utils/pdfUtils";
 import { EditRecipeModal } from "@/components/EditRecipeModal";
@@ -1663,7 +1664,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 </div>
               )}
 
-              {parseCategories(localRecipe.recipeType).length > 0 && (
+              {CATEGORIES_ENABLED && parseCategories(localRecipe.recipeType).length > 0 && (
                 <div className="contents">
                   <h3 className="font-semibold text-base">Categoría</h3>
                   <div className="flex flex-wrap gap-2 justify-self-stretch min-w-0">
