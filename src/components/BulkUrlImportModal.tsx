@@ -285,6 +285,68 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
     }
   };
 
+  const handleRetryErrors = async () => {
+    const failedIndexes = results
+      .map((result, index) => result.status === 'error' ? index : -1)
+      .filter(index => index >= 0);
+    if (failedIndexes.length === 0) return;
+
+    setIsImporting(true);
+    cancelRef.current = false;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const failedIndexSet = new Set(failedIndexes);
+    setResults(previous => previous.map((result, index) =>
+      failedIndexSet.has(index) ? { ...result, status: 'pending' } : result
+    ));
+
+    let okCount = 0;
+    const CONCURRENCY = 3;
+    let nextRetryIndex = 0;
+    const worker = async () => {
+      while (nextRetryIndex < failedIndexes.length) {
+        if (cancelRef.current) return;
+        const resultIndex = failedIndexes[nextRetryIndex++];
+        const url = results[resultIndex].url;
+        setResults(previous => previous.map((result, index) =>
+          index === resultIndex ? { ...result, status: 'importing', error: undefined } : result
+        ));
+        const retriedResult = await importSingle(url, controller.signal);
+        if (retriedResult.status === 'success') okCount++;
+        setResults(previous => previous.map((result, index) =>
+          index === resultIndex
+            ? retriedResult.status === 'pending'
+              ? { ...result, status: 'error', error: 'Importación cancelada' }
+              : retriedResult
+            : result
+        ));
+      }
+    };
+
+    await Promise.all(Array.from(
+      { length: Math.min(CONCURRENCY, failedIndexes.length) },
+      () => worker()
+    ));
+
+    if (cancelRef.current) {
+      setResults(previous => previous.map((result, index) =>
+        failedIndexSet.has(index) && result.status === 'pending'
+          ? { ...result, status: 'error', error: result.error || 'Importación cancelada' }
+          : result
+      ));
+    }
+    abortRef.current = null;
+    setIsImporting(false);
+
+    const remainingErrors = failedIndexes.length - okCount;
+    toast({
+      title: cancelRef.current ? 'Reintento cancelado' : 'Reintento finalizado',
+      description: `${okCount} de ${failedIndexes.length} receta${failedIndexes.length === 1 ? '' : 's'} importada${okCount === 1 ? '' : 's'} correctamente.${remainingErrors > 0 ? ` ${remainingErrors} continúan con error.` : ''}`,
+      variant: remainingErrors > 0 ? 'destructive' : undefined,
+      duration: remainingErrors > 0 ? IMPORT_ERROR_TOAST_DURATION_MS : undefined,
+    });
+  };
+
   const handleClose = () => {
     if (isImporting) return;
     setUrlsText('');
@@ -634,6 +696,11 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                   {results.length > 0
                     ? 'Recetas importadas'
                     : `Importar ${urlCount > 0 ? urlCount : ''} receta${urlCount === 1 ? '' : 's'}`.trim()}
+                </Button>
+              )}
+              {!isImporting && results.some(result => result.status === 'error') && (
+                <Button type="button" variant="outline" className="w-full" onClick={handleRetryErrors}>
+                  Importar nuevamente recetas con error
                 </Button>
               )}
               {isImporting && (
