@@ -3353,7 +3353,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen w-full min-w-0 flex-col overflow-x-clip bg-background">
       <Header
         onAddRecipe={handleAddRecipe}
         onImportRecipe={handleImportRecipe}
@@ -3367,7 +3367,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         <Hero onGetStarted={handleGetStarted} onViewFeatured={handleViewFeatured} />
       )}
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-8">
+      <main className="mx-auto w-full min-w-0 max-w-7xl px-4 pb-8 pt-0 sm:px-6 lg:px-8">
         <div
           ref={recipeToolbarRef}
           className="sticky z-30 -mx-4 flex flex-col gap-2 border-b border-border/50 bg-background px-4 pt-1 pb-2.5 shadow-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 xl:flex-row xl:items-center xl:justify-between xl:gap-3"
@@ -3453,9 +3453,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
             )}
           </div>
-          <div className={`grid w-full gap-x-4 gap-y-1 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'grid-cols-[1fr_auto_auto]' : 'grid-cols-[1fr_auto_auto_auto]'}`}>
+          <div className={`grid w-full min-w-0 grid-cols-2 gap-2 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:grid-cols-[1fr_auto_auto]' : 'xl:grid-cols-[1fr_auto_auto_auto]'}`}>
             {/* Search input (multi-palabra: escrib? y Enter agrega una palabra clave) */}
-            <div className={`flex flex-col gap-1 ${showCollectionsGallery || showDishTypesGallery ? 'col-span-1' : 'col-span-1'} ml-0 md:ml-1 xl:ml-2`}>
+            <div className="col-span-2 flex min-w-0 flex-col gap-1 xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2">
               <div className={`toolbar-search-field relative rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'md:w-full xl:w-[330px]' : 'md:w-full xl:w-[330px]'}`}>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -3520,7 +3520,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {!showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="toolbar-new-button px-4 transition-all duration-200 hover:scale-105 hover:shadow-md whitespace-nowrap row-start-2 col-start-1 w-full xl:w-[330px] flex items-center justify-start ml-0 md:ml-1 xl:ml-2 rounded-md">
+                  <Button variant="outline" size="sm" className="toolbar-new-button col-span-2 row-start-2 flex w-full items-center justify-start whitespace-nowrap rounded-md px-4 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-span-1 xl:col-start-1 xl:ml-2 xl:w-[330px]">
                     <PlusCircle className="h-4 w-4 mr-2" />
                     <span>Nueva Receta</span>
                     <ChevronDown className="ml-auto h-4 w-4" />
@@ -3550,7 +3550,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {/* Column selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className={`h-10 px-2 transition-all duration-200 hover:scale-105 hover:shadow-md whitespace-nowrap col-start-2`}>
+                <Button variant="outline" size="sm" className="col-start-1 row-start-3 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-1 xl:w-auto">
                   {viewMode === 'list' || viewMode === 'detail' || viewMode === 'ingredients' ? <List className="h-4 w-4" /> : getColumnIcon(gridColumns)}
                   <span className="ml-2">Ver</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
@@ -3622,7 +3622,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {/* Sort selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className={`h-10 px-2 transition-all duration-200 hover:scale-105 hover:shadow-md whitespace-nowrap col-start-3`}>
+                <Button variant="outline" size="sm" className="col-start-2 row-start-3 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-3 xl:row-start-1 xl:w-auto">
                   <ArrowUpDown className="h-4 w-4" />
                   <span className="ml-2">Ordenar</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
@@ -3832,7 +3832,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 setActiveBulkPanel(null);
                 setSelectedRecipeIds(new Set());
               }}
-              className={`h-10 transition-all duration-200 hover:scale-105 hover:shadow-md col-start-4 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
+              className={`col-start-1 row-start-4 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-4 xl:row-start-1 xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
             >
               <Filter className="h-4 w-4 mr-2" />
               Filtrar
@@ -3846,7 +3846,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'edit' ? "default" : "outline"}
               size="sm"
-              className={`h-10 transition-all duration-200 hover:scale-105 hover:shadow-md row-start-2 col-start-2 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
+              className={`col-start-2 row-start-4 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-2 xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
               onClick={() => {
                 if (activeBulkPanel === 'edit') {
                   setActiveBulkPanel(null);
@@ -3864,7 +3864,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'print' ? "default" : "outline"}
               size="sm"
-              className={`h-10 px-2 transition-all duration-200 hover:scale-105 hover:shadow-md whitespace-nowrap row-start-2 col-start-3 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'row-start-2 col-start-2' : ''}`}
+              className={`col-start-1 row-start-5 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-2 xl:row-start-2' : 'xl:col-start-3 xl:row-start-2'}`}
               onClick={() => {
                 if (activeBulkPanel === 'print') {
                   setActiveBulkPanel(null);
@@ -3882,7 +3882,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'delete' ? "default" : "outline"}
               size="sm"
-              className={`h-10 px-2 transition-all duration-200 hover:scale-105 hover:shadow-md whitespace-nowrap row-start-2 col-start-4 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'row-start-2 col-start-3' : ''}`}
+              className={`col-start-2 row-start-5 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-3 xl:row-start-2' : 'xl:col-start-4 xl:row-start-2'}`}
               onClick={() => {
                 if (activeBulkPanel === 'delete') {
                   setActiveBulkPanel(null);
@@ -3901,7 +3901,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <Button
                 variant="outline"
                 size="sm"
-                className="toolbar-new-button px-4 transition-all duration-200 hover:scale-105 hover:shadow-md whitespace-nowrap row-start-2 col-start-1 w-full xl:w-[330px] flex items-center justify-start ml-0 md:ml-1 xl:ml-2 rounded-md"
+                className="toolbar-new-button col-span-2 row-start-2 flex w-full items-center justify-start whitespace-nowrap rounded-md px-4 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-span-1 xl:col-start-1 xl:ml-2 xl:w-[330px]"
                 onClick={() => { setNewCollectionName(''); setShowNewCollectionDialog(true); }}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -3912,7 +3912,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <Button
                 variant="outline"
                 size="sm"
-                className="toolbar-new-button px-4 transition-all duration-200 hover:scale-105 hover:shadow-md whitespace-nowrap row-start-2 col-start-1 w-full xl:w-[330px] flex items-center justify-start ml-0 md:ml-1 xl:ml-2 rounded-md"
+                className="toolbar-new-button col-span-2 row-start-2 flex w-full items-center justify-start whitespace-nowrap rounded-md px-4 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-span-1 xl:col-start-1 xl:ml-2 xl:w-[330px]"
                 onClick={() => { resetNewDishTypeDialog(); setShowNewDishTypeDialog(true); }}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -3923,7 +3923,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <Button
                 variant="outline"
                 size="sm"
-                className="toolbar-new-button px-4 transition-all duration-200 hover:scale-105 hover:shadow-md whitespace-nowrap row-start-2 col-start-1 w-full xl:w-[330px] flex items-center justify-start ml-0 md:ml-1 xl:ml-2 rounded-md"
+                className="toolbar-new-button col-span-2 row-start-2 flex w-full items-center justify-start whitespace-nowrap rounded-md px-4 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-span-1 xl:col-start-1 xl:ml-2 xl:w-[330px]"
                 onClick={() => { resetNewCategoryDialog(); setShowNewCategoryDialog(true); }}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -3934,7 +3934,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <Button
                 variant="outline"
                 size="sm"
-                className="toolbar-new-button px-4 transition-all duration-200 hover:scale-105 hover:shadow-md whitespace-nowrap row-start-2 col-start-1 w-full xl:w-[330px] flex items-center justify-start ml-0 md:ml-1 xl:ml-2 rounded-md"
+                className="toolbar-new-button col-span-2 row-start-2 flex w-full items-center justify-start whitespace-nowrap rounded-md px-4 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-span-1 xl:col-start-1 xl:ml-2 xl:w-[330px]"
                 onClick={() => { resetNewSourceDialog(); setShowNewSourceDialog(true); }}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -3945,7 +3945,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <Button
                 variant="outline"
                 size="sm"
-                className="toolbar-new-button px-4 transition-all duration-200 hover:scale-105 hover:shadow-md whitespace-nowrap row-start-2 col-start-1 w-full xl:w-[330px] flex items-center justify-start ml-0 md:ml-1 xl:ml-2 rounded-md"
+                className="toolbar-new-button col-span-2 row-start-2 flex w-full items-center justify-start whitespace-nowrap rounded-md px-4 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-span-1 xl:col-start-1 xl:ml-2 xl:w-[330px]"
                 onClick={() => { resetNewTagDialog(); setShowNewTagDialog(true); }}
               >
                 <Plus className="h-4 w-4 mr-2" />
