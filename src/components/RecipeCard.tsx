@@ -166,7 +166,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
   // En 1 columna la tarjeta es horizontal y muestra info adicional a la derecha.
   const oneCol = columns === 1;
   const inlineGridCard = columns >= 2 && columns <= 4;
-  const infoIconClass = oneCol ? "h-5 w-5" : compact ? "h-3 w-3" : "h-4 w-4";
+  const infoIconClass = oneCol ? "h-4 w-4 sm:h-5 sm:w-5" : compact ? "h-3 w-3" : "h-4 w-4";
   const hasNutritionData = recipe.calories !== null && recipe.calories !== undefined && recipe.calories > 0;
   const activeCardFeatures = [
     (recipe.thermomix || isThermomixRecipe(recipe)) ? (
@@ -237,6 +237,8 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
   ].filter((feature): feature is JSX.Element => feature !== null);
   // Get dynamic image height based on columns
   const getImageHeight = () => {
+    if (oneCol) return 'h-80 sm:h-64';
+
     switch (columns) {
       case 2:
         return 'h-80';
@@ -502,7 +504,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         onClick={handleCardClick}
       >
         <div>
-          <h3 className={`recipe-card-title font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors ${minimal ? "text-sm leading-tight" : oneCol ? "text-2xl leading-8" : "text-lg leading-7"}`}>
+          <h3 className={`recipe-card-title font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors ${minimal ? "text-sm leading-tight" : oneCol ? "text-lg leading-7 sm:text-2xl sm:leading-8" : "text-lg leading-7"}`}>
             {recipe.title}
           </h3>
           {minimal && sourceName && (
@@ -523,7 +525,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             </p>
           )}
           {!minimal && (
-            <p className={`mt-1.5 text-muted-foreground ${oneCol ? "text-base" : columns === 2 ? "text-sm" : "text-[13px]"}`}>
+            <p className={`mt-1.5 text-muted-foreground ${oneCol ? "text-sm sm:text-base" : columns === 2 ? "text-sm" : "text-[13px]"}`}>
               <span className="font-semibold text-foreground">Fuente:</span>{' '}
               {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) ? (
                 <a
@@ -543,7 +545,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         </div>
 
         {!minimal && (
-          <div className={`@container flex items-center flex-wrap text-muted-foreground ${compact ? "gap-x-2 gap-y-1 text-xs" : oneCol ? "gap-x-4 gap-y-1 text-base" : "gap-x-4 gap-y-1 text-sm"}`}>
+          <div className={`@container flex items-center flex-wrap text-muted-foreground ${compact ? "gap-x-2 gap-y-1 text-xs" : oneCol ? "gap-x-4 gap-y-1 text-sm sm:text-base" : "gap-x-4 gap-y-1 text-sm"}`}>
             {!!recipe.prepTime && recipe.prepTime > 0 && (
               <div className="flex items-center gap-1 whitespace-nowrap" title="Tiempo de preparación">
                 <PreparationTimeIcon className={infoIconClass} />
@@ -566,7 +568,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         )}
 
         {!minimal && activeCardFeatures.length > 0 && (
-          <div className={`flex flex-wrap items-center gap-2 text-muted-foreground ${oneCol ? "[&>span]:h-9 [&>span]:w-9 [&_img]:!h-7 [&_img]:!w-7 [&_svg]:!h-6 [&_svg]:!w-6 [&_.keto-ico]:!h-8 [&_.keto-ico]:!w-8 [&_.cooked-ico]:!h-8 [&_.cooked-ico]:!w-8" : ""}`}>
+          <div className={`flex flex-wrap items-center gap-2 text-muted-foreground ${oneCol ? "sm:[&>span]:h-9 sm:[&>span]:w-9 sm:[&_img]:!h-7 sm:[&_img]:!w-7 sm:[&_svg]:!h-6 sm:[&_svg]:!w-6 sm:[&_.keto-ico]:!h-8 sm:[&_.keto-ico]:!w-8 sm:[&_.cooked-ico]:!h-8 sm:[&_.cooked-ico]:!w-8" : ""}`}>
             {activeCardFeatures}
           </div>
         )}
@@ -608,7 +610,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
 
       {(oneCol || (inlineGridCard && inlineEditing)) && (
         <div
-          className={`relative flex w-full min-w-0 shrink-0 flex-col gap-3 border-t p-4 text-sm ${oneCol ? 'sm:w-60 sm:border-l sm:border-t-0' : ''}`}
+          className={`relative w-full min-w-0 shrink-0 flex-col gap-3 border-t p-4 text-sm ${oneCol ? 'hidden sm:flex sm:w-60 sm:border-l sm:border-t-0' : 'flex'}`}
           onClick={inlineEditing ? (e) => e.stopPropagation() : undefined}
         >
           {(onInlineSave || onEdit) && !inlineEditing && (
