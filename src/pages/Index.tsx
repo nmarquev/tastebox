@@ -3590,7 +3590,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   className={`hidden xl:flex ${viewMode === 'grid' && gridColumns === 5 ? "bg-accent" : ""}`}
                 >
                   <Columns className="h-4 w-4 mr-2" />
-                  5 columnas
+                  Iconos pequeños
                 </DropdownMenuItem>
                 {!inGallery && (
                   <DropdownMenuItem
