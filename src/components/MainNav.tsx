@@ -228,14 +228,6 @@ export const MainNav = () => {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem asChild>
-            <Link to={duplicateOption.to} className="flex items-center gap-2">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                {duplicateOption.icon}
-              </span>
-              {duplicateOption.label}
-            </Link>
-          </DropdownMenuItem>
           <DropdownMenuItem onSelect={openRecipeSearch}>
             <Search className="mr-2 h-4 w-4" />
             Buscar
@@ -250,6 +242,14 @@ export const MainNav = () => {
               </Link>
             </DropdownMenuItem>
           ))}
+          <DropdownMenuItem asChild>
+            <Link to={duplicateOption.to} className="flex items-center gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                {duplicateOption.icon}
+              </span>
+              {duplicateOption.label}
+            </Link>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -404,10 +404,6 @@ export const MainNav = () => {
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
               <div className="space-y-0.5 pb-2 pl-2">
-                <Link to={duplicateOption.to} onClick={closeMobileMenu} className={mobileSubmenuItemClass}>
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center">{duplicateOption.icon}</span>
-                  {duplicateOption.label}
-                </Link>
                 <button
                   type="button"
                   onClick={() => {
@@ -425,6 +421,10 @@ export const MainNav = () => {
                     {item.label}
                   </Link>
                 ))}
+                <Link to={duplicateOption.to} onClick={closeMobileMenu} className={mobileSubmenuItemClass}>
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center">{duplicateOption.icon}</span>
+                  {duplicateOption.label}
+                </Link>
               </div>
             </details>
 
