@@ -3569,14 +3569,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 2 ? "bg-accent" : ""}`}
                 >
                   <Grid2X2 className="h-4 w-4 mr-2" />
-                  2 columnas
+                  Iconos grandes
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(3); }}
                   className={`hidden sm:flex md:hidden xl:flex ${viewMode === 'grid' && gridColumns === 3 ? "bg-accent" : ""}`}
                 >
                   <Grid3X3 className="h-4 w-4 mr-2" />
-                  3 columnas
+                  Iconos medianos
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(4); }}
