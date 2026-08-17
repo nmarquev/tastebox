@@ -3520,7 +3520,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {!showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="toolbar-new-button col-span-2 row-start-2 flex w-full items-center justify-start whitespace-nowrap rounded-md px-4 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-span-1 xl:col-start-1 xl:ml-2 xl:w-[330px]">
+                  <Button variant="outline" size="sm" className="toolbar-new-button col-span-2 row-start-2 hidden w-full items-center justify-start whitespace-nowrap rounded-md px-4 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-span-1 xl:col-start-1 xl:ml-2 xl:flex xl:w-[330px]">
                     <PlusCircle className="h-4 w-4 mr-2" />
                     <span>Nueva Receta</span>
                     <ChevronDown className="ml-auto h-4 w-4" />
@@ -3550,7 +3550,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {/* Column selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="col-start-1 row-start-3 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-1 xl:w-auto">
+                <Button variant="outline" size="sm" className={`col-start-1 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-1 xl:w-auto ${inGallery ? 'row-start-3' : 'row-start-2'}`}>
                   {viewMode === 'list' || viewMode === 'detail' || viewMode === 'ingredients' ? <List className="h-4 w-4" /> : getColumnIcon(gridColumns)}
                   <span className="ml-2">Ver</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
@@ -3622,7 +3622,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {/* Sort selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="col-start-2 row-start-3 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-3 xl:row-start-1 xl:w-auto">
+                <Button variant="outline" size="sm" className={`col-start-2 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-3 xl:row-start-1 xl:w-auto ${inGallery ? 'row-start-3' : 'row-start-2'}`}>
                   <ArrowUpDown className="h-4 w-4" />
                   <span className="ml-2">Ordenar</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
@@ -3832,7 +3832,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 setActiveBulkPanel(null);
                 setSelectedRecipeIds(new Set());
               }}
-              className={`col-start-1 row-start-4 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-4 xl:row-start-1 xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
+              className={`col-start-1 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-4 xl:row-start-1 xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
             >
               <Filter className="h-4 w-4 mr-2" />
               Filtrar
@@ -3846,7 +3846,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'edit' ? "default" : "outline"}
               size="sm"
-              className={`col-start-2 row-start-4 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-2 xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
+              className={`col-start-2 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-2 xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
               onClick={() => {
                 if (activeBulkPanel === 'edit') {
                   setActiveBulkPanel(null);
@@ -3864,7 +3864,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'print' ? "default" : "outline"}
               size="sm"
-              className={`col-start-1 row-start-5 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-2 xl:row-start-2' : 'xl:col-start-3 xl:row-start-2'}`}
+              className={`col-start-1 row-start-4 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-2 xl:row-start-2' : 'xl:col-start-3 xl:row-start-2'}`}
               onClick={() => {
                 if (activeBulkPanel === 'print') {
                   setActiveBulkPanel(null);
@@ -3882,7 +3882,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'delete' ? "default" : "outline"}
               size="sm"
-              className={`col-start-2 row-start-5 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-3 xl:row-start-2' : 'xl:col-start-4 xl:row-start-2'}`}
+              className={`col-start-2 row-start-4 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-3 xl:row-start-2' : 'xl:col-start-4 xl:row-start-2'}`}
               onClick={() => {
                 if (activeBulkPanel === 'delete') {
                   setActiveBulkPanel(null);
