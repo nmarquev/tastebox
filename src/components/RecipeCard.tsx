@@ -252,7 +252,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
   };
 
   return (
-    <Card className={`group relative flex h-full overflow-hidden bg-gradient-card shadow-recipe-card transition-all duration-300 hover:shadow-elegant hover:-translate-y-1 ${oneCol ? "flex-col sm:flex-row" : "flex-col"} ${
+    <Card className={`group relative flex h-full w-full min-w-0 max-w-full overflow-hidden bg-gradient-card shadow-recipe-card transition-all duration-300 hover:shadow-elegant hover:-translate-y-1 ${oneCol ? "flex-col sm:flex-row" : "flex-col"} ${
       isSelected ? "ring-2 ring-primary ring-offset-2" : ""
     }`}>
       {selectionMode && (
@@ -263,7 +263,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           aria-label={`${isSelected ? "Deseleccionar" : "Seleccionar"} ${recipe.title}`}
         />
       )}
-      <div className={`relative overflow-hidden cursor-pointer ${oneCol ? "sm:w-72 sm:shrink-0" : ""}`} onClick={handleCardClick}>
+      <div className={`relative w-full min-w-0 overflow-hidden cursor-pointer ${oneCol ? "sm:w-72 sm:shrink-0" : ""}`} onClick={handleCardClick}>
         {selectionMode && (
           <span
             className={`pointer-events-none absolute right-3 bottom-3 z-20 inline-flex h-5 w-5 items-center justify-center rounded-md border-2 shadow-sm ${
@@ -498,7 +498,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
       </div>
 
       <CardContent
-        className="flex flex-1 cursor-pointer flex-col space-y-3 p-4"
+        className="flex min-w-0 flex-1 cursor-pointer flex-col space-y-3 p-4"
         onClick={handleCardClick}
       >
         <div>
@@ -608,7 +608,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
 
       {(oneCol || (inlineGridCard && inlineEditing)) && (
         <div
-          className={`relative flex shrink-0 flex-col gap-3 border-t p-4 text-sm ${oneCol ? 'sm:w-60 sm:border-l sm:border-t-0' : 'w-full'}`}
+          className={`relative flex w-full min-w-0 shrink-0 flex-col gap-3 border-t p-4 text-sm ${oneCol ? 'sm:w-60 sm:border-l sm:border-t-0' : ''}`}
           onClick={inlineEditing ? (e) => e.stopPropagation() : undefined}
         >
           {(onInlineSave || onEdit) && !inlineEditing && (
