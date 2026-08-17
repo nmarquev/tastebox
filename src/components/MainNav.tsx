@@ -15,6 +15,7 @@ import {
   Filter,
   Heart,
   Leaf,
+  Menu,
   PlusCircle,
   Printer,
   Search,
@@ -37,6 +38,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const menuItems = [
   { label: "COLECCIONES", to: "/app?view=colecciones" },
@@ -85,6 +93,7 @@ export const MainNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [recipeSearch, setRecipeSearch] = useState('');
   const [recipeSearchMode, setRecipeSearchMode] = useState<'all' | 'any'>('all');
   const showingDuplicateRecipes = new URLSearchParams(location.search).get('view') === 'duplicadas';
@@ -147,11 +156,19 @@ export const MainNav = () => {
     window.setTimeout(() => setSearchDialogOpen(true), 0);
   };
 
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const mobileMenuItemClass =
+    "flex min-h-11 w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-semibold tracking-wide text-[#6f6965] transition-colors hover:bg-pink-50 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2";
+  const mobileSubmenuItemClass =
+    "flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium text-[#6f6965] transition-colors hover:bg-pink-50 hover:text-primary";
+
   return (
-    <nav
-      aria-label="Menu principal"
-      className="flex flex-wrap items-center justify-center gap-1 lg:gap-2 xl:flex-nowrap sm:justify-end"
-    >
+    <>
+      <nav
+        aria-label="Menú principal"
+        className="hidden items-center justify-end gap-1 lg:gap-2 xl:flex xl:flex-nowrap"
+      >
       <div className="flex h-10 items-center justify-center rounded-md text-[#6f6965] transition-colors hover:bg-pink-50 hover:text-primary">
         <ThemeSwitcher />
       </div>
@@ -322,6 +339,120 @@ export const MainNav = () => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-    </nav>
+      </nav>
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-[#6f6965] transition-colors hover:bg-pink-50 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 xl:hidden"
+            aria-label="Abrir menú"
+            title="Menú"
+          >
+            <Menu className="h-7 w-7" />
+          </button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-[min(88vw,360px)] overflow-y-auto p-0">
+          <SheetHeader className="border-b border-border/60 px-5 py-5 text-left">
+            <SheetTitle className="text-xl text-[#6f6965]">Menú</SheetTitle>
+          </SheetHeader>
+
+          <nav aria-label="Menú principal móvil" className="space-y-1 p-4">
+            <div className="flex min-h-11 items-center rounded-md px-3">
+              <span className="text-sm font-semibold tracking-wide text-[#6f6965]">TEMA</span>
+              <div className="ml-auto">
+                <ThemeSwitcher />
+              </div>
+            </div>
+
+            <Link to="/buscar" onClick={closeMobileMenu} className={mobileMenuItemClass}>
+              <Search className="h-5 w-5" />
+              BUSCAR
+            </Link>
+
+            {menuItems.map((item) => (
+              <Link key={item.label} to={item.to} onClick={closeMobileMenu} className={mobileMenuItemClass}>
+                {item.label}
+              </Link>
+            ))}
+
+            <details className="group border-t border-border/60 pt-1">
+              <summary className={`${mobileMenuItemClass} cursor-pointer list-none justify-between`}>
+                <span>RECETAS</span>
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="space-y-0.5 pb-2 pl-2">
+                {recipeTypeItems.map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      selectRecipeType(item.filter);
+                      closeMobileMenu();
+                    }}
+                    className={mobileSubmenuItemClass}
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center">{item.icon}</span>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </details>
+
+            <details className="group border-t border-border/60 pt-1">
+              <summary className={`${mobileMenuItemClass} cursor-pointer list-none justify-between`}>
+                <span>ACCIONES</span>
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="space-y-0.5 pb-2 pl-2">
+                <Link to={duplicateOption.to} onClick={closeMobileMenu} className={mobileSubmenuItemClass}>
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center">{duplicateOption.icon}</span>
+                  {duplicateOption.label}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileMenu();
+                    openRecipeSearch();
+                  }}
+                  className={mobileSubmenuItemClass}
+                >
+                  <Search className="h-4 w-4" />
+                  Buscar
+                </button>
+                {optionItems.map((item) => (
+                  <Link key={item.label} to={item.to} onClick={closeMobileMenu} className={mobileSubmenuItemClass}>
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center">{item.icon}</span>
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </details>
+
+            <details className="group border-t border-border/60 pt-1">
+              <summary className={`${mobileMenuItemClass} cursor-pointer list-none justify-between`}>
+                <span>AGREGAR</span>
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="space-y-0.5 pb-2 pl-2">
+                {actionItems.map((item) => (
+                  <button
+                    key={item.action}
+                    type="button"
+                    onClick={() => {
+                      openAction(item.action);
+                      closeMobileMenu();
+                    }}
+                    className={mobileSubmenuItemClass}
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center">{item.icon}</span>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </details>
+          </nav>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };

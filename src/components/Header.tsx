@@ -110,7 +110,7 @@ export const Header = ({
   return (
     <header ref={headerRef} className="sticky top-0 z-40 bg-white border-b border-border/50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-between gap-4 py-3">
+        <div className="flex items-center justify-between gap-2 py-3 xl:gap-4">
           <button
             type="button"
             onClick={() => {
@@ -123,18 +123,18 @@ export const Header = ({
             <img
               src={THEME_LOGOS[theme]}
               alt="TasteBox"
-              className="h-14 w-auto max-w-[280px] bg-white object-contain"
+              className="h-12 w-auto max-w-[155px] bg-white object-contain sm:h-14 sm:max-w-[220px] xl:max-w-[280px]"
             />
           </button>
 
-          <div className="ml-auto">
+          <div className="ml-auto shrink-0">
             <MainNav />
           </div>
 
           {!minimal && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button variant="ghost" className="relative h-8 w-8 shrink-0 rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarImage
                       src={user?.profilePhoto ? `${getServerBaseUrl()}${user.profilePhoto}` : undefined}
