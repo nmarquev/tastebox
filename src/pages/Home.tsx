@@ -220,7 +220,7 @@ const Home = () => {
     <main className="min-h-screen bg-[#fff8f8]">
       <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-8 pt-28 sm:px-6 sm:pt-32">
         <header className="fixed left-0 top-0 z-50 w-full border-b border-pink-100 bg-[#fff8f8]/95 shadow-sm backdrop-blur">
-          <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 px-4 py-3 sm:px-6 xl:flex-row xl:items-center xl:justify-between xl:gap-2">
           <Link to="/" className="inline-flex shrink-0 items-center justify-center sm:justify-start">
             <img
               src={THEME_LOGOS[theme]}
@@ -229,9 +229,11 @@ const Home = () => {
             />
           </Link>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-end">
+          <div className="flex min-w-0 flex-wrap items-center justify-center gap-3 sm:justify-end xl:flex-nowrap xl:gap-1">
             <MainNav />
-            <UserMenu />
+            <div className="shrink-0">
+              <UserMenu />
+            </div>
           </div>
           </div>
         </header>
