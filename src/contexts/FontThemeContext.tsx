@@ -1,18 +1,18 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type FontTheme = 'tastebox' | 'original' | 'moderna' | 'elegante' | 'amable';
+export type FontTheme = 'tastebox' | 'moderna' | 'elegante' | 'amable';
 
 interface FontThemeContextType {
   fontTheme: FontTheme;
   setFontTheme: (fontTheme: FontTheme) => void;
 }
 
-const FONT_THEMES = new Set<FontTheme>(['tastebox', 'original', 'moderna', 'elegante', 'amable']);
+const FONT_THEMES = new Set<FontTheme>(['tastebox', 'moderna', 'elegante', 'amable']);
 const FontThemeContext = createContext<FontThemeContextType | undefined>(undefined);
 
 const getSavedFontTheme = (): FontTheme => {
   const saved = localStorage.getItem('font-theme') as FontTheme | null;
-  return saved && FONT_THEMES.has(saved) ? saved : 'original';
+  return saved && FONT_THEMES.has(saved) ? saved : 'tastebox';
 };
 
 // Context and hook live together, matching the existing ThemeContext API.

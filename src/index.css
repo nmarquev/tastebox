@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Lato:wght@400;700&family=Lora:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@400;700&family=Lora:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -649,11 +649,6 @@ All colors MUST be HSL.
     --font-display: var(--font-body);
   }
 
-  :root[data-font-theme="original"] {
-    --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-    --font-display: "Instrument Serif", Georgia, serif;
-  }
-
   :root[data-font-theme="tastebox"] {
     --font-body: ui-sans-serif, system-ui, sans-serif;
     --font-display: var(--font-body);
@@ -716,7 +711,6 @@ All colors MUST be HSL.
   }
 
   .font-preview-tastebox { font-family: ui-sans-serif, system-ui, sans-serif; }
-  .font-preview-original { font-family: "Instrument Serif", Georgia, serif; }
   .font-preview-moderna { font-family: "Bebas Neue", Impact, sans-serif; }
   .font-preview-elegante { font-family: "Playfair Display", Georgia, serif; }
   .font-preview-amable { font-family: "Lora", Georgia, serif; }
