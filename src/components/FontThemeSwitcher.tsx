@@ -14,7 +14,6 @@ const fontThemes: { value: FontTheme; label: string; previewClass: string }[] = 
   { value: 'moderna', label: 'Moderna', previewClass: 'font-preview-moderna' },
   { value: 'elegante', label: 'Elegante', previewClass: 'font-preview-elegante' },
   { value: 'amable', label: 'Amable', previewClass: 'font-preview-amable' },
-  { value: 'clasica', label: 'Clásica', previewClass: 'font-preview-clasica' },
 ];
 
 export const FontThemeSwitcher = () => {
