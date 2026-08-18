@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { FontThemeSwitcher } from "@/components/FontThemeSwitcher";
 import { UncheckedIcon } from "@/components/icons/UncheckedIcon";
 import {
   DropdownMenu,
@@ -171,6 +172,9 @@ export const MainNav = () => {
       >
       <div className="flex h-10 items-center justify-center rounded-md text-[#6f6965] transition-colors hover:bg-pink-50 hover:text-primary">
         <ThemeSwitcher />
+      </div>
+      <div className="flex h-10 items-center justify-center rounded-md text-[#6f6965] transition-colors hover:bg-pink-50 hover:text-primary">
+        <FontThemeSwitcher />
       </div>
 
       <Link
@@ -361,6 +365,13 @@ export const MainNav = () => {
               <span className="text-sm font-semibold tracking-wide text-[#6f6965]">TEMA</span>
               <div className="ml-auto">
                 <ThemeSwitcher />
+              </div>
+            </div>
+
+            <div className="flex min-h-11 items-center rounded-md px-3">
+              <span className="text-sm font-semibold tracking-wide text-[#6f6965]">FUENTE</span>
+              <div className="ml-auto">
+                <FontThemeSwitcher />
               </div>
             </div>
 

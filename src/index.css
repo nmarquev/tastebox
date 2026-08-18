@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Lato:wght@400;700&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Nunito:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -642,13 +644,82 @@ All colors MUST be HSL.
 }
 
 @layer base {
+  :root {
+    --font-body: ui-sans-serif, system-ui, sans-serif;
+    --font-display: var(--font-body);
+  }
+
+  :root[data-font-theme="original"] {
+    --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Instrument Serif", Georgia, serif;
+  }
+
+  :root[data-font-theme="moderna"] {
+    --font-body: "Poppins", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Bebas Neue", Impact, sans-serif;
+  }
+
+  :root[data-font-theme="elegante"] {
+    --font-body: "Lato", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Playfair Display", Georgia, serif;
+  }
+
+  :root[data-font-theme="amable"] {
+    --font-body: "Nunito", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Lora", Georgia, serif;
+  }
+
+  :root[data-font-theme="clasica"] {
+    --font-body: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Merriweather", Georgia, serif;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-body);
   }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer components {
+  .font-theme-icon {
+    font-family: Georgia, serif;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: -0.0625rem;
+    line-height: 1;
+  }
+
+  .font-theme-preview {
+    display: grid;
+    width: 1.875rem;
+    height: 1.5625rem;
+    flex: 0 0 1.875rem;
+    place-items: center;
+    border-radius: 0.3125rem;
+    color: hsl(var(--foreground));
+    background: hsl(var(--muted));
+    font-size: 0.9375rem;
+    line-height: 1;
+  }
+
+  .font-preview-original { font-family: "Instrument Serif", Georgia, serif; }
+  .font-preview-moderna { font-family: "Bebas Neue", Impact, sans-serif; }
+  .font-preview-elegante { font-family: "Playfair Display", Georgia, serif; }
+  .font-preview-amable { font-family: "Lora", Georgia, serif; }
+  .font-preview-clasica { font-family: "Merriweather", Georgia, serif; }
 }
 
 @layer components {
