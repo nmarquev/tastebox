@@ -9,6 +9,7 @@ import { FontTheme, useFontTheme } from '@/contexts/FontThemeContext';
 import { Check } from 'lucide-react';
 
 const fontThemes: { value: FontTheme; label: string; previewClass: string }[] = [
+  { value: 'tastebox', label: 'Fuente Tastebox', previewClass: 'font-preview-tastebox' },
   { value: 'original', label: 'Original', previewClass: 'font-preview-original' },
   { value: 'moderna', label: 'Moderna', previewClass: 'font-preview-moderna' },
   { value: 'elegante', label: 'Elegante', previewClass: 'font-preview-elegante' },

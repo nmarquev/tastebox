@@ -654,6 +654,11 @@ All colors MUST be HSL.
     --font-display: "Instrument Serif", Georgia, serif;
   }
 
+  :root[data-font-theme="tastebox"] {
+    --font-body: ui-sans-serif, system-ui, sans-serif;
+    --font-display: var(--font-body);
+  }
+
   :root[data-font-theme="moderna"] {
     --font-body: "Poppins", ui-sans-serif, system-ui, sans-serif;
     --font-display: "Bebas Neue", Impact, sans-serif;
@@ -715,6 +720,7 @@ All colors MUST be HSL.
     line-height: 1;
   }
 
+  .font-preview-tastebox { font-family: ui-sans-serif, system-ui, sans-serif; }
   .font-preview-original { font-family: "Instrument Serif", Georgia, serif; }
   .font-preview-moderna { font-family: "Bebas Neue", Impact, sans-serif; }
   .font-preview-elegante { font-family: "Playfair Display", Georgia, serif; }

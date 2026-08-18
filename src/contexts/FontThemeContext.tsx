@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type FontTheme = 'original' | 'moderna' | 'elegante' | 'amable' | 'clasica';
+export type FontTheme = 'tastebox' | 'original' | 'moderna' | 'elegante' | 'amable' | 'clasica';
 
 interface FontThemeContextType {
   fontTheme: FontTheme;
   setFontTheme: (fontTheme: FontTheme) => void;
 }
 
-const FONT_THEMES = new Set<FontTheme>(['original', 'moderna', 'elegante', 'amable', 'clasica']);
+const FONT_THEMES = new Set<FontTheme>(['tastebox', 'original', 'moderna', 'elegante', 'amable', 'clasica']);
 const FontThemeContext = createContext<FontThemeContextType | undefined>(undefined);
 
 const getSavedFontTheme = (): FontTheme => {
