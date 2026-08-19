@@ -1158,6 +1158,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 variant="outline"
                 size="sm"
                 onClick={() => setIsEditModalOpen(true)}
+                className="hidden sm:inline-flex"
               >
                 <Edit className="h-4 w-4 mr-2" />
                 Editar
@@ -1636,7 +1637,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
               {/* Campo Autor oculto por ahora */}
 
-              <div className="contents">
+              <div className="hidden sm:contents">
                 <h3 className="font-semibold text-base">Origen</h3>
                 <Badge>
                   {localRecipe.importedFrom
@@ -1651,7 +1652,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
 
               {localRecipe.difficulty && (
-                <div className="contents">
+                <div className="hidden sm:contents">
                   <h3 className="font-semibold text-base">Dificultad</h3>
                   <Badge>{localRecipe.difficulty}</Badge>
                 </div>
@@ -1665,7 +1666,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               )}
 
               {CATEGORIES_ENABLED && parseCategories(localRecipe.recipeType).length > 0 && (
-                <div className="contents">
+                <div className="hidden sm:contents">
                   <h3 className="font-semibold text-base">Categoría</h3>
                   <div className="flex flex-wrap gap-2 justify-self-stretch min-w-0">
                     {parseCategories(localRecipe.recipeType).map((cat) => (
@@ -1687,20 +1688,20 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               )}
 
               {localRecipe.language && (
-                <div className="contents">
+                <div className="hidden sm:contents">
                   <h3 className="font-semibold text-base">Idioma</h3>
                   <Badge>{localRecipe.language}</Badge>
                 </div>
               )}
               {localRecipe.country && (
-                <div className="contents">
+                <div className="hidden sm:contents">
                   <h3 className="font-semibold text-base">País</h3>
                   <Badge>{localRecipe.country}</Badge>
                 </div>
               )}
 
               {localRecipe.createdAt && (
-                <div className="contents">
+                <div className="hidden sm:contents">
                   <h3 className="font-semibold text-base">Fecha</h3>
                   <Badge>
                     {new Date(localRecipe.createdAt).toLocaleDateString('es-AR', {
@@ -1712,7 +1713,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 </div>
               )}
 
-              <div className="contents">
+              <div className="hidden sm:contents">
                 <h3 className="font-semibold text-base">Etiquetas</h3>
                 <div className="flex min-w-0 flex-wrap gap-2 justify-self-stretch">
                   {(localRecipe.tags || []).map((tag, index) => {
@@ -1743,7 +1744,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           </div>
 
           {localRecipe.description && (
-            <div>
+            <div className="hidden sm:block">
               <p className="text-muted-foreground leading-relaxed">
                 {localRecipe.description}
               </p>
@@ -1790,29 +1791,31 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
 
             {/* Right column: Nutrition Label - 1/3 width */}
-            <div className={`flex justify-center lg:col-span-1 lg:justify-start lg:pl-6 ${!hasNutritionData(localRecipe) ? 'pr-12' : ''}`}>
+            <div className={`${(localRecipe.language || '').trim() && !isSpanishLanguage(localRecipe.language) ? 'flex' : 'hidden sm:flex'} justify-center lg:col-span-1 lg:justify-start lg:pl-6 ${!hasNutritionData(localRecipe) ? 'sm:pr-12' : ''}`}>
               <div className="sticky top-4">
-                <NutritionLabel
-                  nutrition={{
-                    calories: localRecipe.calories,
-                    protein: localRecipe.protein,
-                    carbohydrates: localRecipe.carbohydrates,
-                    fat: localRecipe.fat,
-                    saturatedFat: localRecipe.saturatedFat,
-                    fiber: localRecipe.fiber,
-                    sugar: localRecipe.sugar,
-                    sodium: localRecipe.sodium
-                  }}
-                  servings={localRecipe.servings}
-                  showCalculateButton={!hasNutritionData(localRecipe)}
-                  onCalculate={handleCalculateNutrition}
-                  isCalculating={isCalculating}
-                />
+                <div className="hidden sm:block">
+                  <NutritionLabel
+                    nutrition={{
+                      calories: localRecipe.calories,
+                      protein: localRecipe.protein,
+                      carbohydrates: localRecipe.carbohydrates,
+                      fat: localRecipe.fat,
+                      saturatedFat: localRecipe.saturatedFat,
+                      fiber: localRecipe.fiber,
+                      sugar: localRecipe.sugar,
+                      sodium: localRecipe.sodium
+                    }}
+                    servings={localRecipe.servings}
+                    showCalculateButton={!hasNutritionData(localRecipe)}
+                    onCalculate={handleCalculateNutrition}
+                    isCalculating={isCalculating}
+                  />
+                </div>
                 {(localRecipe.language || '').trim() && !isSpanishLanguage(localRecipe.language) && (
                   <Button
                     type="button"
                     variant="outline"
-                    className="mt-3 w-full"
+                    className="w-full sm:mt-3"
                     onClick={handleTranslateRecipe}
                     disabled={isTranslating}
                   >
