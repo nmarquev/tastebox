@@ -1129,9 +1129,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         <DialogHeader className={isPage ? "mb-6" : ""}>
           <div className="flex items-center justify-between gap-4">
             {isPage ? (
-              <h1 className="text-3xl font-semibold leading-tight tracking-tight">{localRecipe.title}</h1>
+              <h1 className="text-xl font-semibold leading-tight tracking-tight sm:text-3xl">{localRecipe.title}</h1>
             ) : (
-              <DialogTitle className="text-3xl">{localRecipe.title}</DialogTitle>
+              <DialogTitle className="text-xl leading-tight sm:text-3xl">{localRecipe.title}</DialogTitle>
             )}
             <div className="flex flex-shrink-0 items-center gap-2">
               <Button
