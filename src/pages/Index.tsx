@@ -3862,7 +3862,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 setActiveBulkPanel(null);
                 setSelectedRecipeIds(new Set());
               }}
-              className={`col-start-1 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-4 xl:row-start-1 xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
+              className={`${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:flex'} col-start-1 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-4 xl:row-start-1 xl:w-auto`}
             >
               <Filter className="h-4 w-4 mr-2" />
               Filtrar
@@ -3876,7 +3876,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'edit' ? "default" : "outline"}
               size="sm"
-              className={`col-start-2 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-2 xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : ''}`}
+              className={`${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:flex'} col-start-2 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-2 xl:w-auto`}
               onClick={() => {
                 if (activeBulkPanel === 'edit') {
                   setActiveBulkPanel(null);
@@ -3894,7 +3894,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'print' ? "default" : "outline"}
               size="sm"
-              className={`col-start-1 row-start-4 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-2 xl:row-start-2' : 'xl:col-start-3 xl:row-start-2'}`}
+              className={`col-start-1 row-start-4 hidden h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md sm:flex xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-2 xl:row-start-2' : 'xl:col-start-3 xl:row-start-2'}`}
               onClick={() => {
                 if (activeBulkPanel === 'print') {
                   setActiveBulkPanel(null);
@@ -3912,7 +3912,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'delete' ? "default" : "outline"}
               size="sm"
-              className={`col-start-2 row-start-4 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-3 xl:row-start-2' : 'xl:col-start-4 xl:row-start-2'}`}
+              className={`col-start-2 row-start-4 hidden h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md sm:flex xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-3 xl:row-start-2' : 'xl:col-start-4 xl:row-start-2'}`}
               onClick={() => {
                 if (activeBulkPanel === 'delete') {
                   setActiveBulkPanel(null);
