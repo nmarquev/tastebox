@@ -1137,22 +1137,24 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <Button
                 variant="outline"
                 size="icon"
+                className="!h-8 !w-8 sm:!h-10 sm:!w-10"
                 onClick={onPreviousRecipe}
                 disabled={!hasPreviousRecipe}
                 title="Receta anterior"
                 aria-label="Receta anterior"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
+                className="!h-8 !w-8 sm:!h-10 sm:!w-10"
                 onClick={onNextRecipe}
                 disabled={!hasNextRecipe}
                 title="Receta siguiente"
                 aria-label="Receta siguiente"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="outline"
