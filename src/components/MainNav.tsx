@@ -33,6 +33,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -253,6 +256,22 @@ export const MainNav = () => {
               </Link>
             </DropdownMenuItem>
           ))}
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <PlusCircle className="h-4 w-4" />
+              </span>
+              Nueva receta
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              {actionItems.map((item) => (
+                <DropdownMenuItem key={item.action} onClick={() => openAction(item.action)}>
+                  <span className="mr-2 flex h-5 w-5 shrink-0 items-center justify-center">{item.icon}</span>
+                  {item.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           <DropdownMenuItem asChild>
             <Link to={duplicateOption.to} className="flex items-center gap-2">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center">
@@ -452,6 +471,33 @@ export const MainNav = () => {
                     {item.label}
                   </Link>
                 ))}
+                <details className="group/new">
+                  <summary className={`${mobileSubmenuItemClass} cursor-pointer list-none justify-between`}>
+                    <span className="flex items-center gap-3">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                        <PlusCircle className="h-4 w-4" />
+                      </span>
+                      Nueva receta
+                    </span>
+                    <ChevronDown className="h-4 w-4 transition-transform group-open/new:rotate-180" />
+                  </summary>
+                  <div className="space-y-0.5 pl-5">
+                    {actionItems.map((item) => (
+                      <button
+                        key={item.action}
+                        type="button"
+                        onClick={() => {
+                          openAction(item.action);
+                          closeMobileMenu();
+                        }}
+                        className={mobileSubmenuItemClass}
+                      >
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center">{item.icon}</span>
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </details>
                 <Link to={duplicateOption.to} onClick={closeMobileMenu} className={mobileSubmenuItemClass}>
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">{duplicateOption.icon}</span>
                   {duplicateOption.label}
