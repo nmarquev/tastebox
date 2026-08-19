@@ -3580,37 +3580,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               )}
             </div>
 
-            {/* Nueva Receta button - only show in recipes view */}
-            {!showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="toolbar-new-button col-span-2 row-start-2 hidden w-full items-center justify-start whitespace-nowrap rounded-md px-4 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-span-1 xl:col-start-1 xl:ml-2 xl:flex xl:w-[330px]">
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    <span>Nueva Receta</span>
-                    <ChevronDown className="ml-auto h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => { navigate(`/app?accion=nueva&_=${Date.now()}`); }}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Nueva Receta
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { navigate(`/app?accion=importar&_=${Date.now()}`); }}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Importar receta
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { navigate(`/app?accion=importar-texto&_=${Date.now()}`); }}>
-                    <ClipboardPaste className="mr-2 h-4 w-4" />
-                    Importar texto
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { navigate(`/app?accion=busqueda-inteligente&_=${Date.now()}`); }}>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Buscador inteligente
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
             {/* Column selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
