@@ -3384,6 +3384,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       }}
       onShowDishTypes={() => { setShowHero(false); setShowCollectionsGallery(false); setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowAuthorsGallery(false); setShowDishTypesGallery(true); setShowFilters(false); setActiveBulkPanel(null); setSelectedRecipeIds(new Set()); handleFiltersChange({ ...filters, collectionId: undefined, recipeTypes: [], sources: undefined, dishType: undefined, dishTypes: [] }); }}
       onCreateDishType={handleCreateDishType}
+      onHide={() => {
+        setShowDesktopSidebar(false);
+        setShowMobileSidebar(false);
+      }}
     />
   );
 

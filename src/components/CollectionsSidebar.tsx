@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Beef, CakeSlice, CandyOff, ChevronRight, ChevronDown, ImageIcon, Plus, Loader2, Heart, WheatOff, Leaf, ChefHat, Utensils } from "lucide-react";
+import { Beef, CakeSlice, CandyOff, ChevronRight, ChevronDown, ImageIcon, Plus, Loader2, Heart, WheatOff, Leaf, ChefHat, Utensils, PanelLeftClose } from "lucide-react";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { RecipeCollection } from "@/services/api";
@@ -83,6 +83,7 @@ interface CollectionsSidebarProps {
   onSelectAuthor?: (name: string) => void;
   onShowAuthors?: () => void;
   onCreateAuthor?: (name: string) => Promise<void> | void;
+  onHide?: () => void;
 }
 
 // Panel lateral estilo Cookidoo: título "Colecciones", la lista de colecciones
@@ -157,6 +158,7 @@ export const CollectionsSidebar = ({
   onSelectAuthor,
   onShowAuthors,
   onCreateAuthor,
+  onHide,
 }: CollectionsSidebarProps) => {
   const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
@@ -281,21 +283,34 @@ export const CollectionsSidebar = ({
   return (
     <div className="rounded-lg border border-border/60 bg-card">
       {/* Todas las recetas */}
-      <button
-        type="button"
-        onClick={() => { setCollectionsOpen(false); setCategoriesOpen(false); setSourcesOpen(false); setDishTypesOpen(false); setAuthorsOpen(false); setTagsOpen(false); onSelectCollection(undefined); }}
-        className={`flex w-full items-center justify-between h-9 px-4 text-xs font-semibold uppercase tracking-wide transition-colors ${
-          allRecipesActive ? "bg-accent/60 text-foreground" : "text-muted-foreground hover:bg-muted/50"
-        }`}
-      >
-        <span>Todas las recetas</span>
-        <span className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{totalRecipes}</span>
-          <span className="flex h-6 w-6 items-center justify-center">
-            <ChefHat className="h-[18px] w-[18px]" />
+      <div className={`flex h-9 w-full items-center transition-colors ${
+        allRecipesActive ? "bg-accent/60 text-foreground" : "text-muted-foreground"
+      }`}>
+        <button
+          type="button"
+          onClick={() => { setCollectionsOpen(false); setCategoriesOpen(false); setSourcesOpen(false); setDishTypesOpen(false); setAuthorsOpen(false); setTagsOpen(false); onSelectCollection(undefined); }}
+          className="flex h-full min-w-0 flex-1 items-center justify-between px-4 text-xs font-semibold uppercase tracking-wide hover:bg-muted/50"
+        >
+          <span>Todas las recetas</span>
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{totalRecipes}</span>
+            <span className="flex h-6 w-6 items-center justify-center">
+              <ChefHat className="h-[18px] w-[18px]" />
+            </span>
           </span>
-        </span>
-      </button>
+        </button>
+        {onHide && (
+          <button
+            type="button"
+            onClick={onHide}
+            className="mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title="Ocultar panel de filtros"
+            aria-label="Ocultar panel de filtros"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
       <div className="flex flex-col">
       {/* Encabezado colapsable de colecciones (fijo arriba al desplazarse) */}
