@@ -39,6 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Sheet,
   SheetContent,
@@ -97,6 +98,7 @@ export const MainNav = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [recipeSearch, setRecipeSearch] = useState('');
   const [recipeSearchMode, setRecipeSearchMode] = useState<'all' | 'any'>('all');
+  const [recipeSearchExact, setRecipeSearchExact] = useState(false);
   const showingDuplicateRecipes = new URLSearchParams(location.search).get('view') === 'duplicadas';
   const panelPath = (panel: 'filter' | 'edit' | 'print' | 'delete') => {
     const params = new URLSearchParams(location.search);
@@ -141,10 +143,14 @@ export const MainNav = () => {
   const submitRecipeSearch = () => {
     const term = recipeSearch.trim();
     if (!term) return;
-    const keywords = term.split(/\s+/).filter(Boolean);
     const params = new URLSearchParams();
-    keywords.forEach(keyword => params.append('buscar', keyword));
-    params.set('coincidencia', recipeSearchMode === 'any' ? 'alguna' : 'todas');
+    if (recipeSearchExact) {
+      params.append('buscar', term);
+      params.set('coincidencia', 'exacta');
+    } else {
+      term.split(/\s+/).filter(Boolean).forEach(keyword => params.append('buscar', keyword));
+      params.set('coincidencia', recipeSearchMode === 'any' ? 'alguna' : 'todas');
+    }
     setSearchDialogOpen(false);
     navigate(`/app?${params.toString()}`);
   };
@@ -154,6 +160,7 @@ export const MainNav = () => {
     // siguiente ciclo evita que ese cierre lo descarte inmediatamente.
     setRecipeSearch('');
     setRecipeSearchMode('all');
+    setRecipeSearchExact(false);
     window.setTimeout(() => setSearchDialogOpen(true), 0);
   };
 
@@ -262,38 +269,51 @@ export const MainNav = () => {
           <DialogHeader>
             <DialogTitle>Buscar por una o más palabras clave</DialogTitle>
           </DialogHeader>
-          <div className="relative">
-            <Input
-              autoFocus
-              value={recipeSearch}
-              onChange={(event) => setRecipeSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  submitRecipeSearch();
-                }
-              }}
-              placeholder="Escribir nombre de la receta o ingredientes..."
-              aria-label="Nombre de la receta o ingredientes"
-              className="pr-10"
-            />
-            {recipeSearch && (
-              <button
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => setRecipeSearch('')}
-                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Borrar texto de búsqueda"
-                title="Borrar texto"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+          <div className="flex items-center gap-3">
+            <div className="relative min-w-0 flex-1">
+              <Input
+                autoFocus
+                value={recipeSearch}
+                onChange={(event) => setRecipeSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    submitRecipeSearch();
+                  }
+                }}
+                placeholder="Escribir nombre o ingredientes..."
+                aria-label="Nombre de la receta o ingredientes"
+                className="pr-10"
+              />
+              {recipeSearch && (
+                <button
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => setRecipeSearch('')}
+                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="Borrar texto de búsqueda"
+                  title="Borrar texto"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Checkbox
+                id="search-exact-phrase"
+                checked={recipeSearchExact}
+                onCheckedChange={(checked) => setRecipeSearchExact(checked === true)}
+              />
+              <label htmlFor="search-exact-phrase" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
+                Palabra completa
+              </label>
+            </div>
           </div>
           <RadioGroup
             value={recipeSearchMode}
             onValueChange={(value) => setRecipeSearchMode(value as 'all' | 'any')}
-            className="gap-3"
+            disabled={recipeSearchExact}
+            className={`gap-3 ${recipeSearchExact ? 'opacity-50' : ''}`}
             aria-label="Coincidencia de palabras clave"
           >
             <div className="flex items-center gap-2">

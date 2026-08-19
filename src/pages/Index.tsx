@@ -181,10 +181,12 @@ const Index = () => {
     ? new URLSearchParams(window.location.search).getAll('buscar').map(term => term.trim()).filter(Boolean)
     : [];
   const initialSearch = initialSearchValues.length <= 1 ? (initialSearchValues[0] || "") : "";
-  const initialSearchMatchMode = typeof window !== 'undefined'
-    && new URLSearchParams(window.location.search).get('coincidencia') === 'alguna'
+  const initialSearchMatchValue = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('coincidencia')
+    : null;
+  const initialSearchMatchMode: 'all' | 'any' | 'exact' = initialSearchMatchValue === 'alguna'
     ? 'any'
-    : 'all';
+    : initialSearchMatchValue === 'exacta' ? 'exact' : 'all';
   const initialRecipeTypeFilter = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('filtro')
     : null;
@@ -202,7 +204,7 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   // Palabras clave confirmadas (con Enter) para buscar recetas por varios terminos (AND).
   const [searchTerms, setSearchTerms] = useState<string[]>(initialSearchValues.length > 1 ? initialSearchValues : []);
-  const [searchMatchMode, setSearchMatchMode] = useState<'all' | 'any'>(initialSearchMatchMode);
+  const [searchMatchMode, setSearchMatchMode] = useState<'all' | 'any' | 'exact'>(initialSearchMatchMode);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   // El banner (Hero) ya no se muestra: una sola pagina.
   const [showHero, setShowHero] = useState(false);
@@ -325,7 +327,10 @@ const Index = () => {
     const view = params.get('view');
     const keywords = params.getAll('buscar').map(term => term.trim()).filter(Boolean);
     const keyword = keywords.length <= 1 ? (keywords[0] || "") : "";
-    const matchMode = params.get('coincidencia') === 'alguna' ? 'any' : 'all';
+    const matchValue = params.get('coincidencia');
+    const matchMode: 'all' | 'any' | 'exact' = matchValue === 'alguna'
+      ? 'any'
+      : matchValue === 'exacta' ? 'exact' : 'all';
     const typeFilter = params.get('filtro');
     const categoria = CATEGORIES_ENABLED ? params.get('categoria') : null;
     const panel = params.get('panel');
@@ -747,9 +752,12 @@ const Index = () => {
       (getRecipeSource(recipe).toLowerCase().includes(q)) ||
       collections.some(col => col.recipeIds.includes(recipe.id) && (col.name || '').toLowerCase().includes(q));
 
-    const allSearchTerms = [...searchTerms, searchTerm]
-      .flatMap(t => t.trim().toLowerCase().split(/\s+/))
+    const normalizedSearchTerms = [...searchTerms, searchTerm]
+      .map(t => t.trim().toLowerCase())
       .filter(Boolean);
+    const allSearchTerms = searchMatchMode === 'exact'
+      ? normalizedSearchTerms
+      : normalizedSearchTerms.flatMap(t => t.split(/\s+/));
     const matchesSearch = allSearchTerms.length === 0
       || (searchMatchMode === 'any' ? allSearchTerms.some(matchesTerm) : allSearchTerms.every(matchesTerm));
 
