@@ -67,6 +67,7 @@ import { saveRecentSource } from "@/utils/recentSources";
 import { EMPTY_FILTER_OPTIONS } from "@/constants/emptyFilterOptions";
 import { CATEGORIES_ENABLED } from "@/constants/features";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type RecipeSort = 'title' | 'category' | 'date' | 'collection' | 'source' | 'dishType' | 'difficulty' | 'prepTime' | 'totalTime';
 type EditableGalleryKind = 'category' | 'source' | 'tag' | 'dishType';
@@ -3464,36 +3465,50 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           <div className={`grid w-full min-w-0 grid-cols-2 gap-2 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:grid-cols-[1fr_auto_auto]' : 'xl:grid-cols-[1fr_auto_auto_auto]'}`}>
             {/* Search input (multi-palabra: escrib? y Enter agrega una palabra clave) */}
             <div className="col-span-2 flex min-w-0 flex-col gap-1 xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2">
-              <div className={`toolbar-search-field relative rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'md:w-full xl:w-[330px]' : 'md:w-full xl:w-[330px]'}`}>
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={showCollectionsGallery ? "Buscar coleccion" : showDishTypesGallery ? "Buscar tipo de comida" : showCategoriesGallery ? "Buscar categoria" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar por receta, ingrediente, etc"}
-                  title="Escribi una palabra o frase y pulsa Enter para agregarla. Podes sumar varias."
-                  value={searchTerm}
-                  onChange={(e) => { if (e.target.value && !showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery) { setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); } setSearchTerm(e.target.value); }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const term = searchTerm.trim();
-                      const inGallery = showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery;
-                      if (term && !inGallery) {
-                        setSearchTerms(prev => prev.some(t => t.toLowerCase() === term.toLowerCase()) ? prev : [...prev, term]);
-                        setSearchTerm('');
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <div className={`toolbar-search-field relative min-w-[190px] flex-1 rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'md:w-full xl:w-[330px] xl:flex-none' : 'md:w-full xl:w-[330px] xl:flex-none'}`}>
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={showCollectionsGallery ? "Buscar coleccion" : showDishTypesGallery ? "Buscar tipo de comida" : showCategoriesGallery ? "Buscar categoria" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar por receta, ingrediente, etc"}
+                    title="Escribi una palabra o frase y pulsa Enter para agregarla. Podes sumar varias."
+                    value={searchTerm}
+                    onChange={(e) => { if (e.target.value && !showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery) { setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); } setSearchTerm(e.target.value); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const term = searchTerm.trim();
+                        const inGallery = showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery;
+                        if (term && !inGallery) {
+                          setSearchTerms(prev => prev.some(t => t.toLowerCase() === term.toLowerCase()) ? prev : [...prev, term]);
+                          setSearchTerm('');
+                        }
                       }
-                    }
-                  }}
-                  className="h-full w-full border-0 bg-transparent pl-10 pr-9 font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    aria-label="Borrar busqueda"
-                    title="Borrar busqueda"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                    }}
+                    className="h-full w-full border-0 bg-transparent pl-10 pr-9 font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                  />
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label="Borrar busqueda"
+                      title="Borrar busqueda"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {!showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery && (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Checkbox
+                      id="toolbar-search-exact-phrase"
+                      checked={searchMatchMode === 'exact'}
+                      onCheckedChange={(checked) => setSearchMatchMode(checked === true ? 'exact' : 'all')}
+                    />
+                    <label htmlFor="toolbar-search-exact-phrase" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
+                      Palabra completa
+                    </label>
+                  </div>
                 )}
               </div>
               {/* Palabras clave agregadas */}
