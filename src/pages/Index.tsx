@@ -3490,8 +3490,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           </div>
           <div className={`grid w-full min-w-0 grid-cols-2 gap-2 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:grid-cols-[1fr_auto_auto]' : 'xl:grid-cols-[1fr_auto_auto_auto]'}`}>
             {/* Search input (multi-palabra: escrib? y Enter agrega una palabra clave) */}
-            <div className="col-span-2 flex min-w-0 flex-col gap-1 xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2">
-              <div className="flex min-w-0 flex-col gap-2">
+            <div className={`col-span-2 flex min-w-0 flex-col gap-1 xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2 ${inGallery ? '' : 'xl:row-span-2'}`}>
+              <div className="flex min-w-0 flex-col gap-2.5">
                 <div className={`toolbar-search-field relative min-w-[190px] rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'w-full xl:w-[330px]' : 'w-full xl:w-[330px]'}`}>
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -3528,25 +3528,25 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   <RadioGroup
                     value={searchScope}
                     onValueChange={(value) => setSearchScope(value as SearchScope)}
-                    className="flex flex-wrap items-center gap-x-3 gap-y-1"
+                    className="flex w-full flex-wrap items-center justify-start gap-x-3 gap-y-1 pl-2 text-left"
                     aria-label="Campo de búsqueda"
                   >
                     <div className="flex items-center gap-1.5" title="Busca todas las palabras escritas dentro de cualquier campo de la receta">
-                      <RadioGroupItem value="keyword" id="search-scope-keyword" className="h-3 w-3" />
-                      <label htmlFor="search-scope-keyword" className="cursor-pointer whitespace-nowrap text-[10px] leading-none text-foreground">
+                      <RadioGroupItem value="keyword" id="search-scope-keyword" className="h-3.5 w-3.5" />
+                      <label htmlFor="search-scope-keyword" className="cursor-pointer whitespace-nowrap text-xs leading-none text-foreground">
                         Palabra clave
                       </label>
                     </div>
                     <div className="flex items-center gap-1.5" title="Busca la frase como palabras completas solamente en el nombre de la receta">
-                      <RadioGroupItem value="title" id="search-scope-title" className="h-3 w-3" />
-                      <label htmlFor="search-scope-title" className="cursor-pointer whitespace-nowrap text-[10px] leading-none text-foreground">
+                      <RadioGroupItem value="title" id="search-scope-title" className="h-3.5 w-3.5" />
+                      <label htmlFor="search-scope-title" className="cursor-pointer whitespace-nowrap text-xs leading-none text-foreground">
                         Nombre de receta
                       </label>
                     </div>
-                    <div className="flex items-center gap-1.5" title="Devuelve las recetas que contienen el ingrediente escrito">
-                      <RadioGroupItem value="ingredient" id="search-scope-ingredient" className="h-3 w-3" />
-                      <label htmlFor="search-scope-ingredient" className="cursor-pointer whitespace-nowrap text-[10px] leading-none text-foreground">
-                        Ingrediente
+                    <div className="flex items-center gap-1.5" title="Devuelve las recetas que contienen los ingredientes escritos">
+                      <RadioGroupItem value="ingredient" id="search-scope-ingredient" className="h-3.5 w-3.5" />
+                      <label htmlFor="search-scope-ingredient" className="cursor-pointer whitespace-nowrap text-xs leading-none text-foreground">
+                        Ingredientes
                       </label>
                     </div>
                   </RadioGroup>
