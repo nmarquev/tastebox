@@ -3528,24 +3528,24 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   <RadioGroup
                     value={searchScope}
                     onValueChange={(value) => setSearchScope(value as SearchScope)}
-                    className="flex flex-wrap items-center gap-x-4 gap-y-2"
+                    className="flex flex-wrap items-center gap-x-3 gap-y-1"
                     aria-label="Campo de búsqueda"
                   >
-                    <div className="flex items-center gap-2" title="Busca la frase como palabras completas solamente en el nombre de la receta">
-                      <RadioGroupItem value="title" id="search-scope-title" />
-                      <label htmlFor="search-scope-title" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
+                    <div className="flex items-center gap-1.5" title="Busca la frase como palabras completas solamente en el nombre de la receta">
+                      <RadioGroupItem value="title" id="search-scope-title" className="h-3 w-3" />
+                      <label htmlFor="search-scope-title" className="cursor-pointer whitespace-nowrap text-[10px] leading-none text-foreground">
                         Nombre de receta
                       </label>
                     </div>
-                    <div className="flex items-center gap-2" title="Devuelve las recetas que contienen el ingrediente escrito">
-                      <RadioGroupItem value="ingredient" id="search-scope-ingredient" />
-                      <label htmlFor="search-scope-ingredient" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
+                    <div className="flex items-center gap-1.5" title="Devuelve las recetas que contienen el ingrediente escrito">
+                      <RadioGroupItem value="ingredient" id="search-scope-ingredient" className="h-3 w-3" />
+                      <label htmlFor="search-scope-ingredient" className="cursor-pointer whitespace-nowrap text-[10px] leading-none text-foreground">
                         Ingrediente
                       </label>
                     </div>
-                    <div className="flex items-center gap-2" title="Busca todas las palabras escritas dentro de cualquier campo de la receta">
-                      <RadioGroupItem value="keyword" id="search-scope-keyword" />
-                      <label htmlFor="search-scope-keyword" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
+                    <div className="flex items-center gap-1.5" title="Busca todas las palabras escritas dentro de cualquier campo de la receta">
+                      <RadioGroupItem value="keyword" id="search-scope-keyword" className="h-3 w-3" />
+                      <label htmlFor="search-scope-keyword" className="cursor-pointer whitespace-nowrap text-[10px] leading-none text-foreground">
                         Palabra clave
                       </label>
                     </div>
