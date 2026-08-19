@@ -67,7 +67,7 @@ import { saveRecentSource } from "@/utils/recentSources";
 import { EMPTY_FILTER_OPTIONS } from "@/constants/emptyFilterOptions";
 import { CATEGORIES_ENABLED } from "@/constants/features";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 type RecipeSort = 'title' | 'category' | 'date' | 'collection' | 'source' | 'dishType' | 'difficulty' | 'prepTime' | 'totalTime';
 type EditableGalleryKind = 'category' | 'source' | 'tag' | 'dishType';
@@ -80,11 +80,7 @@ type EditableGalleryTarget = {
   cover?: string | null;
 };
 
-const DEFAULT_SEARCH_SCOPES: Record<SearchScope, boolean> = {
-  title: false,
-  ingredient: false,
-  keyword: true,
-};
+const DEFAULT_SEARCH_SCOPE: SearchScope = 'keyword';
 
 const matchesWholePhrase = (text: string, query: string) => {
   const escapedQuery = query
@@ -220,7 +216,7 @@ const Index = () => {
   // Palabras clave confirmadas (con Enter) para buscar recetas por varios terminos (AND).
   const [searchTerms, setSearchTerms] = useState<string[]>(initialSearchValues.length > 1 ? initialSearchValues : []);
   const [searchMatchMode, setSearchMatchMode] = useState<'all' | 'any' | 'exact'>(initialSearchMatchMode);
-  const [searchScopes, setSearchScopes] = useState<Record<SearchScope, boolean>>({ ...DEFAULT_SEARCH_SCOPES });
+  const [searchScope, setSearchScope] = useState<SearchScope>(DEFAULT_SEARCH_SCOPE);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   // El banner (Hero) ya no se muestra: una sola pagina.
   const [showHero, setShowHero] = useState(false);
@@ -356,7 +352,7 @@ const Index = () => {
       setSearchTerm(keyword);
       setSearchTerms(keywords.length > 1 ? keywords : []);
       setSearchMatchMode(matchMode);
-      setSearchScopes({ ...DEFAULT_SEARCH_SCOPES });
+      setSearchScope(DEFAULT_SEARCH_SCOPE);
     }
     setShowCollectionsGallery(view === 'colecciones');
     setShowCategoriesGallery(CATEGORIES_ENABLED && view === 'categorias');
@@ -786,9 +782,9 @@ const Index = () => {
     const matchesKeyword = searchMatchMode === 'any'
       ? keywordSearchTerms.some(matchesTerm)
       : keywordSearchTerms.every(matchesTerm);
-    const matchesSelectedScope = (searchScopes.title && matchesTitle)
-      || (searchScopes.ingredient && matchesIngredient)
-      || (searchScopes.keyword && matchesKeyword);
+    const matchesSelectedScope = searchScope === 'title'
+      ? matchesTitle
+      : searchScope === 'ingredient' ? matchesIngredient : matchesKeyword;
     const matchesSearch = normalizedSearchTerms.length === 0 || matchesSelectedScope;
 
     // Difficulty filter
@@ -1052,7 +1048,7 @@ const Index = () => {
   useEffect(() => {
     if (!user) return; // Skip if not logged in
     setDisplayedCount(24);
-  }, [user, searchTerm, searchTerms, searchMatchMode, searchScopes, filters, recipeSort, sortDirection]);
+  }, [user, searchTerm, searchTerms, searchMatchMode, searchScope, filters, recipeSort, sortDirection]);
 
   // If user is not logged in, show auth page
   if (!user) {
@@ -2577,7 +2573,7 @@ const Index = () => {
     setSearchTerm('');
     setSearchTerms([]);
     setSearchMatchMode('all');
-    setSearchScopes({ ...DEFAULT_SEARCH_SCOPES });
+    setSearchScope(DEFAULT_SEARCH_SCOPE);
     setFilters({
       difficulty: [],
       prepTimeRange: [0, 180],
@@ -2602,13 +2598,6 @@ const Index = () => {
       dishType: undefined,
       dishTypes: [],
       author: undefined
-    });
-  };
-
-  const handleSearchScopeChange = (scope: SearchScope, checked: boolean) => {
-    setSearchScopes(previous => {
-      const next = { ...previous, [scope]: checked };
-      return Object.values(next).some(Boolean) ? next : previous;
     });
   };
 
@@ -3503,40 +3492,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {/* Search input (multi-palabra: escrib? y Enter agrega una palabra clave) */}
             <div className="col-span-2 flex min-w-0 flex-col gap-1 xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2">
               <div className="flex min-w-0 flex-col gap-2">
-                {!showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery && (
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2" role="group" aria-label="Campos de búsqueda">
-                    <div className="flex items-center gap-2" title="Busca la frase como palabras completas solamente en el nombre de la receta">
-                      <Checkbox
-                        id="search-scope-title"
-                        checked={searchScopes.title}
-                        onCheckedChange={(checked) => handleSearchScopeChange('title', checked === true)}
-                      />
-                      <label htmlFor="search-scope-title" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
-                        Nombre de receta
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2" title="Devuelve las recetas que contienen el ingrediente escrito">
-                      <Checkbox
-                        id="search-scope-ingredient"
-                        checked={searchScopes.ingredient}
-                        onCheckedChange={(checked) => handleSearchScopeChange('ingredient', checked === true)}
-                      />
-                      <label htmlFor="search-scope-ingredient" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
-                        Ingrediente
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2" title="Busca todas las palabras escritas dentro de cualquier campo de la receta">
-                      <Checkbox
-                        id="search-scope-keyword"
-                        checked={searchScopes.keyword}
-                        onCheckedChange={(checked) => handleSearchScopeChange('keyword', checked === true)}
-                      />
-                      <label htmlFor="search-scope-keyword" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
-                        Palabra clave
-                      </label>
-                    </div>
-                  </div>
-                )}
                 <div className={`toolbar-search-field relative min-w-[190px] rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'w-full xl:w-[330px]' : 'w-full xl:w-[330px]'}`}>
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -3569,6 +3524,33 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     </button>
                   )}
                 </div>
+                {!showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery && (
+                  <RadioGroup
+                    value={searchScope}
+                    onValueChange={(value) => setSearchScope(value as SearchScope)}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2"
+                    aria-label="Campo de búsqueda"
+                  >
+                    <div className="flex items-center gap-2" title="Busca la frase como palabras completas solamente en el nombre de la receta">
+                      <RadioGroupItem value="title" id="search-scope-title" />
+                      <label htmlFor="search-scope-title" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
+                        Nombre de receta
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2" title="Devuelve las recetas que contienen el ingrediente escrito">
+                      <RadioGroupItem value="ingredient" id="search-scope-ingredient" />
+                      <label htmlFor="search-scope-ingredient" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
+                        Ingrediente
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2" title="Busca todas las palabras escritas dentro de cualquier campo de la receta">
+                      <RadioGroupItem value="keyword" id="search-scope-keyword" />
+                      <label htmlFor="search-scope-keyword" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
+                        Palabra clave
+                      </label>
+                    </div>
+                  </RadioGroup>
+                )}
               </div>
               {/* Palabras clave agregadas */}
               {searchTerms.length > 0 && (
