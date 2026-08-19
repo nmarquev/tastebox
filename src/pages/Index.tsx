@@ -3495,7 +3495,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 <div className={`toolbar-search-field relative min-w-[190px] rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'w-full xl:w-[330px]' : 'w-full xl:w-[330px]'}`}>
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder={showCollectionsGallery ? "Buscar coleccion" : showDishTypesGallery ? "Buscar tipo de comida" : showCategoriesGallery ? "Buscar categoria" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar por receta, ingrediente, etc"}
+                    placeholder={showCollectionsGallery ? "Buscar coleccion" : showDishTypesGallery ? "Buscar tipo de comida" : showCategoriesGallery ? "Buscar categoria" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar"}
                     title="Escribi una palabra o frase y pulsa Enter para agregarla. Podes sumar varias."
                     value={searchTerm}
                     onChange={(e) => { if (e.target.value && !showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery) { setShowCategoriesGallery(false); setShowSourcesGallery(false); setShowDishTypesGallery(false); setShowTagsGallery(false); setShowAuthorsGallery(false); } setSearchTerm(e.target.value); }}
@@ -3531,6 +3531,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     className="flex flex-wrap items-center gap-x-3 gap-y-1"
                     aria-label="Campo de búsqueda"
                   >
+                    <div className="flex items-center gap-1.5" title="Busca todas las palabras escritas dentro de cualquier campo de la receta">
+                      <RadioGroupItem value="keyword" id="search-scope-keyword" className="h-3 w-3" />
+                      <label htmlFor="search-scope-keyword" className="cursor-pointer whitespace-nowrap text-[10px] leading-none text-foreground">
+                        Palabra clave
+                      </label>
+                    </div>
                     <div className="flex items-center gap-1.5" title="Busca la frase como palabras completas solamente en el nombre de la receta">
                       <RadioGroupItem value="title" id="search-scope-title" className="h-3 w-3" />
                       <label htmlFor="search-scope-title" className="cursor-pointer whitespace-nowrap text-[10px] leading-none text-foreground">
@@ -3541,12 +3547,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       <RadioGroupItem value="ingredient" id="search-scope-ingredient" className="h-3 w-3" />
                       <label htmlFor="search-scope-ingredient" className="cursor-pointer whitespace-nowrap text-[10px] leading-none text-foreground">
                         Ingrediente
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-1.5" title="Busca todas las palabras escritas dentro de cualquier campo de la receta">
-                      <RadioGroupItem value="keyword" id="search-scope-keyword" className="h-3 w-3" />
-                      <label htmlFor="search-scope-keyword" className="cursor-pointer whitespace-nowrap text-[10px] leading-none text-foreground">
-                        Palabra clave
                       </label>
                     </div>
                   </RadioGroup>
