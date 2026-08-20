@@ -6565,7 +6565,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                     </span>
                     {activeBulkPanel === null && (
-                      <div className="flex shrink-0 flex-col items-center gap-1.5">
+                      <div className="hidden shrink-0 flex-col items-center gap-1.5 sm:flex">
                         <button
                           type="button"
                           disabled={savingIngredientsEdit}
