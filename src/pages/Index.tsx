@@ -3641,7 +3641,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 {!inGallery && (
                   <DropdownMenuItem
                     onClick={() => setViewMode('detail')}
-                    className={viewMode === 'detail' ? "bg-accent" : ""}
+                    className={`hidden sm:flex ${viewMode === 'detail' ? "bg-accent" : ""}`}
                   >
                     <ListChecks className="h-4 w-4 mr-2" />
                     Detalles
@@ -3652,8 +3652,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     onClick={() => setViewMode('ingredients')}
                     className={viewMode === 'ingredients' ? "bg-accent" : ""}
                   >
-                    <UtensilsCrossed className="h-4 w-4 mr-2" />
-                    <span className="xl:hidden">Ingredientes</span>
+                    <ListChecks className="mr-2 h-4 w-4 sm:hidden" />
+                    <UtensilsCrossed className="mr-2 hidden h-4 w-4 sm:block" />
+                    <span className="sm:hidden">Detalles</span>
+                    <span className="hidden sm:inline xl:hidden">Ingredientes</span>
                     <span className="hidden xl:inline">Ver ingredientes</span>
                   </DropdownMenuItem>
                 )}
@@ -6712,7 +6714,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             event.stopPropagation();
                             handleEditRecipe(recipe);
                           }}
-                          className="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                          className="hidden h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary sm:inline-flex"
                           title="Editar"
                           aria-label="Editar receta"
                         >
@@ -6730,7 +6732,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                                 if (event.key !== 'Enter' && event.key !== ' ') return;
                                 event.stopPropagation();
                               }}
-                              className="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                              className="hidden h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary sm:inline-flex"
                               title="Características"
                               aria-label="Características"
                             >
