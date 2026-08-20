@@ -247,7 +247,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
       case 4:
         return 'h-56';
       case 5:
-        return 'h-44';
+        return 'h-32 sm:h-44';
       default:
         return 'h-64';
     }
@@ -500,15 +500,15 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
       </div>
 
       <CardContent
-        className="flex min-w-0 flex-1 cursor-pointer flex-col space-y-3 p-4"
+        className={`flex min-w-0 flex-1 cursor-pointer flex-col ${minimal ? 'space-y-1 p-2 sm:space-y-3 sm:p-4' : 'space-y-3 p-4'}`}
         onClick={handleCardClick}
       >
         <div>
-          <h3 className={`recipe-card-title font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors ${minimal ? "text-sm leading-tight" : oneCol ? "text-lg leading-7 sm:text-2xl sm:leading-8" : "text-lg leading-7"}`}>
+          <h3 className={`recipe-card-title font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors ${minimal ? "text-xs leading-tight sm:text-sm" : oneCol ? "text-lg leading-7 sm:text-2xl sm:leading-8" : "text-lg leading-7"}`}>
             {recipe.title}
           </h3>
           {minimal && sourceName && (
-            <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground">
+            <p className="mt-0.5 hidden truncate text-[11px] leading-tight text-muted-foreground sm:block">
               {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) ? (
                 <a
                   href={recipe.sourceUrl}

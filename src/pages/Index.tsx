@@ -2846,8 +2846,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         // En tablet representa iconos medianos (3 columnas); en desktop, 4.
         return 'grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-4 gap-6';
       case 5:
-        // En tablet y pantallas muy grandes muestra 5 columnas.
-        return 'grid grid-cols-1 sm:grid-cols-5 xl:grid-cols-4 2xl:grid-cols-5 gap-6';
+        // En mobile muestra iconos pequenos en 2 columnas; en tablet y pantallas muy grandes, 5.
+        return 'grid grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-6 xl:grid-cols-4 2xl:grid-cols-5';
       default:
         return 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6';
     }
@@ -3598,7 +3598,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(1); }}
-                  className={viewMode === 'grid' && gridColumns === 1 ? "bg-accent" : ""}
+                  className={`sm:hidden ${viewMode === 'grid' && gridColumns === 1 ? "bg-accent" : ""}`}
+                >
+                  <Grid3X3 className="h-4 w-4 mr-2" />
+                  Iconos grandes
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => { setViewMode('grid'); setGridColumns(1); }}
+                  className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 1 ? "bg-accent" : ""}`}
                 >
                   <Square className="h-4 w-4 mr-2" />
                   Fila
@@ -3619,7 +3626,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(5); }}
-                  className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 5 ? "bg-accent" : ""}`}
+                  className={viewMode === 'grid' && gridColumns === 5 ? "bg-accent" : ""}
                 >
                   <Columns className="h-4 w-4 mr-2" />
                   Iconos pequeños
