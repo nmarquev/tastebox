@@ -2843,11 +2843,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         // En tablet representa iconos grandes (2 columnas); en desktop, 3.
         return 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6';
       case 4:
-        // En tablet representa iconos medianos (3 columnas); en desktop, 4.
-        return 'grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-4 gap-6';
+        // En mobile muestra 2 columnas; en tablet, 3; en desktop, 4.
+        return 'grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 xl:grid-cols-4';
       case 5:
-        // En mobile muestra iconos pequenos en 2 columnas; en tablet y pantallas muy grandes, 5.
-        return 'grid grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-6 xl:grid-cols-4 2xl:grid-cols-5';
+        // En mobile muestra 3 columnas; en tablet y pantallas muy grandes, 5.
+        return 'grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-6 xl:grid-cols-4 2xl:grid-cols-5';
       default:
         return 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6';
     }
@@ -3619,7 +3619,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(4); }}
-                  className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 4 ? "bg-accent" : ""}`}
+                  className={viewMode === 'grid' && gridColumns === 4 ? "bg-accent" : ""}
                 >
                   <Grid className="h-4 w-4 mr-2" />
                   Iconos medianos
@@ -3641,7 +3641,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 {!inGallery && (
                   <DropdownMenuItem
                     onClick={() => setViewMode('detail')}
-                    className={`hidden sm:flex ${viewMode === 'detail' ? "bg-accent" : ""}`}
+                    className={viewMode === 'detail' ? "bg-accent" : ""}
                   >
                     <ListChecks className="h-4 w-4 mr-2" />
                     Detalles
@@ -3650,7 +3650,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 {!inGallery && (
                   <DropdownMenuItem
                     onClick={() => setViewMode('ingredients')}
-                    className={`hidden sm:flex ${viewMode === 'ingredients' ? "bg-accent" : ""}`}
+                    className={viewMode === 'ingredients' ? "bg-accent" : ""}
                   >
                     <UtensilsCrossed className="h-4 w-4 mr-2" />
                     <span className="xl:hidden">Ingredientes</span>
