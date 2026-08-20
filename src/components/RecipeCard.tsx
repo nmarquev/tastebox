@@ -446,7 +446,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 <DropdownMenuItem onClick={(e) => {
                   e.stopPropagation();
                   onEdit(recipe);
-                }}>
+                }} className="hidden sm:flex">
                   <Edit className="h-4 w-4 mr-2" />
                   Editar
                 </DropdownMenuItem>
@@ -600,7 +600,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         <button
           type="button"
           onClick={(event) => { event.stopPropagation(); startInlineEdit(); }}
-          className="absolute bottom-3 right-3 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="absolute bottom-3 right-3 z-20 hidden h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
           title="Editar estos campos"
           aria-label="Editar campos"
         >
@@ -618,7 +618,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); if (onInlineSave) { startInlineEdit(); } else { onEdit?.(recipe); } }}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="hidden h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
                 title="Editar estos campos"
                 aria-label="Editar campos"
               >

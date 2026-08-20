@@ -6365,7 +6365,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                                   Ver en {getSourceFromUrl(recipe.sourceUrl)}
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem onSelect={() => handleEditRecipe(recipe)}>
+                              <DropdownMenuItem className="hidden sm:flex" onSelect={() => handleEditRecipe(recipe)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Editar
                               </DropdownMenuItem>
@@ -6803,7 +6803,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                                 Ver en {getSourceFromUrl(recipe.sourceUrl)}
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onSelect={() => handleEditRecipe(recipe)}>
+                            <DropdownMenuItem className="hidden sm:flex" onSelect={() => handleEditRecipe(recipe)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Editar
                             </DropdownMenuItem>

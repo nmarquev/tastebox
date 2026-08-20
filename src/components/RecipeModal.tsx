@@ -1097,7 +1097,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <ArrowUpRightFromSquare className="mr-2 h-4 w-4" />
             Abrir en una nueva pestaña
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
+          <DropdownMenuItem className="hidden sm:flex" onClick={() => setIsEditModalOpen(true)}>
             <Edit className="mr-2 h-4 w-4" />
             Editar receta
           </DropdownMenuItem>
