@@ -3601,7 +3601,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   className={viewMode === 'grid' && gridColumns === 1 ? "bg-accent" : ""}
                 >
                   <Square className="h-4 w-4 mr-2" />
-                  1 columna
+                  Fila
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(3); }}
@@ -3646,7 +3646,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     className={`hidden sm:flex ${viewMode === 'ingredients' ? "bg-accent" : ""}`}
                   >
                     <UtensilsCrossed className="h-4 w-4 mr-2" />
-                    Ver ingredientes
+                    <span className="xl:hidden">Ingredientes</span>
+                    <span className="hidden xl:inline">Ver ingredientes</span>
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -4321,7 +4322,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     ...filters,
                     checkedStatus: filters.checkedStatus === 'checked' ? undefined : 'checked',
                   })}
-                  className="h-8"
+                  className="hidden h-8 xl:flex"
                 >
                   <Check className="mr-2 h-4 w-4" strokeWidth={3} />
                   Checked
@@ -4333,7 +4334,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     ...filters,
                     checkedStatus: filters.checkedStatus === 'unchecked' ? undefined : 'unchecked',
                   })}
-                  className="h-8"
+                  className="hidden h-8 xl:flex"
                 >
                   <UncheckedIcon className="mr-2 h-4 w-4" />
                   Unchecked
