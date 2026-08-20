@@ -2840,14 +2840,16 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
       case 2:
         return 'grid grid-cols-1 md:grid-cols-2 gap-6';
       case 3:
-        // En iPad (md-lg) queda en 2 columnas; 3 columnas recien en desktop (xl).
-        return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6';
+        // En tablet representa iconos grandes (2 columnas); en desktop, 3.
+        return 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6';
       case 4:
-        return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6';
+        // En tablet representa iconos medianos (3 columnas); en desktop, 4.
+        return 'grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-4 gap-6';
       case 5:
-        return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-6';
+        // En tablet y pantallas muy grandes muestra 5 columnas.
+        return 'grid grid-cols-1 sm:grid-cols-5 xl:grid-cols-4 2xl:grid-cols-5 gap-6';
       default:
-        return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6';
+        return 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6';
     }
   };
 
@@ -3603,24 +3605,31 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(3); }}
-                  className={`hidden sm:flex md:hidden xl:flex ${viewMode === 'grid' && gridColumns === 3 ? "bg-accent" : ""}`}
+                  className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 3 ? "bg-accent" : ""}`}
                 >
                   <Grid3X3 className="h-4 w-4 mr-2" />
                   Iconos grandes
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(4); }}
-                  className={`hidden xl:flex ${viewMode === 'grid' && gridColumns === 4 ? "bg-accent" : ""}`}
+                  className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 4 ? "bg-accent" : ""}`}
                 >
                   <Grid className="h-4 w-4 mr-2" />
                   Iconos medianos
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(5); }}
-                  className={`hidden xl:flex ${viewMode === 'grid' && gridColumns === 5 ? "bg-accent" : ""}`}
+                  className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 5 ? "bg-accent" : ""}`}
                 >
                   <Columns className="h-4 w-4 mr-2" />
                   Iconos pequeños
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setViewMode('list')}
+                  className={viewMode === 'list' ? "bg-accent" : ""}
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Lista
                 </DropdownMenuItem>
                 {!inGallery && (
                   <DropdownMenuItem
@@ -3631,17 +3640,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     Detalles
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem
-                  onClick={() => setViewMode('list')}
-                  className={viewMode === 'list' ? "bg-accent" : ""}
-                >
-                  <List className="h-4 w-4 mr-2" />
-                  Lista
-                </DropdownMenuItem>
                 {!inGallery && (
                   <DropdownMenuItem
                     onClick={() => setViewMode('ingredients')}
-                    className={`hidden sm:flex ${viewMode === 'ingredients' ? "bg-accent" : ""}`}
+                    className={`hidden xl:flex ${viewMode === 'ingredients' ? "bg-accent" : ""}`}
                   >
                     <UtensilsCrossed className="h-4 w-4 mr-2" />
                     Ingredientes
