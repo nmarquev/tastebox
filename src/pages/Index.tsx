@@ -3494,9 +3494,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
             )}
           </div>
-          <div className={`grid w-full min-w-0 grid-cols-2 gap-2 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:grid-cols-[1fr_auto_auto]' : 'xl:grid-cols-[1fr_auto_auto_auto]'}`}>
+          <div className={`grid w-full min-w-0 grid-cols-2 gap-2 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:grid-cols-[1fr_auto_auto]' : 'sm:grid-cols-3 xl:grid-cols-[1fr_auto_auto_auto]'}`}>
             {/* Search input (multi-palabra: escrib? y Enter agrega una palabra clave) */}
-            <div className={`col-span-2 flex min-w-0 flex-col gap-1 xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2 ${inGallery ? '' : 'xl:row-span-2'}`}>
+            <div className={`col-span-2 flex min-w-0 flex-col gap-1 xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2 ${inGallery ? '' : 'sm:col-span-3 xl:row-span-2'}`}>
               <div className="flex min-w-0 flex-col gap-2.5">
                 <div className={`toolbar-search-field relative min-w-[190px] rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'w-full xl:w-[330px]' : 'w-full xl:w-[330px]'}`}>
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -3643,10 +3643,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 {!inGallery && (
                   <DropdownMenuItem
                     onClick={() => setViewMode('ingredients')}
-                    className={`hidden xl:flex ${viewMode === 'ingredients' ? "bg-accent" : ""}`}
+                    className={`hidden sm:flex ${viewMode === 'ingredients' ? "bg-accent" : ""}`}
                   >
                     <UtensilsCrossed className="h-4 w-4 mr-2" />
-                    Ingredientes
+                    Ver ingredientes
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -3864,7 +3864,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 setActiveBulkPanel(null);
                 setSelectedRecipeIds(new Set());
               }}
-              className={`${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:flex'} col-start-1 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-4 xl:row-start-1 xl:w-auto`}
+              className={`${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:flex'} col-start-1 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md sm:col-start-3 sm:row-start-2 xl:col-start-4 xl:row-start-1 xl:w-auto`}
             >
               <Filter className="h-4 w-4 mr-2" />
               Filtrar
@@ -3878,7 +3878,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'edit' ? "default" : "outline"}
               size="sm"
-              className={`${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:flex'} col-start-2 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-2 xl:w-auto`}
+              className={`${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden xl:flex'} col-start-2 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-2 xl:w-auto`}
               onClick={() => {
                 if (activeBulkPanel === 'edit') {
                   setActiveBulkPanel(null);
@@ -3896,7 +3896,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'print' ? "default" : "outline"}
               size="sm"
-              className={`col-start-1 row-start-4 hidden h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md sm:flex xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-2 xl:row-start-2' : 'xl:col-start-3 xl:row-start-2'}`}
+              className={`col-start-1 row-start-4 hidden h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:flex xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-2 xl:row-start-2' : 'xl:col-start-3 xl:row-start-2'}`}
               onClick={() => {
                 if (activeBulkPanel === 'print') {
                   setActiveBulkPanel(null);
@@ -3914,7 +3914,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant={activeBulkPanel === 'delete' ? "default" : "outline"}
               size="sm"
-              className={`col-start-2 row-start-4 hidden h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md sm:flex xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-3 xl:row-start-2' : 'xl:col-start-4 xl:row-start-2'}`}
+              className={`col-start-2 row-start-4 hidden h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:flex xl:w-auto ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'xl:col-start-3 xl:row-start-2' : 'xl:col-start-4 xl:row-start-2'}`}
               onClick={() => {
                 if (activeBulkPanel === 'delete') {
                   setActiveBulkPanel(null);
