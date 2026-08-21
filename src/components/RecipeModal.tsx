@@ -1094,7 +1094,22 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <MoreVertical className="h-4 w-4 text-gray-600" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent
+          align="end"
+          className="max-h-[calc(100dvh-1rem)] w-64 overflow-y-auto"
+          collisionPadding={8}
+        >
+          <DropdownMenuItem
+            disabled={!localRecipe.sourceUrl || !isValidUrl(localRecipe.sourceUrl)}
+            onClick={() => {
+              if (localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl)) {
+                window.open(localRecipe.sourceUrl, '_blank', 'noopener,noreferrer');
+              }
+            }}
+          >
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Ver en {localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) ? getSourceFromUrl(localRecipe.sourceUrl) : 'fuente original'}
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => window.open(`/receta/${localRecipe.id}`, '_blank', 'noopener,noreferrer')}>
             <ArrowUpRightFromSquare className="mr-2 h-4 w-4" />
             Abrir en una nueva pestaña
@@ -1103,17 +1118,17 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Edit className="mr-2 h-4 w-4" />
             Editar
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePdfAction('download')} disabled={loadingStates.download}>
-            {loadingStates.download
-              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              : <Download className="mr-2 h-4 w-4" />}
-            Descargar
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handlePdfAction('print')} disabled={loadingStates.print}>
             {loadingStates.print
               ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               : <Printer className="mr-2 h-4 w-4" />}
             Imprimir
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handlePdfAction('download')} disabled={loadingStates.download}>
+            {loadingStates.download
+              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              : <Download className="mr-2 h-4 w-4" />}
+            Descargar
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handlePdfAction('share')} disabled={loadingStates.share}>
             {loadingStates.share
@@ -1123,7 +1138,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIsNutritionModalOpen(true)}>
             <Calculator className="mr-2 h-4 w-4" />
-            Ver Nutrición
+            Ver info nutricional
           </DropdownMenuItem>
           {onDelete && (
             <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(localRecipe)}>
@@ -1452,16 +1467,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             >
               <Edit className="h-4 w-4" />
             </Button>
-            {localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(localRecipe.sourceUrl, '_blank')}
-                title={`Ver en ${getSourceFromUrl(localRecipe.sourceUrl)}`}
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            )}
             <Button
               variant="outline"
               size="sm"
@@ -1652,16 +1657,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               >
                 <ArrowUpRightFromSquare className="h-4 w-4" />
               </Button>
-              {localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(localRecipe.sourceUrl, '_blank')}
-                  title={`Ver en ${getSourceFromUrl(localRecipe.sourceUrl)}`}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              )}
               <Button
                 variant="outline"
                 size="sm"

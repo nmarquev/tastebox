@@ -6364,20 +6364,46 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                                 <MoreVertical className="h-4 w-4" />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" onClick={(event) => event.stopPropagation()}>
+                            <DropdownMenuContent
+                              align="start"
+                              className="max-h-[calc(100dvh-1rem)] w-64 overflow-y-auto"
+                              collisionPadding={8}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <DropdownMenuItem
+                                disabled={!recipe.sourceUrl || !isValidUrl(recipe.sourceUrl)}
+                                onSelect={() => {
+                                  if (recipe.sourceUrl && isValidUrl(recipe.sourceUrl)) {
+                                    window.open(recipe.sourceUrl, '_blank', 'noopener,noreferrer');
+                                  }
+                                }}
+                              >
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                Ver en {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) ? getSourceFromUrl(recipe.sourceUrl) : 'fuente original'}
+                              </DropdownMenuItem>
                               <DropdownMenuItem onSelect={() => window.open(`${window.location.origin}/receta/${recipe.id}`, '_blank', 'noopener,noreferrer')}>
                                 <ExternalLink className="mr-2 h-4 w-4" />
                                 Abrir en una nueva pestaña
                               </DropdownMenuItem>
-                              {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) && (
-                                <DropdownMenuItem onSelect={() => window.open(recipe.sourceUrl!, '_blank', 'noopener,noreferrer')}>
-                                  <ExternalLink className="mr-2 h-4 w-4" />
-                                  Ver en {getSourceFromUrl(recipe.sourceUrl)}
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem className="hidden sm:flex" onSelect={() => handleEditRecipe(recipe)}>
+                              <DropdownMenuItem onSelect={() => handleEditRecipe(recipe)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => void handleRecipePdfAction(recipe, 'print')}>
+                                <Printer className="mr-2 h-4 w-4" />
+                                Imprimir
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => void handleRecipePdfAction(recipe, 'download')}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Descargar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => void handleRecipePdfAction(recipe, 'share')}>
+                                <Send className="mr-2 h-4 w-4" />
+                                Compartir
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => handleShowNutrition(recipe)}>
+                                <Calculator className="mr-2 h-4 w-4" />
+                                Ver info nutricional
                               </DropdownMenuItem>
                               <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => handleDeleteRecipe(recipe)}>
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -6802,28 +6828,38 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               <MoreVertical className="h-4 w-4" />
                             </span>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+                          <DropdownMenuContent
+                            align="end"
+                            className="max-h-[calc(100dvh-1rem)] w-64 overflow-y-auto"
+                            collisionPadding={8}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <DropdownMenuItem
+                              disabled={!recipe.sourceUrl || !isValidUrl(recipe.sourceUrl)}
+                              onSelect={() => {
+                                if (recipe.sourceUrl && isValidUrl(recipe.sourceUrl)) {
+                                  window.open(recipe.sourceUrl, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                            >
+                              <ExternalLink className="mr-2 h-4 w-4" />
+                              Ver en {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) ? getSourceFromUrl(recipe.sourceUrl) : 'fuente original'}
+                            </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => window.open(`${window.location.origin}/receta/${recipe.id}`, '_blank', 'noopener,noreferrer')}>
                               <ExternalLink className="mr-2 h-4 w-4" />
                               Abrir en una nueva pestaña
                             </DropdownMenuItem>
-                            {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) && (
-                              <DropdownMenuItem onSelect={() => window.open(recipe.sourceUrl!, '_blank', 'noopener,noreferrer')}>
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                                Ver en {getSourceFromUrl(recipe.sourceUrl)}
-                              </DropdownMenuItem>
-                            )}
                             <DropdownMenuItem onSelect={() => handleEditRecipe(recipe)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => void handleRecipePdfAction(recipe, 'download')}>
-                              <Download className="mr-2 h-4 w-4" />
-                              Descargar
-                            </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => void handleRecipePdfAction(recipe, 'print')}>
                               <Printer className="mr-2 h-4 w-4" />
                               Imprimir
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => void handleRecipePdfAction(recipe, 'download')}>
+                              <Download className="mr-2 h-4 w-4" />
+                              Descargar
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => void handleRecipePdfAction(recipe, 'share')}>
                               <Send className="mr-2 h-4 w-4" />
@@ -6831,7 +6867,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => handleShowNutrition(recipe)}>
                               <Calculator className="mr-2 h-4 w-4" />
-                              Ver Nutrición
+                              Ver info nutricional
                             </DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => handleDeleteRecipe(recipe)}>
                               <Trash2 className="mr-2 h-4 w-4" />

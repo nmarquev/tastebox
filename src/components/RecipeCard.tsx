@@ -426,7 +426,22 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 <MoreVertical className="h-4 w-4 text-gray-600" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent
+              align="end"
+              className="max-h-[calc(100dvh-1rem)] w-64 overflow-y-auto"
+              collisionPadding={8}
+            >
+              <DropdownMenuItem
+                disabled={!recipe.sourceUrl || !isValidUrl(recipe.sourceUrl)}
+                onClick={() => {
+                  if (recipe.sourceUrl && isValidUrl(recipe.sourceUrl)) {
+                    window.open(recipe.sourceUrl, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Ver en {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) ? getSourceFromUrl(recipe.sourceUrl) : 'fuente original'}
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
@@ -436,12 +451,6 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 <ArrowUpRightFromSquare className="h-4 w-4 mr-2" />
                 Abrir en una nueva pestaña
               </DropdownMenuItem>
-              {recipe.sourceUrl && isValidUrl(recipe.sourceUrl) && (
-                <DropdownMenuItem onClick={() => window.open(recipe.sourceUrl, '_blank')}>
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Ver en {getSourceFromUrl(recipe.sourceUrl)}
-                </DropdownMenuItem>
-              )}
               {onEdit && (
                 <DropdownMenuItem onClick={(e) => {
                   e.stopPropagation();
@@ -453,17 +462,17 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               )}
               <DropdownMenuItem onClick={(e) => {
                 e.stopPropagation();
-                handlePdfAction('download');
-              }} disabled={isPdfLoading}>
-                <Download className="h-4 w-4 mr-2" />
-                {isPdfLoading ? 'Generando...' : 'Descargar'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => {
-                e.stopPropagation();
                 handlePdfAction('print');
               }} disabled={isPdfLoading}>
                 <Printer className="h-4 w-4 mr-2" />
                 {isPdfLoading ? 'Generando...' : 'Imprimir'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation();
+                handlePdfAction('download');
+              }} disabled={isPdfLoading}>
+                <Download className="h-4 w-4 mr-2" />
+                {isPdfLoading ? 'Generando...' : 'Descargar'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={(e) => {
                 e.stopPropagation();
@@ -478,7 +487,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   onShowNutrition(recipe);
                 }}>
                   <Calculator className="h-4 w-4 mr-2" />
-                  Ver Nutrición
+                  Ver info nutricional
                 </DropdownMenuItem>
               )}
               {onDelete && (
