@@ -3588,9 +3588,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   <button
                     type="button"
                     onClick={() => setSearchTerms([])}
-                    className="ml-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                    className="ml-1 text-xs font-semibold uppercase !text-primary underline-offset-2 hover:opacity-80 hover:underline"
                   >
-                    Limpiar
+                    LIMPIAR
                   </button>
                 </div>
               )}
