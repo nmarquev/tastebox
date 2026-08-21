@@ -446,7 +446,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 <DropdownMenuItem onClick={(e) => {
                   e.stopPropagation();
                   onEdit(recipe);
-                }} className="hidden sm:flex">
+                }}>
                   <Edit className="h-4 w-4 mr-2" />
                   Editar
                 </DropdownMenuItem>
