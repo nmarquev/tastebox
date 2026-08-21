@@ -431,9 +431,9 @@ const Home = () => {
               <button
                 type="button"
                 onClick={() => setHomeSearchTerms([])}
-                className="text-sm font-medium text-primary underline-offset-2 hover:text-primary/80 hover:underline"
+                className="text-sm font-semibold uppercase !text-primary underline-offset-2 hover:opacity-80 hover:underline"
               >
-                Limpiar
+                LIMPIAR
               </button>
             </div>
           )}
