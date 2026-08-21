@@ -27,6 +27,8 @@ interface MultiSelectComboboxProps {
   canDeleteOption?: (value: string) => boolean;
   singleSelect?: boolean;
   closeOnSelect?: boolean;
+  openDownward?: boolean;
+  listClassName?: string;
 }
 
 // Selector múltiple con buscador (reutilizable: categorías, etiquetas, etc.).
@@ -44,6 +46,8 @@ export const MultiSelectCombobox = ({
   canDeleteOption,
   singleSelect = false,
   closeOnSelect = false,
+  openDownward = false,
+  listClassName,
 }: MultiSelectComboboxProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -120,7 +124,12 @@ export const MultiSelectCombobox = ({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent
+          className="w-[--radix-popover-trigger-width] p-0"
+          align="start"
+          side={openDownward ? "bottom" : undefined}
+          avoidCollisions={!openDownward}
+        >
           <Command shouldFilter={false}>
             <div className="relative">
               <CommandInput
@@ -164,7 +173,7 @@ export const MultiSelectCombobox = ({
                 </button>
               )}
             </div>
-            <CommandList ref={listRef}>
+            <CommandList ref={listRef} className={listClassName}>
               {!filteredOptions.length && !canCreate && (
                 <CommandEmpty>Sin resultados.</CommandEmpty>
               )}

@@ -1212,13 +1212,13 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
         style={dragContentStyle}
-        className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0"
-        closeButtonClassName="right-4 top-4 h-8 w-8 rounded-md bg-primary/65 text-foreground opacity-100 inline-flex items-center justify-center shadow-sm backdrop-blur-sm hover:bg-primary/80 hover:opacity-100 data-[state=open]:bg-primary/65 data-[state=open]:text-foreground"
+        className="flex h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-4xl flex-col gap-0 p-0 sm:h-[90vh]"
+        closeButtonClassName="right-2 top-2 h-8 w-8 rounded-md bg-primary/65 text-foreground opacity-100 inline-flex items-center justify-center shadow-sm backdrop-blur-sm hover:bg-primary/80 hover:opacity-100 data-[state=open]:bg-primary/65 data-[state=open]:text-foreground sm:right-4 sm:top-4"
       >
         {/* Fixed Header (se puede arrastrar para mover el modal) */}
-        <DialogHeader className="border-b px-6 pb-4 pt-6" {...dragHandleProps}>
-          <DialogTitle className="flex w-full items-center justify-between gap-4 pr-10">
-            <span className="flex shrink-0 items-center gap-2">
+        <DialogHeader className="border-b px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-6" {...dragHandleProps}>
+          <DialogTitle className="flex w-full items-center justify-between gap-2 pr-10 sm:gap-4">
+            <span className={`${mode === 'create' ? 'flex' : 'hidden sm:flex'} shrink-0 items-center gap-2`}>
               <Edit className="h-5 w-5" />
               {mode === 'create' ? 'Nueva Receta' : 'Editar Receta'}
               {queue && (
@@ -1229,7 +1229,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
             </span>
             {mode !== 'create' && (
               <span
-                className="min-w-0 max-w-[50%] truncate text-right text-base font-semibold text-muted-foreground"
+                className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-muted-foreground sm:max-w-[50%] sm:text-right sm:text-base"
                 title={watch('title') || recipe.title || 'Sin título'}
               >
                 {watch('title') || recipe.title || 'Sin título'}
@@ -1241,7 +1241,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         <form onSubmit={handleSubmit(onSubmit)} onFocus={trackFocusField} className="flex flex-col flex-1 min-h-0">
           {/* Fixed Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
-            <div className="px-6 pt-4 flex-shrink-0">
+            <div className="flex-shrink-0 px-3 pt-3 sm:px-6 sm:pt-4">
               <TabsList className="grid h-auto w-full grid-cols-3 sm:grid-cols-6">
                 <TabsTrigger value="info">Información</TabsTrigger>
                 <TabsTrigger value="classification">Clasificación</TabsTrigger>
@@ -1343,7 +1343,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
             )}
 
             {/* Scrollable content area with fixed height */}
-            <div ref={formScrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
+            <div ref={formScrollRef} className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 sm:px-6 sm:pb-4">
               <TabsContent value="info" className="space-y-6 mt-4 bg-muted/20 p-6 rounded-lg m-0">
               {/* a: Título */}
               <div>
@@ -1637,7 +1637,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               </div>
             </TabsContent>
 
-              <TabsContent value="classification" className="space-y-4 mt-4 bg-muted/20 px-6 pt-6 pb-1 rounded-lg m-0">
+              <TabsContent value="classification" className="m-0 mt-4 space-y-4 rounded-lg bg-muted/20 px-3 pb-1 pt-4 sm:px-6 sm:pt-6">
                 {/* 1: Tipo de comida / Colección */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -1658,6 +1658,17 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       closeOnSelect
                       allowCreate
                       createLabel="Agregar"
+                      openDownward
+                      listClassName="max-h-[min(20rem,calc(100dvh-15rem))]"
+                      onCreate={async (name) => {
+                        try {
+                          const created = await api.dishTypes.create(name);
+                          setDishTypeOptions(prev => Array.from(new Set([...prev, created.name])).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })));
+                          toast({ title: 'Tipo de comida creado', description: `Se creó "${created.name}".` });
+                        } catch (error: any) {
+                          toast({ title: 'No se pudo crear el tipo de comida', description: error?.message || 'Intentá nuevamente', variant: 'destructive' });
+                        }
+                      }}
                       onDeleteOption={(value) => {
                         setDishTypeOptions(prev => prev.filter(option => option !== value));
                         const next = (watch('dishType') || '').split(',').map(s => s.trim()).filter(Boolean).filter(option => option !== value);
@@ -1698,6 +1709,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       closeOnSelect
                       allowCreate
                       createLabel="Crear colección"
+                      openDownward
+                      listClassName="max-h-[min(20rem,calc(100dvh-15rem))]"
                       onDeleteOption={(value) => {
                         const collection = collections.find(c => c.name === value);
                         setCollections(prev => prev.filter(c => c.name !== value));
@@ -1775,7 +1788,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 </div>
 
                 {/* c-f: Características (switches sí/no con ícono) — 4 por renglón, 2 renglones */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
                   {([
                     { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
                     { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
@@ -1793,12 +1806,12 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   ] as const).map(({ field, label, icon }) => {
                     const active = Boolean(watch(field as any));
                     return (
-                      <label key={field} className="flex min-h-10 cursor-pointer items-center justify-between rounded-md border bg-background px-2.5 py-1.5">
-                        <span className="flex items-center gap-2 text-sm">
+                      <label key={field} className="flex min-h-9 cursor-pointer items-center justify-between gap-1 rounded-md border bg-background px-1.5 py-1 sm:min-h-10 sm:px-2.5 sm:py-1.5">
+                        <span className="flex min-w-0 items-center gap-1 text-xs sm:gap-2 sm:text-sm">
                           <span className="text-muted-foreground">{icon}</span>
                           {label}
                         </span>
-                        <Switch className="scale-[0.85] data-[state=checked]:!bg-[#9eddee]" checked={active} onCheckedChange={(v) => setValue(field as any, v, { shouldDirty: true })} />
+                        <Switch className="shrink-0 scale-[0.72] data-[state=checked]:!bg-[#9eddee] sm:scale-[0.85]" checked={active} onCheckedChange={(v) => setValue(field as any, v, { shouldDirty: true })} />
                       </label>
                     );
                   })}
@@ -2456,23 +2469,20 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
           </Tabs>
 
           {/* Fixed Submit Buttons */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t flex-shrink-0">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancelar
-            </Button>
-            <Button type="button" variant="outline" onClick={handlePasteText}>
-              <ClipboardPaste className="h-4 w-4 mr-2" />
+          <div className="flex flex-shrink-0 justify-end gap-1 border-t px-2 py-2 sm:gap-2 sm:px-6 sm:py-4">
+            <Button type="button" size="sm" variant="outline" onClick={handlePasteText} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
+              <ClipboardPaste className="mr-1 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
               Pegar texto
             </Button>
             {queue && queue.position < queue.total - 1 && (
-              <Button type="button" variant="outline" onClick={() => queue.onNext()} disabled={isLoading}>
+              <Button type="button" size="sm" variant="outline" onClick={() => queue.onNext()} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
                 Omitir
               </Button>
             )}
-            <Button type="submit" disabled={isLoading || !hasChanges}>
+            <Button type="submit" size="sm" disabled={isLoading || !hasChanges} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
               {isLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
                   Actualizando...
                 </>
               ) : queue ? (
@@ -2482,12 +2492,12 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               )}
             </Button>
             {!queue && onImportAnother && (
-              <Button type="button" variant="secondary" onClick={onImportAnother} disabled={isLoading}>
+              <Button type="button" size="sm" variant="secondary" onClick={onImportAnother} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
                 Importar otra receta
               </Button>
             )}
             {!queue && (
-              <Button type="button" onClick={handleClose} disabled={isLoading}>
+              <Button type="button" size="sm" onClick={handleClose} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
                 Finalizar
               </Button>
             )}

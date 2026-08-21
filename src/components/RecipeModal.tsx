@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Recipe } from "@/types/recipe";
-import { Beef, CakeSlice, CandyOff, Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2, Utensils, MoreVertical, Upload } from "lucide-react";
+import { Activity, Beef, CakeSlice, CandyOff, Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2, Utensils, MoreVertical, Upload } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { resolveImageUrl } from "@/utils/api";
 import { getSourceFromUrl, isValidUrl, getRecipeSource } from "@/utils/siteUtils";
@@ -11,6 +11,7 @@ import { api, RecipeCollection } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useVoiceSettings } from "@/hooks/useVoiceSettings";
 import { NutritionLabel } from "@/components/NutritionLabel";
+import { NutritionModal } from "@/components/NutritionModal";
 import { ThermomixSetting } from "@/components/ThermomixSetting";
 import { StepDescription, hasInlineThermomix } from "@/components/StepDescription";
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
@@ -256,6 +257,7 @@ export const RecipeModal = ({
     : scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isNutritionModalOpen, setIsNutritionModalOpen] = useState(false);
   const [loadingStates, setLoadingStates] = useState({
     print: false,
     download: false,
@@ -1095,20 +1097,38 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => window.open(`/receta/${localRecipe.id}`, '_blank', 'noopener,noreferrer')}>
             <ArrowUpRightFromSquare className="mr-2 h-4 w-4" />
-            Abrir en una nueva pestaña
+            Abrir en nueva pestaña
           </DropdownMenuItem>
-          <DropdownMenuItem className="hidden sm:flex" onClick={() => setIsEditModalOpen(true)}>
+          <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
             <Edit className="mr-2 h-4 w-4" />
-            Editar receta
+            Editar
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePdfAction('print')}>
-            <Printer className="mr-2 h-4 w-4" />
+          <DropdownMenuItem onClick={() => handlePdfAction('download')} disabled={loadingStates.download}>
+            {loadingStates.download
+              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              : <Download className="mr-2 h-4 w-4" />}
+            Descargar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handlePdfAction('print')} disabled={loadingStates.print}>
+            {loadingStates.print
+              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              : <Printer className="mr-2 h-4 w-4" />}
             Imprimir
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handlePdfAction('share')} disabled={loadingStates.share}>
+            {loadingStates.share
+              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              : <Send className="mr-2 h-4 w-4" />}
+            Compartir
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setIsNutritionModalOpen(true)}>
+            <Activity className="mr-2 h-4 w-4" />
+            Ver Nutrición
           </DropdownMenuItem>
           {onDelete && (
             <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(localRecipe)}>
               <Trash2 className="mr-2 h-4 w-4" />
-              Eliminar receta
+              Eliminar
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -2025,6 +2045,18 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             if (onRecipeUpdate) {
               onRecipeUpdate(updatedRecipe);
             }
+          }}
+        />
+      )}
+
+      {localRecipe && (
+        <NutritionModal
+          recipe={localRecipe}
+          isOpen={isNutritionModalOpen}
+          onClose={() => setIsNutritionModalOpen(false)}
+          onRecipeUpdate={(updatedRecipe) => {
+            setLocalRecipe(updatedRecipe);
+            onRecipeUpdate?.(updatedRecipe);
           }}
         />
       )}
