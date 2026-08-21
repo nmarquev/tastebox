@@ -1410,6 +1410,106 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
           )}
 
+          <div className="flex flex-wrap gap-2 sm:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                window.open(`/receta/${localRecipe.id}`, '_blank', 'noopener,noreferrer');
+                onClose();
+              }}
+              title="Abrir receta en pestaña nueva"
+              aria-label="Abrir receta en pestaña nueva"
+            >
+              <ArrowUpRightFromSquare className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditModalOpen(true)}
+              title="Editar receta"
+              aria-label="Editar receta"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            {localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(localRecipe.sourceUrl, '_blank')}
+                title={`Ver en ${getSourceFromUrl(localRecipe.sourceUrl)}`}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              title="Imprimir"
+              onClick={() => handlePdfAction('print')}
+              disabled={loadingStates.print}
+            >
+              {loadingStates.print ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+              ) : (
+                <Printer className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              title="Descargar"
+              onClick={() => handlePdfAction('download')}
+              disabled={loadingStates.download}
+            >
+              {loadingStates.download ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              title="Compartir"
+              aria-label="Compartir receta"
+              onClick={() => handlePdfAction('share')}
+              disabled={loadingStates.share}
+            >
+              {loadingStates.share ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePlayTTS}
+              disabled={isGeneratingScript}
+              title={isPlaying ? "Pausar audio" : "Escuchar receta"}
+            >
+              {isGeneratingScript ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+              ) : isPlaying ? (
+                <Pause className="h-4 w-4" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+            </Button>
+            {onDelete && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => onDelete(localRecipe)}
+                title="Eliminar receta"
+                aria-label="Eliminar receta"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
           <div className="space-y-2 text-sm text-muted-foreground">
               {/* Línea 1: tiempos y porciones */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -1519,7 +1619,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
 
           {/* Columna derecha: botones de acción + metadata */}
           <div className="flex-1 space-y-4">
-            <div className="flex gap-2 flex-wrap">
+            <div className="hidden flex-wrap gap-2 sm:flex">
               <Button
                 variant="outline"
                 size="sm"
