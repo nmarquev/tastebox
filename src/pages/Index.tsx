@@ -6250,7 +6250,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     className={`flex items-start gap-4 px-3 py-3 text-left transition-colors hover:bg-muted/50 ${ingSelected ? 'bg-accent/60' : ''}`}
                   >
                     {/* Imagen a la izquierda */}
-                    <span className="relative flex h-44 w-44 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                    <span className="relative flex h-48 w-48 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                       {ingImg
                         ? <img src={ingImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
