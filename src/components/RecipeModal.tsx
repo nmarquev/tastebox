@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Recipe } from "@/types/recipe";
-import { Activity, Beef, CakeSlice, CandyOff, Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2, Utensils, MoreVertical, Upload } from "lucide-react";
+import { Beef, CakeSlice, Calculator, CandyOff, Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2, Utensils, MoreVertical, Upload } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { resolveImageUrl } from "@/utils/api";
 import { getSourceFromUrl, isValidUrl, getRecipeSource } from "@/utils/siteUtils";
@@ -1094,10 +1094,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <MoreVertical className="h-4 w-4 text-gray-600" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuItem onClick={() => window.open(`/receta/${localRecipe.id}`, '_blank', 'noopener,noreferrer')}>
             <ArrowUpRightFromSquare className="mr-2 h-4 w-4" />
-            Abrir en nueva pestaña
+            Abrir en una nueva pestaña
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
             <Edit className="mr-2 h-4 w-4" />
@@ -1122,7 +1122,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             Compartir
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIsNutritionModalOpen(true)}>
-            <Activity className="mr-2 h-4 w-4" />
+            <Calculator className="mr-2 h-4 w-4" />
             Ver Nutrición
           </DropdownMenuItem>
           {onDelete && (

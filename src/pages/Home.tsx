@@ -7,6 +7,7 @@ import { MainNav } from "@/components/MainNav";
 import { UserMenu } from "@/components/UserMenu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { api, RecipeCollection } from "@/services/api";
 import { Recipe } from "@/types/recipe";
 import { resolveImageUrl } from "@/utils/api";
@@ -53,12 +54,15 @@ const recipeLinks = [
   { label: "Vegetarianas", to: "/buscar?filtro=vegetarianas", image: recetasVegetarianas },
 ];
 
+type HomeSearchScope = 'keyword' | 'title' | 'ingredient';
+
 const Home = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [homeSearch, setHomeSearch] = useState("");
   const [homeSearchTerms, setHomeSearchTerms] = useState<string[]>([]);
+  const [homeSearchScope, setHomeSearchScope] = useState<HomeSearchScope>('keyword');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [collections, setCollections] = useState<RecipeCollection[]>([]);
   const [sourceCovers, setSourceCovers] = useState<Record<string, string | null>>({});
@@ -198,6 +202,7 @@ const Home = () => {
 
     const params = new URLSearchParams();
     terms.forEach((term) => params.append("buscar", term));
+    params.set("campo", homeSearchScope);
     navigate(`/buscar?${params.toString()}`);
   };
 
@@ -359,7 +364,7 @@ const Home = () => {
                 value={homeSearch}
                 onChange={(event) => setHomeSearch(event.target.value)}
                 onKeyDown={handleHomeSearchKeyDown}
-                placeholder="Buscar por receta o ingredientes (ENTER para agregar)"
+                placeholder="Buscar"
                 title="Escribi una palabra y pulsa Enter para agregarla. Podes sumar varias."
                 className="h-12 pl-12 pr-10 text-base"
               />
@@ -379,6 +384,31 @@ const Home = () => {
               Buscar
             </Button>
           </div>
+          <RadioGroup
+            value={homeSearchScope}
+            onValueChange={(value) => setHomeSearchScope(value as HomeSearchScope)}
+            className="mt-3 flex w-full flex-wrap items-center justify-start gap-x-3 gap-y-2 pl-1 text-left"
+            aria-label="Campo de búsqueda"
+          >
+            <div className="flex items-center gap-1.5" title="Busca todas las palabras escritas dentro de cualquier campo de la receta">
+              <RadioGroupItem value="keyword" id="home-search-scope-keyword" className="h-3.5 w-3.5" />
+              <label htmlFor="home-search-scope-keyword" className="cursor-pointer whitespace-nowrap text-xs leading-none text-foreground">
+                Palabra clave
+              </label>
+            </div>
+            <div className="flex items-center gap-1.5" title="Busca la frase como palabras completas solamente en el nombre de la receta">
+              <RadioGroupItem value="title" id="home-search-scope-title" className="h-3.5 w-3.5" />
+              <label htmlFor="home-search-scope-title" className="cursor-pointer whitespace-nowrap text-xs leading-none text-foreground">
+                Nombre de receta
+              </label>
+            </div>
+            <div className="flex items-center gap-1.5" title="Devuelve las recetas que contienen los ingredientes escritos">
+              <RadioGroupItem value="ingredient" id="home-search-scope-ingredient" className="h-3.5 w-3.5" />
+              <label htmlFor="home-search-scope-ingredient" className="cursor-pointer whitespace-nowrap text-xs leading-none text-foreground">
+                Ingredientes
+              </label>
+            </div>
+          </RadioGroup>
           {homeSearchTerms.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {homeSearchTerms.map((term, index) => (

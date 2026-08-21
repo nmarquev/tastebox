@@ -198,6 +198,12 @@ const Index = () => {
   const initialSearchMatchMode: 'all' | 'any' | 'exact' = initialSearchMatchValue === 'alguna'
     ? 'any'
     : initialSearchMatchValue === 'exacta' ? 'exact' : 'all';
+  const initialSearchScopeValue = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('campo')
+    : null;
+  const initialSearchScope: SearchScope = initialSearchScopeValue === 'title' || initialSearchScopeValue === 'ingredient'
+    ? initialSearchScopeValue
+    : DEFAULT_SEARCH_SCOPE;
   const initialRecipeTypeFilter = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('filtro')
     : null;
@@ -216,7 +222,7 @@ const Index = () => {
   // Palabras clave confirmadas (con Enter) para buscar recetas por varios terminos (AND).
   const [searchTerms, setSearchTerms] = useState<string[]>(initialSearchValues.length > 1 ? initialSearchValues : []);
   const [searchMatchMode, setSearchMatchMode] = useState<'all' | 'any' | 'exact'>(initialSearchMatchMode);
-  const [searchScope, setSearchScope] = useState<SearchScope>(DEFAULT_SEARCH_SCOPE);
+  const [searchScope, setSearchScope] = useState<SearchScope>(initialSearchScope);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   // El banner (Hero) ya no se muestra: una sola pagina.
   const [showHero, setShowHero] = useState(false);
@@ -343,6 +349,10 @@ const Index = () => {
     const matchMode: 'all' | 'any' | 'exact' = matchValue === 'alguna'
       ? 'any'
       : matchValue === 'exacta' ? 'exact' : 'all';
+    const scopeValue = params.get('campo');
+    const scope: SearchScope = scopeValue === 'title' || scopeValue === 'ingredient'
+      ? scopeValue
+      : DEFAULT_SEARCH_SCOPE;
     const typeFilter = params.get('filtro');
     const categoria = CATEGORIES_ENABLED ? params.get('categoria') : null;
     const panel = params.get('panel');
@@ -352,7 +362,7 @@ const Index = () => {
       setSearchTerm(keyword);
       setSearchTerms(keywords.length > 1 ? keywords : []);
       setSearchMatchMode(matchMode);
-      setSearchScope(DEFAULT_SEARCH_SCOPE);
+      setSearchScope(scope);
     }
     setShowCollectionsGallery(view === 'colecciones');
     setShowCategoriesGallery(CATEGORIES_ENABLED && view === 'categorias');
@@ -6803,7 +6813,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                                 Ver en {getSourceFromUrl(recipe.sourceUrl)}
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem className="hidden sm:flex" onSelect={() => handleEditRecipe(recipe)}>
+                            <DropdownMenuItem onSelect={() => handleEditRecipe(recipe)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Editar
                             </DropdownMenuItem>

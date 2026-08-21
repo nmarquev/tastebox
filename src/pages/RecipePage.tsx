@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { api, RecipeCollection } from "@/services/api";
 import { Recipe } from "@/types/recipe";
 import { RecipeModal } from "@/components/RecipeModal";
+import { DeleteRecipeDialog } from "@/components/DeleteRecipeDialog";
 import { SaveToCollectionModal } from "@/components/SaveToCollectionModal";
 import { MainNav } from "@/components/MainNav";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -40,6 +41,7 @@ const RecipePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [collectionRecipe, setCollectionRecipe] = useState<Recipe | null>(null);
+  const [deleteRecipe, setDeleteRecipe] = useState<Recipe | null>(null);
   const [collectionRecipeIds, setCollectionRecipeIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -141,6 +143,7 @@ const RecipePage = () => {
         onClose={() => navigate("/app")}
         onRecipeUpdate={setRecipe}
         collections={collections}
+        onDelete={setDeleteRecipe}
         onToggleFavorite={() => persistToggle({ featured: !recipe.featured })}
         onToggleCooked={() => persistToggle({ cooked: !recipe.cooked })}
         onSaveToCollection={setCollectionRecipe}
@@ -159,6 +162,13 @@ const RecipePage = () => {
           setCollections(collections);
           setCollectionRecipeIds(new Set(collections.flatMap((c) => c.recipeIds)));
         }}
+      />
+
+      <DeleteRecipeDialog
+        recipe={deleteRecipe}
+        isOpen={deleteRecipe !== null}
+        onClose={() => setDeleteRecipe(null)}
+        onRecipeDeleted={() => navigate("/buscar", { replace: true })}
       />
     </>
   );
