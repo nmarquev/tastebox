@@ -24,7 +24,9 @@ export const useNutritionCalculator = () => {
   const { toast } = useToast();
 
   const calculateNutrition = async (ingredients: Ingredient[], servings: number = 4): Promise<NutritionData | null> => {
-    if (!ingredients || ingredients.length === 0) {
+    const validIngredients = ingredients?.filter(ingredient => ingredient.name?.trim()) ?? [];
+
+    if (validIngredients.length === 0) {
       toast({
         title: "Sin ingredientes",
         description: "No hay ingredientes para calcular nutrición",
@@ -35,13 +37,17 @@ export const useNutritionCalculator = () => {
 
     try {
       setIsCalculating(true);
-      console.log('🥗 Calculating nutrition for:', { ingredients, servings });
+      const parsedServings = Number(servings);
+      const servingsForCalculation = Number.isFinite(parsedServings) && parsedServings > 0
+        ? parsedServings
+        : 4;
+      console.log('🥗 Calculating nutrition for:', { ingredients: validIngredients, servings: servingsForCalculation });
       console.log('🔍 Ingredients details:');
-      ingredients.forEach((ing, idx) => {
+      validIngredients.forEach((ing, idx) => {
         console.log(`  ${idx}: name="${ing.name}" amount="${ing.amount}" unit="${ing.unit || 'undefined'}"`);
       });
 
-      const result = await api.nutrition.calculate(ingredients, servings);
+      const result = await api.nutrition.calculate(validIngredients, servingsForCalculation);
 
       if (!result.success || !result.nutrition) {
         throw new Error(result.error || 'Error al calcular nutrición');

@@ -932,17 +932,22 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
   const handleCalculateNutrition = async () => {
     const currentIngredients = watch('ingredients');
     const currentServings = watch('servings');
+    const validIngredients = currentIngredients?.filter(ingredient => ingredient.name?.trim()) ?? [];
 
-    if (!currentIngredients?.length || !currentServings) {
+    if (validIngredients.length === 0) {
       toast({
         title: "Datos incompletos",
-        description: "Agregue ingredientes y porciones antes de calcular",
+        description: "Agregue ingredientes antes de calcular",
         variant: "destructive"
       });
       return;
     }
 
-    const result = await calculateNutrition(currentIngredients, currentServings);
+    const parsedServings = Number(currentServings);
+    const servingsForCalculation = Number.isFinite(parsedServings) && parsedServings > 0
+      ? parsedServings
+      : 4;
+    const result = await calculateNutrition(validIngredients, servingsForCalculation);
 
     if (result) {
       // Update form with calculated nutrition values

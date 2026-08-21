@@ -9,11 +9,14 @@ const llmService = new LLMServiceImproved();
 // Validation schema for nutrition calculation request
 const calculateNutritionSchema = z.object({
   ingredients: z.array(z.object({
-    name: z.string().min(1),
-    amount: z.string(),  // Permitir strings vacíos para "al gusto"
+    name: z.string().trim(),
+    amount: z.string().nullable().optional().transform(val => val ?? ''),
     unit: z.string().nullable().optional().transform(val => val ?? '')
   })).min(1),
-  servings: z.number().min(1).default(4)
+  servings: z.preprocess(value => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 4;
+  }, z.number().min(1))
 });
 
 // Calculate nutrition for ingredients
@@ -40,8 +43,13 @@ router.post('/calculate', authenticateToken, async (req: AuthRequest, res) => {
     console.log('🍽️ Original servings:', data.servings);
     console.log('🍽️ Capped servings for calculation:', cappedServings);
 
-    // Filter valid ingredients with required fields
-    const validIngredients = data.ingredients.filter(ing => ing.name && ing.amount) as { name: string; amount: string; unit?: string; }[];
+    // Algunas recetas antiguas guardan la cantidad dentro del nombre (por ejemplo, "100 g de harina").
+    // Conservamos esos ingredientes aunque amount esté vacío para que el cálculo pueda interpretarlos.
+    const validIngredients = data.ingredients.filter(ing => ing.name.trim()) as { name: string; amount: string; unit?: string; }[];
+
+    if (validIngredients.length === 0) {
+      return res.status(400).json({ error: 'No hay ingredientes válidos para calcular' });
+    }
 
     const result = await llmService.calculateNutrition(validIngredients, cappedServings);
 
