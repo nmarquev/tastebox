@@ -1449,6 +1449,20 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant="outline"
               size="sm"
+              disabled={!localRecipe.sourceUrl || !isValidUrl(localRecipe.sourceUrl)}
+              onClick={() => {
+                if (localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl)) {
+                  window.open(localRecipe.sourceUrl, '_blank', 'noopener,noreferrer');
+                }
+              }}
+              title={localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) ? `Ver en ${getSourceFromUrl(localRecipe.sourceUrl)}` : 'Fuente original no disponible'}
+              aria-label="Ver en la fuente original"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => {
                 window.open(`/receta/${localRecipe.id}`, '_blank', 'noopener,noreferrer');
                 onClose();
@@ -1471,11 +1485,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               variant="outline"
               size="sm"
               title="Imprimir"
+              aria-label="Imprimir receta"
               onClick={() => handlePdfAction('print')}
               disabled={loadingStates.print}
             >
               {loadingStates.print ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Printer className="h-4 w-4" />
               )}
@@ -1484,11 +1499,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               variant="outline"
               size="sm"
               title="Descargar"
+              aria-label="Descargar receta"
               onClick={() => handlePdfAction('download')}
               disabled={loadingStates.download}
             >
               {loadingStates.download ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Download className="h-4 w-4" />
               )}
@@ -1502,7 +1518,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               disabled={loadingStates.share}
             >
               {loadingStates.share ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Send className="h-4 w-4" />
               )}
@@ -1510,12 +1526,22 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setIsNutritionModalOpen(true)}
+              title="Ver info nutricional"
+              aria-label="Ver info nutricional"
+            >
+              <Calculator className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handlePlayTTS}
               disabled={isGeneratingScript}
-              title={isPlaying ? "Pausar audio" : "Escuchar receta"}
+              title={isPlaying ? "Pausar receta" : "Escuchar receta"}
+              aria-label={isPlaying ? "Pausar receta" : "Escuchar receta"}
             >
               {isGeneratingScript ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : isPlaying ? (
                 <Pause className="h-4 w-4" />
               ) : (
@@ -1648,6 +1674,20 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <Button
                 variant="outline"
                 size="sm"
+                disabled={!localRecipe.sourceUrl || !isValidUrl(localRecipe.sourceUrl)}
+                onClick={() => {
+                  if (localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl)) {
+                    window.open(localRecipe.sourceUrl, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                title={localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) ? `Ver en ${getSourceFromUrl(localRecipe.sourceUrl)}` : 'Fuente original no disponible'}
+                aria-label="Ver en la fuente original"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   window.open(`/receta/${localRecipe.id}`, '_blank', 'noopener,noreferrer');
                   onClose();
@@ -1660,12 +1700,22 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setIsEditModalOpen(true)}
+                title="Editar receta"
+                aria-label="Editar receta"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 title="Imprimir"
+                aria-label="Imprimir receta"
                 onClick={() => handlePdfAction('print')}
                 disabled={loadingStates.print}
               >
                 {loadingStates.print ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Printer className="h-4 w-4" />
                 )}
@@ -1674,11 +1724,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 variant="outline"
                 size="sm"
                 title="Descargar"
+                aria-label="Descargar receta"
                 onClick={() => handlePdfAction('download')}
                 disabled={loadingStates.download}
               >
                 {loadingStates.download ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Download className="h-4 w-4" />
                 )}
@@ -1692,7 +1743,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 disabled={loadingStates.share}
               >
                 {loadingStates.share ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
@@ -1700,12 +1751,22 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setIsNutritionModalOpen(true)}
+                title="Ver info nutricional"
+                aria-label="Ver info nutricional"
+              >
+                <Calculator className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handlePlayTTS}
                 disabled={isGeneratingScript}
-                title={isPlaying ? "Pausar audio" : "Escuchar receta"}
+                title={isPlaying ? "Pausar receta" : "Escuchar receta"}
+                aria-label={isPlaying ? "Pausar receta" : "Escuchar receta"}
               >
                 {isGeneratingScript ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : isPlaying ? (
                   <Pause className="h-4 w-4" />
                 ) : (

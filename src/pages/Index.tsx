@@ -3666,7 +3666,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     <UtensilsCrossed className="mr-2 hidden h-4 w-4 sm:block" />
                     <span className="sm:hidden">Detalles</span>
                     <span className="hidden sm:inline xl:hidden">Ingredientes</span>
-                    <span className="hidden xl:inline">Ver ingredientes</span>
+                    <span className="hidden xl:inline">Ingredientes</span>
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
