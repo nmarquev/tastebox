@@ -38,7 +38,6 @@ import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { UncheckedIcon } from "@/components/icons/UncheckedIcon";
 import { PreparationTimeIcon } from "@/components/icons/PreparationTimeIcon";
-import { IngredientIcon } from "@/components/IngredientIcon";
 import { api, RecipeCollection } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -6590,8 +6589,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       {recipe.ingredients && recipe.ingredients.length > 0 ? (
                         <ul className="space-y-1 text-[11px] leading-snug text-muted-foreground">
                           {recipe.ingredients.map((ing, idx) => (
-                            <li key={idx} className="flex items-start gap-1.5 font-normal">
-                              <IngredientIcon name={ing.name} compact />
+                            <li key={idx} className="flex gap-1.5 font-normal">
+                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
                               <span className="font-normal">
                                 {[ing.amount, ing.unit, ing.name].filter(Boolean).join(' ')}
                               </span>
