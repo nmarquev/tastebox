@@ -17,6 +17,7 @@ import { StepDescription, hasInlineThermomix } from "@/components/StepDescriptio
 import { AvocadoIcon } from "@/components/icons/AvocadoIcon";
 import { RecipePreparedIcon } from "@/components/icons/RecipePreparedIcon";
 import { PreparationTimeIcon } from "@/components/icons/PreparationTimeIcon";
+import { IngredientIcon } from "@/components/IngredientIcon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { parseCategories } from "@/constants/categories";
 import { CATEGORIES_ENABLED } from "@/constants/features";
@@ -1947,10 +1948,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                       <ul className="space-y-2 text-muted-foreground text-sm">
                         {ingredients.map((ingredient, index) => (
-                          <li key={index} className="flex gap-2 break-inside-avoid font-normal">
-                            <span className="flex h-6 items-center shrink-0">
-                              <span className="w-1 h-1 bg-primary rounded-full" />
-                            </span>
+                          <li key={index} className="flex items-start gap-2 break-inside-avoid font-normal">
+                            <IngredientIcon name={ingredient.name} />
                             <span className={`font-normal ${!ingredient.amount && !ingredient.unit && ingredient.name.includes('\n') ? 'whitespace-pre-wrap' : ''}`}>
                               {(ingredient.amount || ingredient.unit) && (
                                 <span>{ingredient.amount} {ingredient.unit}</span>
