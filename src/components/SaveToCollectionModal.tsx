@@ -18,6 +18,7 @@ import { api, RecipeCollection } from "@/services/api";
 import { Recipe } from "@/types/recipe";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { RECIPE_SAVE_TOAST_DURATION_MS } from "@/constants/toastDurations";
 
 interface SaveToCollectionModalProps {
   recipe: Recipe | null;
@@ -36,6 +37,7 @@ export const SaveToCollectionModal = ({
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
   const [removedCollectionIds, setRemovedCollectionIds] = useState<string[]>([]);
   const [isCollectionPickerOpen, setIsCollectionPickerOpen] = useState(false);
+  const [collectionSearch, setCollectionSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +50,7 @@ export const SaveToCollectionModal = ({
     setSelectedCollectionIds([]);
     setRemovedCollectionIds([]);
     setIsCollectionPickerOpen(false);
+    setCollectionSearch("");
     setShowCreate(false);
     setNewCollectionName("");
     setIsLoading(true);
@@ -64,8 +67,11 @@ export const SaveToCollectionModal = ({
       .finally(() => setIsLoading(false));
   }, [isOpen, toast]);
 
-  const handleCreateCollection = async () => {
-    const name = newCollectionName.trim();
+  const handleCreateCollection = async (
+    requestedName = newCollectionName,
+    closePicker = false,
+  ) => {
+    const name = requestedName.trim();
     if (!name) return;
 
     setIsSaving(true);
@@ -74,7 +80,9 @@ export const SaveToCollectionModal = ({
       setCollections(prev => [...prev, collection].sort((a, b) => a.name.localeCompare(b.name)));
       setSelectedCollectionIds(prev => [...prev, collection.id]);
       setNewCollectionName("");
+      setCollectionSearch("");
       setShowCreate(false);
+      if (closePicker) setIsCollectionPickerOpen(false);
       toast({
         title: "Colección creada",
         description: `"${collection.name}" ya está disponible.`,
@@ -131,6 +139,7 @@ export const SaveToCollectionModal = ({
         description: selectedNames.length
           ? `Se agregó a ${selectedNames.map(name => `"${name}"`).join(", ")}.`
           : "La receta se quitó de las colecciones seleccionadas.",
+        duration: RECIPE_SAVE_TOAST_DURATION_MS,
       });
       onClose();
     } catch (error) {
@@ -207,10 +216,28 @@ export const SaveToCollectionModal = ({
               </PopoverTrigger>
               <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                 <Command>
-                  <CommandInput placeholder="Buscar colección..." />
+                  <CommandInput
+                    placeholder="Buscar o crear colección..."
+                    value={collectionSearch}
+                    onValueChange={setCollectionSearch}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" || isSaving) return;
+                      const name = collectionSearch.trim();
+                      const alreadyExists = collections.some(
+                        collection => collection.name.localeCompare(name, "es", { sensitivity: "base" }) === 0
+                      );
+                      if (!name || alreadyExists) return;
+                      event.preventDefault();
+                      void handleCreateCollection(name, true);
+                    }}
+                  />
                   <CommandList>
                     <CommandEmpty>
-                      {availableCollections.length ? "Sin resultados." : "La receta ya está en todas las colecciones."}
+                      {collectionSearch.trim()
+                        ? `Presioná Enter para crear "${collectionSearch.trim()}".`
+                        : availableCollections.length
+                          ? "Sin resultados."
+                          : "La receta ya está en todas las colecciones."}
                     </CommandEmpty>
                     <CommandGroup>
                       {availableCollections.map(collection => (
@@ -219,6 +246,7 @@ export const SaveToCollectionModal = ({
                           value={collection.name}
                           onSelect={() => {
                             toggleCollection(collection.id);
+                            setCollectionSearch("");
                             window.setTimeout(() => setIsCollectionPickerOpen(false), 0);
                           }}
                         >
@@ -303,7 +331,7 @@ export const SaveToCollectionModal = ({
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault();
-                        handleCreateCollection();
+                        void handleCreateCollection();
                       }
                     }}
                     placeholder="Nombre de la colección"
@@ -311,7 +339,7 @@ export const SaveToCollectionModal = ({
                   />
                   <Button
                     type="button"
-                    onClick={handleCreateCollection}
+                    onClick={() => void handleCreateCollection()}
                     disabled={!newCollectionName.trim() || isSaving}
                   >
                     Crear

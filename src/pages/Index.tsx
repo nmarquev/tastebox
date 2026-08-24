@@ -53,6 +53,7 @@ import { useRecipeSources } from "@/hooks/useRecipeSources";
 import { useRecipeTags } from "@/hooks/useRecipeTags";
 import { useRecipeAuthors } from "@/hooks/useRecipeAuthors";
 import { useVoiceSettings } from "@/hooks/useVoiceSettings";
+import { RECIPE_SAVE_TOAST_DURATION_MS } from "@/constants/toastDurations";
 import { SaveToCollectionModal } from "@/components/SaveToCollectionModal";
 import { getRecipeSource, getSourceFromUrl, isValidUrl } from "@/utils/siteUtils";
 import { FilterAutocompleteInput } from "@/components/FilterAutocompleteInput";
@@ -1137,6 +1138,7 @@ const Index = () => {
     toast({
       title: "Receta creada exitosamente!",
       description: `"${recipe.title}" ha sido guardada en tu coleccion`,
+      duration: RECIPE_SAVE_TOAST_DURATION_MS,
     });
     console.log('handleRecipeCreated completed');
   };
@@ -1201,7 +1203,11 @@ const Index = () => {
       for (const cid of toAdd) { try { await api.collections.addRecipe(cid, recipeId); } catch { /* no bloquear */ } }
       for (const cid of toRemove) { try { await api.collections.removeRecipe(cid, recipeId); } catch { /* no bloquear */ } }
       await Promise.all([loadRecipes(), reloadSources(), reloadTags()]);
-      toast({ title: 'Receta actualizada', description: 'Se guardaron los campos.' });
+      toast({
+        title: 'Receta actualizada',
+        description: 'Se guardaron los campos.',
+        duration: RECIPE_SAVE_TOAST_DURATION_MS,
+      });
       return true;
     } catch (error) {
       toast({ title: 'Error', description: error instanceof Error ? error.message : 'No se pudo guardar', variant: 'destructive' });
@@ -1298,6 +1304,7 @@ const Index = () => {
     toast({
       title: "Receta actualizada!",
       description: `"${updatedRecipe.title}" se ha actualizado exitosamente`,
+      duration: RECIPE_SAVE_TOAST_DURATION_MS,
     });
     console.log('handleRecipeUpdated completed');
   };

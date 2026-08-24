@@ -26,6 +26,7 @@ import { RecipePreparedIcon } from '@/components/icons/RecipePreparedIcon';
 import { useDraggableDialog } from '@/hooks/useDraggableDialog';
 import { joinCategories, parseCategories } from '@/constants/categories';
 import { CATEGORIES_ENABLED } from '@/constants/features';
+import { RECIPE_SAVE_TOAST_DURATION_MS } from '@/constants/toastDurations';
 
 interface EditRecipeModalProps {
   isOpen: boolean;
@@ -1130,6 +1131,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         toast({
           title: "¡Receta creada!",
           description: `"${data.title}" se ha guardado exitosamente`,
+          duration: RECIPE_SAVE_TOAST_DURATION_MS,
         });
       } else if (recipe.id) {
         // Existing recipe - update via API
@@ -1143,6 +1145,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         toast({
           title: "¡Receta actualizada!",
           description: `"${data.title}" se ha actualizado exitosamente`,
+          duration: RECIPE_SAVE_TOAST_DURATION_MS,
         });
 
         // En edición secuencial pasamos a la siguiente receta; si no, la ventana

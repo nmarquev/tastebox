@@ -1081,13 +1081,25 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         </Button>
       )}
 
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="order-6 h-9 w-9 bg-white/80 p-0 hover:bg-white/90 sm:hidden"
+        onClick={() => setIsEditModalOpen(true)}
+        title="Editar receta"
+        aria-label="Editar receta"
+      >
+        <Edit className="h-4 w-4 text-gray-600" />
+      </Button>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
             variant="secondary"
             size="sm"
-            className="order-6 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
+            className="order-7 h-9 w-9 bg-white/80 p-0 hover:bg-white/90"
             title="Mas opciones"
             aria-label="Mas opciones"
           >
@@ -1449,20 +1461,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             <Button
               variant="outline"
               size="sm"
-              disabled={!localRecipe.sourceUrl || !isValidUrl(localRecipe.sourceUrl)}
-              onClick={() => {
-                if (localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl)) {
-                  window.open(localRecipe.sourceUrl, '_blank', 'noopener,noreferrer');
-                }
-              }}
-              title={localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) ? `Ver en ${getSourceFromUrl(localRecipe.sourceUrl)}` : 'Fuente original no disponible'}
-              aria-label="Ver en la fuente original"
-            >
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => {
                 window.open(`/receta/${localRecipe.id}`, '_blank', 'noopener,noreferrer');
                 onClose();
@@ -1471,15 +1469,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               aria-label="Abrir receta en pestaña nueva"
             >
               <ArrowUpRightFromSquare className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditModalOpen(true)}
-              title="Editar receta"
-              aria-label="Editar receta"
-            >
-              <Edit className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
@@ -1674,20 +1663,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <Button
                 variant="outline"
                 size="sm"
-                disabled={!localRecipe.sourceUrl || !isValidUrl(localRecipe.sourceUrl)}
-                onClick={() => {
-                  if (localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl)) {
-                    window.open(localRecipe.sourceUrl, '_blank', 'noopener,noreferrer');
-                  }
-                }}
-                title={localRecipe.sourceUrl && isValidUrl(localRecipe.sourceUrl) ? `Ver en ${getSourceFromUrl(localRecipe.sourceUrl)}` : 'Fuente original no disponible'}
-                aria-label="Ver en la fuente original"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={() => {
                   window.open(`/receta/${localRecipe.id}`, '_blank', 'noopener,noreferrer');
                   onClose();
@@ -1696,15 +1671,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 aria-label="Abrir receta en pestaña nueva"
               >
                 <ArrowUpRightFromSquare className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditModalOpen(true)}
-                title="Editar receta"
-                aria-label="Editar receta"
-              >
-                <Edit className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"

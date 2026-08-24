@@ -416,12 +416,28 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               <ExternalLink className="h-4 w-4 text-gray-600" />
             </Button>
           )}
+          {onEdit && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="order-6 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
+              title="Editar receta"
+              aria-label="Editar receta"
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit(recipe);
+              }}
+            >
+              <Edit className="h-4 w-4 text-gray-600" />
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="secondary"
                 size="sm"
-                className="order-6 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
+                className="order-7 h-8 w-8 bg-white/50 p-0 hover:bg-white/70"
               >
                 <MoreVertical className="h-4 w-4 text-gray-600" />
               </Button>
