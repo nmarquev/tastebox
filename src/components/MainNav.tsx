@@ -400,18 +400,18 @@ export const MainNav = () => {
           </SheetHeader>
 
           <nav aria-label="Menú principal móvil" className="space-y-1 p-4">
-            <div className="flex min-h-11 items-center rounded-md px-3">
-              <span className="text-sm font-semibold tracking-wide text-[#6f6965]">TEMA</span>
-              <div className="ml-auto">
+            <div className="flex min-h-11 items-center gap-3 rounded-md px-3">
+              <div className="-mx-1.5">
                 <ThemeSwitcher />
               </div>
+              <span className="text-sm font-semibold tracking-wide text-[#6f6965]">TEMA</span>
             </div>
 
-            <div className="flex min-h-11 items-center rounded-md px-3">
-              <span className="text-sm font-semibold tracking-wide text-[#6f6965]">FUENTE</span>
-              <div className="ml-auto">
+            <div className="flex min-h-11 items-center gap-3 rounded-md px-3">
+              <div className="-mx-1.5">
                 <FontThemeSwitcher />
               </div>
+              <span className="text-sm font-semibold tracking-wide text-[#6f6965]">FUENTE</span>
             </div>
 
             <Link to="/buscar" onClick={closeMobileMenu} className={mobileMenuItemClass}>
