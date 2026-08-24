@@ -247,7 +247,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
       case 4:
         return 'h-36 sm:h-56';
       case 5:
-        return 'h-24 sm:h-44';
+        return 'h-24 sm:aspect-square sm:h-auto xl:aspect-auto xl:h-44';
       default:
         return 'h-64';
     }
