@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Check,
@@ -42,7 +42,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Sheet,
   SheetContent,
@@ -100,8 +99,8 @@ export const MainNav = () => {
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [recipeSearch, setRecipeSearch] = useState('');
-  const [recipeSearchMode, setRecipeSearchMode] = useState<'all' | 'any'>('all');
-  const [recipeSearchExact, setRecipeSearchExact] = useState(false);
+  const [recipeSearchMode, setRecipeSearchMode] = useState<'all' | 'any' | 'exact'>('all');
+  const recipeSearchInputRef = useRef<HTMLInputElement>(null);
   const showingDuplicateRecipes = new URLSearchParams(location.search).get('view') === 'duplicadas';
   const panelPath = (panel: 'filter' | 'edit' | 'print' | 'delete') => {
     const params = new URLSearchParams(location.search);
@@ -147,7 +146,7 @@ export const MainNav = () => {
     const term = recipeSearch.trim();
     if (!term) return;
     const params = new URLSearchParams();
-    if (recipeSearchExact) {
+    if (recipeSearchMode === 'exact') {
       params.append('buscar', term);
       params.set('coincidencia', 'exacta');
     } else {
@@ -163,7 +162,6 @@ export const MainNav = () => {
     // siguiente ciclo evita que ese cierre lo descarte inmediatamente.
     setRecipeSearch('');
     setRecipeSearchMode('all');
-    setRecipeSearchExact(false);
     window.setTimeout(() => setSearchDialogOpen(true), 0);
   };
 
@@ -284,13 +282,19 @@ export const MainNav = () => {
       </DropdownMenu>
 
       <Dialog open={searchDialogOpen} onOpenChange={setSearchDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent
+          className="sm:max-w-md"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            window.requestAnimationFrame(() => recipeSearchInputRef.current?.focus());
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Buscar por una o más palabras clave</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="relative min-w-0 flex-1">
+          <div className="relative min-w-0">
               <Input
+                ref={recipeSearchInputRef}
                 autoFocus
                 value={recipeSearch}
                 onChange={(event) => setRecipeSearch(event.target.value)}
@@ -316,23 +320,11 @@ export const MainNav = () => {
                   <X className="h-4 w-4" />
                 </button>
               )}
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Checkbox
-                id="search-exact-phrase"
-                checked={recipeSearchExact}
-                onCheckedChange={(checked) => setRecipeSearchExact(checked === true)}
-              />
-              <label htmlFor="search-exact-phrase" className="cursor-pointer whitespace-nowrap text-sm text-foreground">
-                Palabra completa
-              </label>
-            </div>
           </div>
           <RadioGroup
             value={recipeSearchMode}
-            onValueChange={(value) => setRecipeSearchMode(value as 'all' | 'any')}
-            disabled={recipeSearchExact}
-            className={`gap-3 ${recipeSearchExact ? 'opacity-50' : ''}`}
+            onValueChange={(value) => setRecipeSearchMode(value as 'all' | 'any' | 'exact')}
+            className="gap-3"
             aria-label="Coincidencia de palabras clave"
           >
             <div className="flex items-center gap-2">
@@ -345,6 +337,12 @@ export const MainNav = () => {
               <RadioGroupItem value="any" id="search-any-word" />
               <label htmlFor="search-any-word" className="cursor-pointer text-sm text-foreground">
                 Incluir alguna de las palabras
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="exact" id="search-exact-phrase" />
+              <label htmlFor="search-exact-phrase" className="cursor-pointer text-sm text-foreground">
+                Palabra completa
               </label>
             </div>
           </RadioGroup>
@@ -414,10 +412,17 @@ export const MainNav = () => {
               <span className="text-sm font-semibold tracking-wide text-[#6f6965]">FUENTE</span>
             </div>
 
-            <Link to="/buscar" onClick={closeMobileMenu} className={mobileMenuItemClass}>
+            <button
+              type="button"
+              onClick={() => {
+                closeMobileMenu();
+                openRecipeSearch();
+              }}
+              className={mobileMenuItemClass}
+            >
               <Search className="h-5 w-5" />
               BUSCAR
-            </Link>
+            </button>
 
             {menuItems.map((item) => (
               <Link key={item.label} to={item.to} onClick={closeMobileMenu} className={mobileMenuItemClass}>
