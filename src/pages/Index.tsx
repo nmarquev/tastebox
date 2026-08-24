@@ -6657,21 +6657,21 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     key={recipe.id}
                     type="button"
                     onClick={(e) => { if (activeBulkPanel !== null) { e.preventDefault(); handleToggleRecipeSelection(recipe, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey }); } else { handleViewRecipe(recipe); } }}
-                    className={`flex items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 ${viewMode === 'detail' ? 'py-2.5' : 'py-1'} ${listSelected ? 'bg-accent/60' : ''}`}
+                    className={`flex items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 ${viewMode === 'detail' ? 'py-2.5 sm:gap-0 sm:p-0 xl:gap-3 xl:px-3 xl:py-2.5' : 'py-1'} ${listSelected ? 'bg-accent/60' : ''}`}
                   >
-                    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ${viewMode === 'detail' ? 'h-14 w-14' : 'h-12 w-12'}`}>
+                    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ${viewMode === 'detail' ? 'h-14 w-14 sm:h-24 sm:w-24 sm:rounded-none xl:h-14 xl:w-14 xl:rounded-md' : 'h-12 w-12'}`}>
                       {listImg
                         ? <img src={listImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-5 w-5 text-muted-foreground" />}
                     </span>
-                    <span className="min-w-0 flex-1">
+                    <span className={`min-w-0 flex-1 ${viewMode === 'detail' ? 'sm:px-3 sm:py-2.5 xl:p-0' : ''}`}>
                       <span className={`block truncate font-medium text-foreground ${viewMode === 'detail' ? 'text-lg' : ''}`}>{recipe.title}</span>
                       {listSource && (
                         <span className="block truncate text-xs text-muted-foreground">{listSource}</span>
                       )}
                     </span>
                     {viewMode === 'detail' && (
-                    <span className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
+                    <span className="hidden shrink-0 flex-col items-end gap-1 sm:flex sm:py-2.5 sm:pr-3 xl:p-0">
                       {/* Fila 1: tiempos y porciones */}
                       <span className="flex items-center gap-3 text-base text-muted-foreground">
                         {!!recipe.prepTime && recipe.prepTime > 0 && (
