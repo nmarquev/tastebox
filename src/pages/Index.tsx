@@ -81,7 +81,7 @@ type EditableGalleryTarget = {
   cover?: string | null;
 };
 
-const DEFAULT_SEARCH_SCOPE: SearchScope = 'keyword';
+const DEFAULT_SEARCH_SCOPE: SearchScope = 'title';
 
 const matchesWholePhrase = (text: string, query: string) => {
   const escapedQuery = query
@@ -6327,7 +6327,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             title={recipe.checked ? "Receta chequeada" : "Marcar receta como chequeada"}
                             aria-label={recipe.checked ? "Marcar como pendiente de revisión" : "Marcar como chequeada"}
                           >
-                            <Check className="h-4 w-4" strokeWidth={3} />
+                            <Check className="h-4 w-4" strokeWidth={3.5} />
                           </button>
                           <button
                             type="button"

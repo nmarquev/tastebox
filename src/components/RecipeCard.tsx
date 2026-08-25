@@ -380,7 +380,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 onToggleFeature(recipe, 'checked', !recipe.checked);
               }}
             >
-              <Check className="h-5 w-5" strokeWidth={3} />
+              <Check className="h-5 w-5" strokeWidth={3.5} />
             </Button>
           )}
           {onSaveToCollection && (
