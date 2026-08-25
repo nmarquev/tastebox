@@ -29,6 +29,7 @@ interface RecipeCardProps {
   onShowNutrition?: (recipe: Recipe) => void;
   onSaveToCollection?: (recipe: Recipe) => void;
   onAddImage?: (recipe: Recipe) => void;
+  onDropImage?: (recipe: Recipe, dataTransfer: DataTransfer) => void;
   isAddingImage?: boolean;
   isInCollection?: boolean;
   columns?: 1 | 2 | 3 | 4 | 5;
@@ -74,8 +75,9 @@ const sameValues = (left: string[], right: string[]) => {
     && normalizedLeft.every((value, index) => value === normalizedRight[index]);
 };
 
-export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onAddImage, isAddingImage = false, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], tagOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onAddImage, onDropImage, isAddingImage = false, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], tagOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [isImageDragOver, setIsImageDragOver] = useState(false);
   // Edición inline (vista 1 columna) de los campos visibles.
   const [inlineEditing, setInlineEditing] = useState(false);
   const [savingInline, setSavingInline] = useState(false);
@@ -267,7 +269,32 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           aria-label={`${isSelected ? "Deseleccionar" : "Seleccionar"} ${recipe.title}`}
         />
       )}
-      <div className={`relative w-full min-w-0 overflow-hidden cursor-pointer ${oneCol ? "sm:w-72 sm:shrink-0" : ""}`} onClick={handleCardClick}>
+      <div
+        className={`relative w-full min-w-0 overflow-hidden cursor-pointer ${oneCol ? "sm:w-72 sm:shrink-0" : ""} ${isImageDragOver ? 'ring-2 ring-inset ring-primary' : ''}`}
+        onClick={handleCardClick}
+        onDragEnter={(event) => {
+          if (!onDropImage || selectionMode || isAddingImage) return;
+          event.preventDefault();
+          setIsImageDragOver(true);
+        }}
+        onDragOver={(event) => {
+          if (!onDropImage || selectionMode || isAddingImage) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'copy';
+          setIsImageDragOver(true);
+        }}
+        onDragLeave={(event) => {
+          if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+          setIsImageDragOver(false);
+        }}
+        onDrop={(event) => {
+          if (!onDropImage || selectionMode || isAddingImage) return;
+          event.preventDefault();
+          event.stopPropagation();
+          setIsImageDragOver(false);
+          onDropImage(recipe, event.dataTransfer);
+        }}
+      >
         {selectionMode && (
           <span
             className={`pointer-events-none absolute right-3 bottom-3 z-20 inline-flex h-5 w-5 items-center justify-center rounded-md border-2 shadow-sm ${
@@ -291,6 +318,11 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
         ) : (
           <div className={`w-full ${getImageHeight()} bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center`}>
             <ChefHat className="h-12 w-12 text-muted-foreground" />
+          </div>
+        )}
+        {isImageDragOver && (
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-primary/20 text-sm font-semibold text-primary">
+            Soltar imagen
           </div>
         )}
         {onAddImage && !selectionMode && (

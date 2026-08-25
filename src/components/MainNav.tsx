@@ -105,6 +105,7 @@ export const MainNav = () => {
   const [recipeSearch, setRecipeSearch] = useState('');
   const [recipeSearchMode, setRecipeSearchMode] = useState<'all' | 'any' | 'exact'>('all');
   const [selectedEmptyFields, setSelectedEmptyFields] = useState<EmptyRecipeField[]>([]);
+  const [emptyFieldsMatchMode, setEmptyFieldsMatchMode] = useState<'any' | 'all'>('any');
   const recipeSearchInputRef = useRef<HTMLInputElement>(null);
   const showingDuplicateRecipes = new URLSearchParams(location.search).get('view') === 'duplicadas';
   const panelPath = (panel: 'filter' | 'edit' | 'print' | 'delete') => {
@@ -171,10 +172,12 @@ export const MainNav = () => {
   };
 
   const openEmptyFieldsSearch = () => {
-    const currentFields = new URLSearchParams(location.search)
+    const params = new URLSearchParams(location.search);
+    const currentFields = params
       .getAll('vacio')
       .filter(isEmptyRecipeField);
     setSelectedEmptyFields(currentFields);
+    setEmptyFieldsMatchMode(params.get('vacioCoincidencia') === 'todas' ? 'all' : 'any');
     window.setTimeout(() => setEmptyFieldsDialogOpen(true), 0);
   };
 
@@ -188,6 +191,7 @@ export const MainNav = () => {
     if (selectedEmptyFields.length === 0) return;
     const params = new URLSearchParams();
     selectedEmptyFields.forEach(field => params.append('vacio', field));
+    params.set('vacioCoincidencia', emptyFieldsMatchMode === 'all' ? 'todas' : 'alguna');
     setEmptyFieldsDialogOpen(false);
     navigate(`/app?${params.toString()}`);
   };
@@ -271,10 +275,6 @@ export const MainNav = () => {
             <Search className="mr-2 h-4 w-4" />
             Buscar
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={openEmptyFieldsSearch}>
-            <ListFilter className="mr-2 h-4 w-4" />
-            Buscar campos vacíos
-          </DropdownMenuItem>
           {optionItems.map((item) => (
             <DropdownMenuItem key={item.label} asChild>
               <Link to={item.to} className="flex items-center gap-2">
@@ -301,6 +301,10 @@ export const MainNav = () => {
               ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+          <DropdownMenuItem onSelect={openEmptyFieldsSearch}>
+            <ListFilter className="mr-2 h-4 w-4" />
+            Buscar campos vacíos
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link to={duplicateOption.to} className="flex items-center gap-2">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center">
@@ -395,8 +399,22 @@ export const MainNav = () => {
             <DialogTitle>Buscar recetas con campos vacíos</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Seleccioná uno o más campos. Se mostrarán las recetas donde todos los campos marcados estén vacíos.
+            Seleccioná uno o más campos vacíos que quieras encontrar.
           </p>
+          <RadioGroup
+            value={emptyFieldsMatchMode}
+            onValueChange={value => setEmptyFieldsMatchMode(value as 'any' | 'all')}
+            className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2"
+          >
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <RadioGroupItem value="any" id="empty-fields-any" />
+              <span>Cumple alguna condición</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <RadioGroupItem value="all" id="empty-fields-all" />
+              <span>Cumple todas las condiciones</span>
+            </label>
+          </RadioGroup>
           <div className="grid max-h-[60vh] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
             {EMPTY_RECIPE_FIELD_OPTIONS.map(option => {
               const checked = selectedEmptyFields.includes(option.value);
@@ -541,17 +559,6 @@ export const MainNav = () => {
                   <Search className="h-4 w-4" />
                   Buscar
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMobileMenu();
-                    openEmptyFieldsSearch();
-                  }}
-                  className={mobileSubmenuItemClass}
-                >
-                  <ListFilter className="h-4 w-4" />
-                  Buscar campos vacíos
-                </button>
                 {optionItems.map((item) => (
                   <Link key={item.label} to={item.to} onClick={closeMobileMenu} className={mobileSubmenuItemClass}>
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center">{item.icon}</span>
@@ -585,6 +592,17 @@ export const MainNav = () => {
                     ))}
                   </div>
                 </details>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileMenu();
+                    openEmptyFieldsSearch();
+                  }}
+                  className={mobileSubmenuItemClass}
+                >
+                  <ListFilter className="h-4 w-4" />
+                  Buscar campos vacíos
+                </button>
                 <Link to={duplicateOption.to} onClick={closeMobileMenu} className={mobileSubmenuItemClass}>
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">{duplicateOption.icon}</span>
                   {duplicateOption.label}

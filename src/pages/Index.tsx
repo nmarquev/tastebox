@@ -209,6 +209,10 @@ const Index = () => {
   const initialEmptyFieldFilters = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).getAll('vacio').filter(isEmptyRecipeField)
     : [];
+  const initialEmptyFieldMatchMode: 'any' | 'all' = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('vacioCoincidencia') === 'todas'
+    ? 'all'
+    : 'any';
   const initialRecipeTypeFilter = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('filtro')
     : null;
@@ -229,9 +233,12 @@ const Index = () => {
   const [searchMatchMode, setSearchMatchMode] = useState<'all' | 'any' | 'exact'>(initialSearchMatchMode);
   const [searchScope, setSearchScope] = useState<SearchScope>(initialSearchScope);
   const [emptyFieldFilters, setEmptyFieldFilters] = useState<EmptyRecipeField[]>(initialEmptyFieldFilters);
+  const [emptyFieldMatchMode, setEmptyFieldMatchMode] = useState<'any' | 'all'>(initialEmptyFieldMatchMode);
   const recipeImageInputRef = useRef<HTMLInputElement>(null);
   const recipeImageTargetRef = useRef<Recipe | null>(null);
+  const recipeImageUploadInProgressRef = useRef(false);
   const [uploadingRecipeImageId, setUploadingRecipeImageId] = useState<string | null>(null);
+  const [dragOverRecipeImageId, setDragOverRecipeImageId] = useState<string | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   // El banner (Hero) ya no se muestra: una sola pagina.
   const [showHero, setShowHero] = useState(false);
@@ -363,6 +370,7 @@ const Index = () => {
       ? scopeValue
       : DEFAULT_SEARCH_SCOPE;
     const emptyFields = params.getAll('vacio').filter(isEmptyRecipeField);
+    const emptyFieldsMatchMode = params.get('vacioCoincidencia') === 'todas' ? 'all' : 'any';
     const typeFilter = params.get('filtro');
     const categoria = CATEGORIES_ENABLED ? params.get('categoria') : null;
     const panel = params.get('panel');
@@ -375,6 +383,7 @@ const Index = () => {
       setSearchScope(scope);
     }
     setEmptyFieldFilters(emptyFields);
+    setEmptyFieldMatchMode(emptyFieldsMatchMode);
     setShowCollectionsGallery(view === 'colecciones');
     setShowCategoriesGallery(CATEGORIES_ENABLED && view === 'categorias');
     setShowSourcesGallery(view === 'fuentes');
@@ -963,7 +972,9 @@ const Index = () => {
       }
     };
     const matchesEmptyFields = emptyFieldFilters.length === 0
-      || emptyFieldFilters.every(isSelectedFieldEmpty);
+      || (emptyFieldMatchMode === 'all'
+        ? emptyFieldFilters.every(isSelectedFieldEmpty)
+        : emptyFieldFilters.some(isSelectedFieldEmpty));
     const matchesDuplicateTitle = !showDuplicateRecipes
       || (duplicateRecipeTitleCounts.get(normalizeRecipeTitle(recipe.title)) || 0) > 1;
 
@@ -1121,7 +1132,7 @@ const Index = () => {
   useEffect(() => {
     if (!user) return; // Skip if not logged in
     setDisplayedCount(24);
-  }, [user, searchTerm, searchTerms, searchMatchMode, searchScope, emptyFieldFilters, filters, recipeSort, sortDirection]);
+  }, [user, searchTerm, searchTerms, searchMatchMode, searchScope, emptyFieldFilters, emptyFieldMatchMode, filters, recipeSort, sortDirection]);
 
   // If user is not logged in, show auth page
   if (!user) {
@@ -1174,24 +1185,25 @@ const Index = () => {
   };
 
   const openRecipeImagePicker = (recipe: Recipe) => {
-    if (uploadingRecipeImageId) return;
+    if (recipeImageUploadInProgressRef.current) return;
     recipeImageTargetRef.current = recipe;
     if (recipeImageInputRef.current) recipeImageInputRef.current.value = '';
     recipeImageInputRef.current?.click();
   };
 
-  const handleRecipeImageSelected = async (file?: File) => {
-    const recipe = recipeImageTargetRef.current;
-    if (!recipe || !file || uploadingRecipeImageId) return;
-    if (!file.type.startsWith('image/')) {
+  const addImageToRecipe = async (recipe: Recipe, source: File | string) => {
+    if (recipeImageUploadInProgressRef.current) return;
+    if (source instanceof File && !source.type.startsWith('image/')) {
       toast({ title: 'El archivo seleccionado no es una imagen', variant: 'destructive' });
       return;
     }
 
+    recipeImageUploadInProgressRef.current = true;
     setUploadingRecipeImageId(recipe.id);
     try {
-      const uploadResult = await api.upload.images([file]);
-      const uploadedImage = uploadResult.images?.[0];
+      const uploadedImage = source instanceof File
+        ? (await api.upload.images([source])).images?.[0]
+        : (await api.upload.fromUrl(source)).image;
       if (!uploadedImage?.url) throw new Error('No se pudo procesar la imagen');
 
       const existingImages = (recipe.images || []).map((image, index) => ({
@@ -1219,10 +1231,44 @@ const Index = () => {
         variant: 'destructive',
       });
     } finally {
+      recipeImageUploadInProgressRef.current = false;
       setUploadingRecipeImageId(null);
       recipeImageTargetRef.current = null;
       if (recipeImageInputRef.current) recipeImageInputRef.current.value = '';
     }
+  };
+
+  const handleRecipeImageSelected = async (file?: File) => {
+    const recipe = recipeImageTargetRef.current;
+    if (!recipe || !file) return;
+    await addImageToRecipe(recipe, file);
+  };
+
+  const handleRecipeImageDrop = (recipe: Recipe, dataTransfer: DataTransfer) => {
+    const imageFile = Array.from(dataTransfer.files || [])
+      .find(file => file.type.startsWith('image/'));
+    if (imageFile) {
+      void addImageToRecipe(recipe, imageFile);
+      return;
+    }
+
+    const html = dataTransfer.getData('text/html');
+    const htmlSource = html?.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || '';
+    const uriSource = dataTransfer.getData('text/uri-list')
+      .split(/\r?\n/)
+      .map(value => value.trim())
+      .find(value => value && !value.startsWith('#')) || '';
+    const imageUrl = (uriSource || htmlSource || dataTransfer.getData('text/plain')).trim();
+    if (/^https?:\/\//i.test(imageUrl)) {
+      void addImageToRecipe(recipe, imageUrl);
+      return;
+    }
+
+    toast({
+      title: 'No se reconoció una imagen',
+      description: 'Arrastrá un archivo de imagen desde tu equipo o desde una página web.',
+      variant: 'destructive',
+    });
   };
 
   const handleImportSuccess = (recipe: Recipe) => {
@@ -2647,6 +2693,7 @@ const Index = () => {
     if (!hadEmptyFieldFilter && fields.length === 0) return;
     params.delete('vacio');
     fields.forEach(field => params.append('vacio', field));
+    if (fields.length === 0) params.delete('vacioCoincidencia');
     params.set('conservarFiltros', '1');
     navigate(
       { pathname: location.pathname, search: `?${params.toString()}` },
@@ -6470,10 +6517,39 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     className={`flex items-start gap-4 px-3 py-3 text-left transition-colors hover:bg-muted/50 ${ingSelected ? 'bg-accent/60' : ''}`}
                   >
                     {/* Imagen a la izquierda */}
-                    <span className="relative flex h-48 w-48 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                    <span
+                      className={`relative flex h-48 w-48 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ${dragOverRecipeImageId === recipe.id ? 'ring-2 ring-inset ring-primary' : ''}`}
+                      onDragEnter={(event) => {
+                        if (activeBulkPanel !== null || uploadingRecipeImageId) return;
+                        event.preventDefault();
+                        setDragOverRecipeImageId(recipe.id);
+                      }}
+                      onDragOver={(event) => {
+                        if (activeBulkPanel !== null || uploadingRecipeImageId) return;
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = 'copy';
+                        setDragOverRecipeImageId(recipe.id);
+                      }}
+                      onDragLeave={(event) => {
+                        if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+                        setDragOverRecipeImageId(null);
+                      }}
+                      onDrop={(event) => {
+                        if (activeBulkPanel !== null || uploadingRecipeImageId) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setDragOverRecipeImageId(null);
+                        handleRecipeImageDrop(recipe, event.dataTransfer);
+                      }}
+                    >
                       {ingImg
                         ? <img src={ingImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
+                      {dragOverRecipeImageId === recipe.id && (
+                        <span className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-primary/20 text-sm font-semibold text-primary">
+                          Soltar imagen
+                        </span>
+                      )}
                       {activeBulkPanel === null && (
                         <button
                           type="button"
@@ -6888,10 +6964,39 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     onClick={(e) => { if (activeBulkPanel !== null) { e.preventDefault(); handleToggleRecipeSelection(recipe, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey }); } else { handleViewRecipe(recipe); } }}
                     className={`flex items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 ${viewMode === 'detail' ? 'py-2.5 sm:gap-0 sm:p-0 xl:gap-3 xl:px-3 xl:py-2.5' : 'py-1'} ${listSelected ? 'bg-accent/60' : ''}`}
                   >
-                    <span className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ${viewMode === 'detail' ? 'h-14 w-14 sm:h-24 sm:w-24 sm:rounded-none xl:h-14 xl:w-14 xl:rounded-md' : 'h-12 w-12'}`}>
+                    <span
+                      className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ${viewMode === 'detail' ? 'h-14 w-14 sm:h-24 sm:w-24 sm:rounded-none xl:h-14 xl:w-14 xl:rounded-md' : 'h-12 w-12'} ${dragOverRecipeImageId === recipe.id ? 'ring-2 ring-inset ring-primary' : ''}`}
+                      onDragEnter={(event) => {
+                        if (activeBulkPanel !== null || uploadingRecipeImageId) return;
+                        event.preventDefault();
+                        setDragOverRecipeImageId(recipe.id);
+                      }}
+                      onDragOver={(event) => {
+                        if (activeBulkPanel !== null || uploadingRecipeImageId) return;
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = 'copy';
+                        setDragOverRecipeImageId(recipe.id);
+                      }}
+                      onDragLeave={(event) => {
+                        if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+                        setDragOverRecipeImageId(null);
+                      }}
+                      onDrop={(event) => {
+                        if (activeBulkPanel !== null || uploadingRecipeImageId) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setDragOverRecipeImageId(null);
+                        handleRecipeImageDrop(recipe, event.dataTransfer);
+                      }}
+                    >
                       {listImg
                         ? <img src={listImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-5 w-5 text-muted-foreground" />}
+                      {dragOverRecipeImageId === recipe.id && (
+                        <span className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-primary/20 px-1 text-center text-[10px] font-semibold leading-tight text-primary">
+                          Soltar imagen
+                        </span>
+                      )}
                       {activeBulkPanel === null && (
                         <span
                           role="button"
@@ -7184,6 +7289,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   onShowNutrition={handleShowNutrition}
                   onSaveToCollection={setCollectionRecipe}
                   onAddImage={openRecipeImagePicker}
+                  onDropImage={handleRecipeImageDrop}
                   isAddingImage={uploadingRecipeImageId === recipe.id}
                   isInCollection={collectionRecipeIds.has(recipe.id)}
                   isPlayingTTS={playingRecipeId === recipe.id}
