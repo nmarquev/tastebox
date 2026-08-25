@@ -1954,11 +1954,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                             onClick={() => handleRemoveIngredient(index)}
                             size="sm"
                             variant="destructive"
-                            className="h-9 w-8 p-0"
+                            className="h-6 w-6 self-center p-0 md:self-end"
                             title="Eliminar ingrediente"
                             aria-label={`Eliminar ingrediente ${index + 1}`}
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-3 w-3" />
                           </Button>
                         </div>
                       ) : isPastedBlock ? (
