@@ -1278,12 +1278,13 @@ const Index = () => {
 
   const handleRecipeCreated = (recipe: Recipe) => {
     console.log('handleRecipeCreated called with recipe:', recipe.title);
+    const alreadyExists = recipes.some(existingRecipe => existingRecipe.id === recipe.id);
     // Add the new recipe to the local state
     setRecipes(prev => {
       console.log('Adding new recipe to recipes list');
       return uniqueRecipesById([recipe, ...prev]);
     });
-    setTotalRecipeCount(prev => prev + 1);
+    if (!alreadyExists) setTotalRecipeCount(prev => prev + 1);
     // Hide hero to show the recipes list
     console.log('Hiding hero to show recipes list');
     setShowHero(false);
@@ -1298,12 +1299,14 @@ const Index = () => {
       featured: undefined,
       thermomixOnly: prev.thermomixOnly
     }));
-    console.log('Showing recipe created toast');
-    toast({
-      title: "Receta creada exitosamente!",
-      description: `"${recipe.title}" ha sido guardada en tu coleccion`,
-      duration: RECIPE_SAVE_TOAST_DURATION_MS,
-    });
+    if (!alreadyExists) {
+      console.log('Showing recipe created toast');
+      toast({
+        title: "Receta creada exitosamente!",
+        description: `"${recipe.title}" ha sido guardada en tu coleccion`,
+        duration: RECIPE_SAVE_TOAST_DURATION_MS,
+      });
+    }
     console.log('handleRecipeCreated completed');
   };
 

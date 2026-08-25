@@ -208,6 +208,9 @@ export const EditRecipeModal = ({
   // El estado de React no bloquea de forma sincrónica dos submits consecutivos.
   // Este ref evita que un doble clic o Enter repetido cree/actualice dos veces.
   const submitInProgressRef = useRef(false);
+  // En modo creación, después del primer guardado conservamos la receta persistida
+  // para que los siguientes guardados hagan PUT y no creen duplicados.
+  const createdRecipeRef = useRef<Recipe | null>(null);
 
   const scrollFormToTop = () => formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   const scrollFormToBottom = () => formScrollRef.current?.scrollTo({
@@ -489,6 +492,7 @@ export const EditRecipeModal = ({
   useEffect(() => {
     if (!isOpen) {
       wasOpenRef.current = false;
+      createdRecipeRef.current = null;
       return;
     }
 
@@ -1128,17 +1132,25 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
 
       // Check if this is an existing recipe (has ID) or a new/imported recipe
       if (mode === 'create') {
-        const createdRecipe = await api.recipes.create(recipeData as any);
-        await syncRecipeCollections(createdRecipe.id);
-        onRecipeUpdated(createdRecipe);
+        const persistedRecipe = createdRecipeRef.current?.id
+          ? await api.recipes.update(createdRecipeRef.current.id, recipeData as any)
+          : await api.recipes.create(recipeData as any);
+        const isFirstSave = !createdRecipeRef.current?.id;
+        createdRecipeRef.current = persistedRecipe;
+        await syncRecipeCollections(persistedRecipe.id);
+        onRecipeUpdated(persistedRecipe);
         toast({
-          title: "¡Receta creada!",
+          title: isFirstSave ? "¡Receta creada!" : "¡Receta actualizada!",
           description: `"${data.title}" se ha guardado exitosamente`,
           duration: RECIPE_SAVE_TOAST_DURATION_MS,
         });
-        // Una receta nueva ya quedó persistida: cerrar el formulario impide que otro
-        // clic en Guardar vuelva a ejecutar POST /recipes sobre la misma receta.
-        onClose();
+        const persistedImages = persistedRecipe.images || allImages;
+        setExistingImages(persistedImages);
+        setUploadedImages([]);
+        setInitialImageCount(persistedImages.length);
+        setInitialCollectionIds(selectedCollectionIds);
+        reset(data);
+        initialFormSnapshot.current = getFormSnapshot(getValues());
       } else if (recipe.id) {
         // Existing recipe - update via API
         const updatedRecipe = await api.recipes.update(recipe.id, recipeData as any);
