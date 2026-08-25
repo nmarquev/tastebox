@@ -205,6 +205,9 @@ export const EditRecipeModal = ({
   const lastSelectedInstructionIndex = useRef<number | null>(null);
   const lastInitializedRecipeKey = useRef<string | null>(null);
   const wasOpenRef = useRef(false);
+  // El estado de React no bloquea de forma sincrónica dos submits consecutivos.
+  // Este ref evita que un doble clic o Enter repetido cree/actualice dos veces.
+  const submitInProgressRef = useRef(false);
 
   const scrollFormToTop = () => formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   const scrollFormToBottom = () => formScrollRef.current?.scrollTo({
@@ -1006,7 +1009,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
   };
 
   const onSubmit = async (data: RecipeFormData) => {
-    if (!recipe) return;
+    if (!recipe || submitInProgressRef.current) return;
 
     // Sin cambios: no se actualiza. En modo cola pasa a la siguiente; en edición normal
     // el botón está deshabilitado, así que esto no debería dispararse (no cerramos).
@@ -1026,6 +1029,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
       return Number.isFinite(n) ? Math.round(n * 100) / 100 : undefined;
     };
 
+    submitInProgressRef.current = true;
     setIsLoading(true);
 
     try {
@@ -1121,18 +1125,14 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         const createdRecipe = await api.recipes.create(recipeData as any);
         await syncRecipeCollections(createdRecipe.id);
         onRecipeUpdated(createdRecipe);
-        const persistedImages = (createdRecipe.images || existingImages);
-        setExistingImages(persistedImages);
-        setUploadedImages([]);
-        setInitialImageCount(persistedImages.length);
-        setInitialCollectionIds(selectedCollectionIds);
-        reset(data);
-        initialFormSnapshot.current = getFormSnapshot(getValues());
         toast({
           title: "¡Receta creada!",
           description: `"${data.title}" se ha guardado exitosamente`,
           duration: RECIPE_SAVE_TOAST_DURATION_MS,
         });
+        // Una receta nueva ya quedó persistida: cerrar el formulario impide que otro
+        // clic en Guardar vuelva a ejecutar POST /recipes sobre la misma receta.
+        onClose();
       } else if (recipe.id) {
         // Existing recipe - update via API
         const updatedRecipe = await api.recipes.update(recipe.id, recipeData as any);
@@ -1184,6 +1184,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         variant: "destructive"
       });
     } finally {
+      submitInProgressRef.current = false;
       setIsLoading(false);
     }
   };

@@ -1,5 +1,6 @@
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
+import { SUCCESS_TOAST_DURATION_MS } from "@/constants/toastDurations";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
@@ -12,7 +13,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       position="top-right"
       style={{ ["--width" as any]: "280px" }}
-      duration={5000}
+      duration={SUCCESS_TOAST_DURATION_MS}
       toastOptions={{
         classNames: {
           toast:

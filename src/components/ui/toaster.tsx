@@ -1,8 +1,8 @@
 import { useToast } from "@/hooks/use-toast";
 import { Toast, ToastClose, ToastDescription, ToastProvider, ToastTitle, ToastViewport } from "@/components/ui/toast";
-import { ERROR_TOAST_DURATION_MS } from "@/constants/toastDurations";
+import { ERROR_TOAST_DURATION_MS, SUCCESS_TOAST_DURATION_MS } from "@/constants/toastDurations";
 
-const TOAST_AUTO_DISMISS_MS = 5000;
+const TOAST_AUTO_DISMISS_MS = SUCCESS_TOAST_DURATION_MS;
 
 export function Toaster() {
   const { toasts } = useToast();

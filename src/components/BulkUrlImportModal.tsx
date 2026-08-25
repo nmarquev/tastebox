@@ -15,7 +15,7 @@ import { api } from '@/services/api';
 import { Recipe } from '@/types/recipe';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { Beef, CakeSlice, CandyOff, Loader2, Check, X, Globe, Heart, WheatOff, Leaf, ClipboardPaste, Utensils } from 'lucide-react';
-import { IMPORT_ERROR_TOAST_DURATION_MS } from '@/constants/toastDurations';
+import { IMPORT_ERROR_TOAST_DURATION_MS, SUCCESS_TOAST_DURATION_MS } from '@/constants/toastDurations';
 
 interface BulkUrlImportModalProps {
   isOpen: boolean;
@@ -356,7 +356,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
     toast({
       title: 'Datos confirmados',
       description: 'Se aplicarán a todas las recetas.',
-      duration: 2000,
+      duration: SUCCESS_TOAST_DURATION_MS,
       className: 'w-auto p-3 pr-8 text-sm',
     });
   };

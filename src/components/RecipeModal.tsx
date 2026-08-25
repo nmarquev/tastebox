@@ -1895,9 +1895,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left column: metadatos + ingredientes - 2/3 width */}
-            <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,1fr)_15rem]">
+            {/* Ingredientes a la izquierda; la columna nutricional queda fija a la derecha. */}
+            <div className="min-w-0 space-y-4">
               <h3 className="font-semibold text-xl">Ingredientes ({localRecipe.ingredients?.length || 0})</h3>
               {localRecipe.ingredients && localRecipe.ingredients.length > 0 ? (
                 <div className="space-y-4">
@@ -1934,8 +1934,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               )}
             </div>
 
-            {/* Right column: Nutrition Label - 1/3 width */}
-            <div className={`${(localRecipe.language || '').trim() && !isSpanishLanguage(localRecipe.language) ? 'flex' : 'hidden sm:flex'} justify-center lg:col-span-1 lg:justify-start lg:pl-6 ${!hasNutritionData(localRecipe) ? 'sm:pr-12' : ''}`}>
+            {/* Información nutricional a la derecha desde tablet en adelante. */}
+            <div className={`${(localRecipe.language || '').trim() && !isSpanishLanguage(localRecipe.language) ? 'flex' : 'hidden sm:flex'} justify-center sm:justify-end`}>
               <div className="sticky top-4">
                 <div className="hidden sm:block">
                   <NutritionLabel
