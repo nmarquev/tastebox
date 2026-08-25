@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Beef, CakeSlice, CandyOff, Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf, X, Loader2, Utensils } from "lucide-react";
+import { Beef, CakeSlice, CandyOff, Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf, X, Loader2, Utensils, ImageIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MultiSelectCombobox } from "@/components/MultiSelectCombobox";
@@ -28,6 +28,8 @@ interface RecipeCardProps {
   onPlayTTS?: (recipe: Recipe) => void;
   onShowNutrition?: (recipe: Recipe) => void;
   onSaveToCollection?: (recipe: Recipe) => void;
+  onAddImage?: (recipe: Recipe) => void;
+  isAddingImage?: boolean;
   isInCollection?: boolean;
   columns?: 1 | 2 | 3 | 4 | 5;
   collectionNames?: string[];
@@ -72,7 +74,7 @@ const sameValues = (left: string[], right: string[]) => {
     && normalizedLeft.every((value, index) => value === normalizedRight[index]);
 };
 
-export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], tagOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite, onToggleCooked, onPlayTTS, onShowNutrition, onSaveToCollection, onAddImage, isAddingImage = false, isInCollection = false, columns = 3, collectionNames = [], dishTypeOptions = [], categoryOptions = [], tagOptions = [], sourceOptions = [], allCollections = [], onInlineSave, onToggleFeature, isPlayingTTS = false, isGeneratingScript = false, selectionMode = false, isSelected = false, onSelectionChange }: RecipeCardProps) => {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   // Edición inline (vista 1 columna) de los campos visibles.
   const [inlineEditing, setInlineEditing] = useState(false);
@@ -290,6 +292,23 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           <div className={`w-full ${getImageHeight()} bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center`}>
             <ChefHat className="h-12 w-12 text-muted-foreground" />
           </div>
+        )}
+        {onAddImage && !selectionMode && (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={isAddingImage}
+            onClick={(event) => {
+              event.stopPropagation();
+              onAddImage(recipe);
+            }}
+            className={`absolute bottom-2 left-2 z-20 bg-white/75 p-0 text-gray-600 shadow-sm hover:bg-white/90 ${minimal ? 'h-7 w-7' : 'h-8 w-8'}`}
+            title={primaryImage ? 'Agregar otra imagen' : 'Agregar imagen'}
+            aria-label={primaryImage ? `Agregar otra imagen a ${recipe.title}` : `Agregar imagen a ${recipe.title}`}
+          >
+            {isAddingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+          </Button>
         )}
         {!minimal && !selectionMode && (
         <div className={`absolute top-3 right-3 flex items-center justify-end gap-1.5 ${compact ? 'top-2 right-2 gap-1 [&_button]:h-6 [&_button]:w-6 [&_svg]:!h-3.5 [&_svg]:!w-3.5 [&_img]:!h-4 [&_img]:!w-4' : ''}`}>

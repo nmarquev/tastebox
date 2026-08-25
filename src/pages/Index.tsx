@@ -224,6 +224,9 @@ const Index = () => {
   const [searchTerms, setSearchTerms] = useState<string[]>(initialSearchValues.length > 1 ? initialSearchValues : []);
   const [searchMatchMode, setSearchMatchMode] = useState<'all' | 'any' | 'exact'>(initialSearchMatchMode);
   const [searchScope, setSearchScope] = useState<SearchScope>(initialSearchScope);
+  const recipeImageInputRef = useRef<HTMLInputElement>(null);
+  const recipeImageTargetRef = useRef<Recipe | null>(null);
+  const [uploadingRecipeImageId, setUploadingRecipeImageId] = useState<string | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   // El banner (Hero) ya no se muestra: una sola pagina.
   const [showHero, setShowHero] = useState(false);
@@ -1092,6 +1095,75 @@ const Index = () => {
 
   const openTabletRecipeAction = (action: 'nueva' | 'importar' | 'importar-texto' | 'busqueda-inteligente') => {
     navigate(`/app?accion=${action}&_=${Date.now()}`);
+  };
+
+  const handlePasteSearch = async () => {
+    try {
+      const clipboardText = (await navigator.clipboard.readText()).replace(/\s+/g, ' ').trim();
+      if (!clipboardText) {
+        toast({ title: 'Portapapeles vacío', description: 'No hay texto para pegar.', variant: 'destructive' });
+        return;
+      }
+      setSearchTerm(clipboardText);
+    } catch {
+      toast({
+        title: 'No se pudo pegar',
+        description: 'Permití el acceso al portapapeles o pegá el texto manualmente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const openRecipeImagePicker = (recipe: Recipe) => {
+    if (uploadingRecipeImageId) return;
+    recipeImageTargetRef.current = recipe;
+    if (recipeImageInputRef.current) recipeImageInputRef.current.value = '';
+    recipeImageInputRef.current?.click();
+  };
+
+  const handleRecipeImageSelected = async (file?: File) => {
+    const recipe = recipeImageTargetRef.current;
+    if (!recipe || !file || uploadingRecipeImageId) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'El archivo seleccionado no es una imagen', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingRecipeImageId(recipe.id);
+    try {
+      const uploadResult = await api.upload.images([file]);
+      const uploadedImage = uploadResult.images?.[0];
+      if (!uploadedImage?.url) throw new Error('No se pudo procesar la imagen');
+
+      const existingImages = (recipe.images || []).map((image, index) => ({
+        ...image,
+        order: index + 2,
+      }));
+      const updatedRecipe = await api.recipes.updateImages(recipe.id, [
+        {
+          url: uploadedImage.url,
+          localPath: uploadedImage.localPath,
+          order: 1,
+          altText: uploadedImage.altText || recipe.title,
+        },
+        ...existingImages,
+      ]);
+
+      setRecipes(previous => previous.map(item => item.id === updatedRecipe.id ? updatedRecipe : item));
+      setSelectedRecipe(previous => previous?.id === updatedRecipe.id ? updatedRecipe : previous);
+      setRecipeToEdit(previous => previous?.id === updatedRecipe.id ? updatedRecipe : previous);
+      toast({ title: 'Imagen agregada', description: `Se agregó una imagen a “${recipe.title}”.` });
+    } catch (error) {
+      toast({
+        title: 'No se pudo agregar la imagen',
+        description: error instanceof Error ? error.message : 'Intentá nuevamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingRecipeImageId(null);
+      recipeImageTargetRef.current = null;
+      if (recipeImageInputRef.current) recipeImageInputRef.current.value = '';
+    }
   };
 
   const handleImportSuccess = (recipe: Recipe) => {
@@ -3425,6 +3497,14 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         minimal={isItemWindow}
       />
 
+      <input
+        ref={recipeImageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => void handleRecipeImageSelected(event.target.files?.[0])}
+      />
+
       {showHero && (
         <Hero onGetStarted={handleGetStarted} onViewFeatured={handleViewFeatured} />
       )}
@@ -3519,7 +3599,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {/* Search input (multi-palabra: escrib? y Enter agrega una palabra clave) */}
             <div className={`col-span-2 flex min-w-0 flex-col gap-1 sm:col-span-full xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2 ${inGallery ? '' : 'xl:row-span-2'}`}>
               <div className="flex min-w-0 flex-col gap-2.5">
-                <div className={`toolbar-search-field relative min-w-[190px] rounded-md border border-input bg-background transition-all duration-200 hover:scale-105 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'w-full xl:w-[330px]' : 'w-full xl:w-[330px]'}`}>
+                <div className="flex min-w-0 items-stretch gap-1.5">
+                <div className={`toolbar-search-field relative min-w-0 flex-1 rounded-md border border-input bg-background transition-all duration-200 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'w-full xl:w-[284px]' : 'w-full xl:w-[284px]'}`}>
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder={showCollectionsGallery ? "Buscar coleccion" : showDishTypesGallery ? "Buscar tipo de comida" : showCategoriesGallery ? "Buscar categoria" : showSourcesGallery ? "Buscar fuente" : showTagsGallery ? "Buscar por etiqueta" : "Buscar"}
@@ -3550,6 +3631,18 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       <X className="h-4 w-4" />
                     </button>
                   )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => void handlePasteSearch()}
+                  className="h-10 w-10 shrink-0 transition-all duration-200 hover:scale-105 hover:shadow-md"
+                  title="Pegar texto del portapapeles"
+                  aria-label="Pegar texto del portapapeles en Buscar"
+                >
+                  <ClipboardPaste className="h-4 w-4" />
+                </Button>
                 </div>
                 {!showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery && (
                   <RadioGroup
@@ -6300,6 +6393,23 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         ? <img src={ingImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-7 w-7 text-muted-foreground" />}
                       {activeBulkPanel === null && (
+                        <button
+                          type="button"
+                          disabled={uploadingRecipeImageId === recipe.id}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openRecipeImagePicker(recipe);
+                          }}
+                          className="absolute bottom-2 left-2 z-20 inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90 disabled:opacity-70"
+                          title={ingImg ? 'Agregar otra imagen' : 'Agregar imagen'}
+                          aria-label={ingImg ? `Agregar otra imagen a ${recipe.title}` : `Agregar imagen a ${recipe.title}`}
+                        >
+                          {uploadingRecipeImageId === recipe.id
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <ImageIcon className="h-4 w-4" />}
+                        </button>
+                      )}
+                      {activeBulkPanel === null && (
                         <span
                           className="absolute inset-x-1 top-1 z-10 flex items-center gap-0.5"
                           onClick={(event) => event.stopPropagation()}
@@ -6696,10 +6806,34 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     onClick={(e) => { if (activeBulkPanel !== null) { e.preventDefault(); handleToggleRecipeSelection(recipe, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey }); } else { handleViewRecipe(recipe); } }}
                     className={`flex items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50 ${viewMode === 'detail' ? 'py-2.5 sm:gap-0 sm:p-0 xl:gap-3 xl:px-3 xl:py-2.5' : 'py-1'} ${listSelected ? 'bg-accent/60' : ''}`}
                   >
-                    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ${viewMode === 'detail' ? 'h-14 w-14 sm:h-24 sm:w-24 sm:rounded-none xl:h-14 xl:w-14 xl:rounded-md' : 'h-12 w-12'}`}>
+                    <span className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ${viewMode === 'detail' ? 'h-14 w-14 sm:h-24 sm:w-24 sm:rounded-none xl:h-14 xl:w-14 xl:rounded-md' : 'h-12 w-12'}`}>
                       {listImg
                         ? <img src={listImg} alt="" className="h-full w-full object-cover" />
                         : <ChefHat className="h-5 w-5 text-muted-foreground" />}
+                      {activeBulkPanel === null && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openRecipeImagePicker(recipe);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter' && event.key !== ' ') return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openRecipeImagePicker(recipe);
+                          }}
+                          className="absolute bottom-1 left-1 z-20 inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/60 bg-white/80 text-gray-600 shadow-sm transition-colors hover:bg-white"
+                          title={listImg ? 'Agregar otra imagen' : 'Agregar imagen'}
+                          aria-label={listImg ? `Agregar otra imagen a ${recipe.title}` : `Agregar imagen a ${recipe.title}`}
+                        >
+                          {uploadingRecipeImageId === recipe.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <ImageIcon className="h-3.5 w-3.5" />}
+                        </span>
+                      )}
                     </span>
                     <span className={`min-w-0 flex-1 ${viewMode === 'detail' ? 'sm:px-3 sm:py-2.5 xl:p-0' : ''}`}>
                       <span className={`block truncate font-medium text-foreground ${viewMode === 'detail' ? 'text-lg' : ''}`}>{recipe.title}</span>
@@ -6967,6 +7101,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   onPlayTTS={handlePlayTTS}
                   onShowNutrition={handleShowNutrition}
                   onSaveToCollection={setCollectionRecipe}
+                  onAddImage={openRecipeImagePicker}
+                  isAddingImage={uploadingRecipeImageId === recipe.id}
                   isInCollection={collectionRecipeIds.has(recipe.id)}
                   isPlayingTTS={playingRecipeId === recipe.id}
                   isGeneratingScript={generatingScript === recipe.id}
