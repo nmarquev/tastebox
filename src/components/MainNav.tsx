@@ -15,6 +15,7 @@ import {
   Filter,
   Heart,
   Leaf,
+  ListFilter,
   Menu,
   PlusCircle,
   Printer,
@@ -41,7 +42,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { EMPTY_RECIPE_FIELD_OPTIONS, EmptyRecipeField, isEmptyRecipeField } from "@/constants/emptyRecipeFields";
 import {
   Sheet,
   SheetContent,
@@ -97,9 +100,11 @@ export const MainNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [emptyFieldsDialogOpen, setEmptyFieldsDialogOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [recipeSearch, setRecipeSearch] = useState('');
   const [recipeSearchMode, setRecipeSearchMode] = useState<'all' | 'any' | 'exact'>('all');
+  const [selectedEmptyFields, setSelectedEmptyFields] = useState<EmptyRecipeField[]>([]);
   const recipeSearchInputRef = useRef<HTMLInputElement>(null);
   const showingDuplicateRecipes = new URLSearchParams(location.search).get('view') === 'duplicadas';
   const panelPath = (panel: 'filter' | 'edit' | 'print' | 'delete') => {
@@ -163,6 +168,28 @@ export const MainNav = () => {
     setRecipeSearch('');
     setRecipeSearchMode('all');
     window.setTimeout(() => setSearchDialogOpen(true), 0);
+  };
+
+  const openEmptyFieldsSearch = () => {
+    const currentFields = new URLSearchParams(location.search)
+      .getAll('vacio')
+      .filter(isEmptyRecipeField);
+    setSelectedEmptyFields(currentFields);
+    window.setTimeout(() => setEmptyFieldsDialogOpen(true), 0);
+  };
+
+  const toggleEmptyField = (field: EmptyRecipeField, checked: boolean) => {
+    setSelectedEmptyFields(previous => checked
+      ? previous.includes(field) ? previous : [...previous, field]
+      : previous.filter(value => value !== field));
+  };
+
+  const submitEmptyFieldsSearch = () => {
+    if (selectedEmptyFields.length === 0) return;
+    const params = new URLSearchParams();
+    selectedEmptyFields.forEach(field => params.append('vacio', field));
+    setEmptyFieldsDialogOpen(false);
+    navigate(`/app?${params.toString()}`);
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -243,6 +270,10 @@ export const MainNav = () => {
           <DropdownMenuItem onSelect={openRecipeSearch}>
             <Search className="mr-2 h-4 w-4" />
             Buscar
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={openEmptyFieldsSearch}>
+            <ListFilter className="mr-2 h-4 w-4" />
+            Buscar campos vacíos
           </DropdownMenuItem>
           {optionItems.map((item) => (
             <DropdownMenuItem key={item.label} asChild>
@@ -353,6 +384,46 @@ export const MainNav = () => {
             <Button type="button" onClick={submitRecipeSearch} disabled={!recipeSearch.trim()}>
               <Search className="mr-2 h-4 w-4" />
               Buscar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={emptyFieldsDialogOpen} onOpenChange={setEmptyFieldsDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Buscar recetas con campos vacíos</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Seleccioná uno o más campos. Se mostrarán las recetas donde todos los campos marcados estén vacíos.
+          </p>
+          <div className="grid max-h-[60vh] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+            {EMPTY_RECIPE_FIELD_OPTIONS.map(option => {
+              const checked = selectedEmptyFields.includes(option.value);
+              const id = `empty-field-${option.value}`;
+              return (
+                <label
+                  key={option.value}
+                  htmlFor={id}
+                  className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors ${checked ? 'border-primary bg-primary/10 text-foreground' : 'border-border hover:bg-muted/60'}`}
+                >
+                  <Checkbox
+                    id={id}
+                    checked={checked}
+                    onCheckedChange={value => toggleEmptyField(option.value, value === true)}
+                  />
+                  <span>{option.label}</span>
+                </label>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setEmptyFieldsDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={submitEmptyFieldsSearch} disabled={selectedEmptyFields.length === 0}>
+              <Search className="mr-2 h-4 w-4" />
+              Mostrar recetas
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -469,6 +540,17 @@ export const MainNav = () => {
                 >
                   <Search className="h-4 w-4" />
                   Buscar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileMenu();
+                    openEmptyFieldsSearch();
+                  }}
+                  className={mobileSubmenuItemClass}
+                >
+                  <ListFilter className="h-4 w-4" />
+                  Buscar campos vacíos
                 </button>
                 {optionItems.map((item) => (
                   <Link key={item.label} to={item.to} onClick={closeMobileMenu} className={mobileSubmenuItemClass}>

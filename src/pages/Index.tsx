@@ -66,6 +66,7 @@ import { saveRecentCategory } from "@/utils/recentCategories";
 import { saveRecentRecipe } from "@/utils/recentRecipes";
 import { saveRecentSource } from "@/utils/recentSources";
 import { EMPTY_FILTER_OPTIONS } from "@/constants/emptyFilterOptions";
+import { EmptyRecipeField, getEmptyRecipeFieldLabel, isEmptyRecipeField } from "@/constants/emptyRecipeFields";
 import { CATEGORIES_ENABLED } from "@/constants/features";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -205,6 +206,9 @@ const Index = () => {
   const initialSearchScope: SearchScope = initialSearchScopeValue === 'title' || initialSearchScopeValue === 'ingredient'
     ? initialSearchScopeValue
     : DEFAULT_SEARCH_SCOPE;
+  const initialEmptyFieldFilters = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).getAll('vacio').filter(isEmptyRecipeField)
+    : [];
   const initialRecipeTypeFilter = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('filtro')
     : null;
@@ -224,6 +228,7 @@ const Index = () => {
   const [searchTerms, setSearchTerms] = useState<string[]>(initialSearchValues.length > 1 ? initialSearchValues : []);
   const [searchMatchMode, setSearchMatchMode] = useState<'all' | 'any' | 'exact'>(initialSearchMatchMode);
   const [searchScope, setSearchScope] = useState<SearchScope>(initialSearchScope);
+  const [emptyFieldFilters, setEmptyFieldFilters] = useState<EmptyRecipeField[]>(initialEmptyFieldFilters);
   const recipeImageInputRef = useRef<HTMLInputElement>(null);
   const recipeImageTargetRef = useRef<Recipe | null>(null);
   const [uploadingRecipeImageId, setUploadingRecipeImageId] = useState<string | null>(null);
@@ -357,6 +362,7 @@ const Index = () => {
     const scope: SearchScope = scopeValue === 'title' || scopeValue === 'ingredient'
       ? scopeValue
       : DEFAULT_SEARCH_SCOPE;
+    const emptyFields = params.getAll('vacio').filter(isEmptyRecipeField);
     const typeFilter = params.get('filtro');
     const categoria = CATEGORIES_ENABLED ? params.get('categoria') : null;
     const panel = params.get('panel');
@@ -368,6 +374,7 @@ const Index = () => {
       setSearchMatchMode(matchMode);
       setSearchScope(scope);
     }
+    setEmptyFieldFilters(emptyFields);
     setShowCollectionsGallery(view === 'colecciones');
     setShowCategoriesGallery(CATEGORIES_ENABLED && view === 'categorias');
     setShowSourcesGallery(view === 'fuentes');
@@ -905,10 +912,62 @@ const Index = () => {
       (wantsNoDishType && recipeDishTypes.length === 0) ||
       recipeDishTypes.some(dt => selectedDishTypeValues.includes(dt));
     const matchesAuthor = !filters.author || (recipe.author || '').trim() === filters.author;
+    const isSelectedFieldEmpty = (field: EmptyRecipeField) => {
+      switch (field) {
+        case 'title':
+          return !(recipe.title || '').trim();
+        case 'description':
+          return !(recipe.description || '').trim();
+        case 'source':
+          return !(recipe.source || '').trim();
+        case 'url':
+          return !(recipe.sourceUrl || '').trim();
+        case 'origin':
+          return !(recipe.importedFrom || '').trim();
+        case 'difficulty':
+          return !(recipe.difficulty || '').trim();
+        case 'language':
+          return !(recipe.language || '').trim();
+        case 'country':
+          return !(recipe.country || '').trim();
+        case 'date': {
+          if (!recipe.createdAt) return true;
+          return Number.isNaN(new Date(recipe.createdAt).getTime());
+        }
+        case 'nutrition':
+          return [
+            recipe.calories,
+            recipe.protein,
+            recipe.carbohydrates,
+            recipe.fat,
+            recipe.saturatedFat,
+            recipe.fiber,
+            recipe.sugar,
+            recipe.sodium,
+          ].every(value => value === null || value === undefined);
+        case 'image':
+          return !(recipe.images || []).some(image => (image.url || '').trim());
+        case 'dishType':
+          return !(recipe.dishType || '').trim();
+        case 'collection':
+          return !collections.some(collection => collection.recipeIds.includes(recipe.id));
+        case 'tags':
+          return !(recipe.tags || []).some(tag => {
+            const value = typeof tag === 'string' ? tag : tag.tag || tag.name || '';
+            return value.trim().length > 0;
+          });
+        case 'ingredients':
+          return !(recipe.ingredients || []).some(ingredient => (ingredient.name || '').trim());
+        case 'instructions':
+          return !(recipe.instructions || []).some(instruction => (instruction.description || '').trim());
+      }
+    };
+    const matchesEmptyFields = emptyFieldFilters.length === 0
+      || emptyFieldFilters.every(isSelectedFieldEmpty);
     const matchesDuplicateTitle = !showDuplicateRecipes
       || (duplicateRecipeTitleCounts.get(normalizeRecipeTitle(recipe.title)) || 0) > 1;
 
-    return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesChecked && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesSugarFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesSweet && matchesSavory && matchesCollection && matchesSource && matchesDishType && matchesAuthor && matchesDuplicateTitle;
+    return matchesSearch && matchesDifficulty && matchesPrepTime && matchesRecipeType && matchesTags && matchesIngredients && matchesFeatured && matchesChecked && matchesCooked && matchesThermomix && matchesAirFryer && matchesGlutenFree && matchesSugarFree && matchesKeto && matchesLowCarb && matchesProteica && matchesVegetarian && matchesSweet && matchesSavory && matchesCollection && matchesSource && matchesDishType && matchesAuthor && matchesEmptyFields && matchesDuplicateTitle;
   }).sort((a, b) => {
     const directionFactor = sortDirection === 'asc' ? 1 : -1;
     const compareText = (left: string, right: string) =>
@@ -1062,7 +1121,7 @@ const Index = () => {
   useEffect(() => {
     if (!user) return; // Skip if not logged in
     setDisplayedCount(24);
-  }, [user, searchTerm, searchTerms, searchMatchMode, searchScope, filters, recipeSort, sortDirection]);
+  }, [user, searchTerm, searchTerms, searchMatchMode, searchScope, emptyFieldFilters, filters, recipeSort, sortDirection]);
 
   // If user is not logged in, show auth page
   if (!user) {
@@ -2581,6 +2640,20 @@ const Index = () => {
     setFilters(newFilters);
   };
 
+  const updateEmptyFieldFilters = (fields: EmptyRecipeField[]) => {
+    setEmptyFieldFilters(fields);
+    const params = new URLSearchParams(location.search);
+    const hadEmptyFieldFilter = params.has('vacio');
+    if (!hadEmptyFieldFilter && fields.length === 0) return;
+    params.delete('vacio');
+    fields.forEach(field => params.append('vacio', field));
+    params.set('conservarFiltros', '1');
+    navigate(
+      { pathname: location.pathname, search: `?${params.toString()}` },
+      { replace: true }
+    );
+  };
+
   // "Mis Recetas": mostrar todas las recetas (sin filtros) y ocultar el banner.
   const handleViewAll = () => {
     setShowHero(false);
@@ -2594,7 +2667,8 @@ const Index = () => {
   };
 
   const hasActiveFilters =
-    filters.difficulty.length > 0
+    emptyFieldFilters.length > 0
+    || filters.difficulty.length > 0
     || (CATEGORIES_ENABLED && filters.recipeTypes.length > 0)
     || filters.tags.length > 0
     || Boolean(filters.ingredients?.length)
@@ -2638,6 +2712,13 @@ const Index = () => {
       onRemove: () => setSearchTerms(previous => previous.filter((_, termIndex) => termIndex !== index)),
     });
   });
+  emptyFieldFilters.forEach(field => {
+    activeFilterChips.push({
+      label: 'Vacío',
+      value: getEmptyRecipeFieldLabel(field),
+      onRemove: () => updateEmptyFieldFilters(emptyFieldFilters.filter(value => value !== field)),
+    });
+  });
   if (filters.collectionId) {
     activeFilterChips.push({ label: 'Coleccion', value: filters.collectionId === EMPTY_FILTER_OPTIONS.collection ? EMPTY_FILTER_OPTIONS.collection : collections.find(c => c.id === filters.collectionId)?.name || '', onRemove: () => handleFiltersChange({ ...filters, collectionId: undefined }) });
   }
@@ -2667,6 +2748,7 @@ const Index = () => {
     setSearchTerms([]);
     setSearchMatchMode('all');
     setSearchScope(DEFAULT_SEARCH_SCOPE);
+    updateEmptyFieldFilters([]);
     setFilters({
       difficulty: [],
       prepTimeRange: [0, 180],
