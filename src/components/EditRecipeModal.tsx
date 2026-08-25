@@ -248,12 +248,18 @@ export const EditRecipeModal = ({
     lastSelectedIngredientIndex.current = null;
   };
 
-  const handleRemovePastedIngredient = (index: number) => {
+  const handleRemoveIngredient = (index: number) => {
     if (ingredientFields.length === 1) {
       handleClearIngredients();
       return;
     }
     removeIngredient(index);
+    setSelectedIngredientIndexes(previous => new Set(
+      Array.from(previous)
+        .filter(selectedIndex => selectedIndex !== index)
+        .map(selectedIndex => selectedIndex > index ? selectedIndex - 1 : selectedIndex)
+    ));
+    lastSelectedIngredientIndex.current = null;
   };
 
   const handleIngredientSelection = (index: number, event: ReactMouseEvent<HTMLInputElement>) => {
@@ -1906,7 +1912,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                         : 'space-y-2 rounded-lg border p-3'}
                     >
                       {bulkEditingIngredients ? (
-                        <div className="grid gap-3 md:grid-cols-[2rem_minmax(0,1fr)_minmax(12rem,0.38fr)] md:items-end">
+                        <div className="grid grid-cols-[2rem_minmax(0,1fr)_2rem] gap-3 md:grid-cols-[2rem_minmax(0,1fr)_minmax(12rem,0.38fr)_2rem] md:items-end">
                           <label className="flex h-9 cursor-pointer items-center text-sm font-medium">
                             <input
                               type="checkbox"
@@ -1917,14 +1923,14 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               className="h-4 w-4 cursor-pointer accent-primary"
                             />
                           </label>
-                          <div className="min-w-0">
+                          <div className="col-span-2 min-w-0 md:col-span-1">
                             <Input
                               {...register(`ingredients.${index}.name`)}
                               aria-label={`Ingrediente ${index + 1}`}
                               className="h-9"
                             />
                           </div>
-                          <div className="min-w-0">
+                          <div className="col-start-2 min-w-0 md:col-start-auto">
                             <CreatableCombobox
                               value={ingredient?.section || ''}
                               options={ingredientSectionOptions}
@@ -1943,6 +1949,17 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               onDeleteOption={handleDeleteSharedSection}
                             />
                           </div>
+                          <Button
+                            type="button"
+                            onClick={() => handleRemoveIngredient(index)}
+                            size="sm"
+                            variant="destructive"
+                            className="h-9 w-8 p-0"
+                            title="Eliminar ingrediente"
+                            aria-label={`Eliminar ingrediente ${index + 1}`}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
                       ) : isPastedBlock ? (
                         <Textarea
@@ -1959,7 +1976,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                           />
                           <Button
                             type="button"
-                            onClick={() => handleRemovePastedIngredient(index)}
+                            onClick={() => handleRemoveIngredient(index)}
                             size="sm"
                             variant="destructive"
                             className="-translate-y-1 !h-[22px] !w-[22px] !p-0"
@@ -1992,7 +2009,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                           {ingredientFields.length > 1 && (
                             <Button
                               type="button"
-                              onClick={() => removeIngredient(index)}
+                              onClick={() => handleRemoveIngredient(index)}
                               size="sm"
                               variant="destructive"
                               className="-translate-y-1 !h-[22px] !w-[22px] !p-0"
