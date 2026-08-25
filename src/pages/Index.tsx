@@ -234,8 +234,6 @@ const Index = () => {
   const [searchScope, setSearchScope] = useState<SearchScope>(initialSearchScope);
   const [emptyFieldFilters, setEmptyFieldFilters] = useState<EmptyRecipeField[]>(initialEmptyFieldFilters);
   const [emptyFieldMatchMode, setEmptyFieldMatchMode] = useState<'any' | 'all'>(initialEmptyFieldMatchMode);
-  const recipeImageInputRef = useRef<HTMLInputElement>(null);
-  const recipeImageTargetRef = useRef<Recipe | null>(null);
   const recipeImageUploadInProgressRef = useRef(false);
   const [uploadingRecipeImageId, setUploadingRecipeImageId] = useState<string | null>(null);
   const [dragOverRecipeImageId, setDragOverRecipeImageId] = useState<string | null>(null);
@@ -1184,13 +1182,6 @@ const Index = () => {
     }
   };
 
-  const openRecipeImagePicker = (recipe: Recipe) => {
-    if (recipeImageUploadInProgressRef.current) return;
-    recipeImageTargetRef.current = recipe;
-    if (recipeImageInputRef.current) recipeImageInputRef.current.value = '';
-    recipeImageInputRef.current?.click();
-  };
-
   const addImageToRecipe = async (recipe: Recipe, source: File | string) => {
     if (recipeImageUploadInProgressRef.current) return;
     if (source instanceof File && !source.type.startsWith('image/')) {
@@ -1233,15 +1224,7 @@ const Index = () => {
     } finally {
       recipeImageUploadInProgressRef.current = false;
       setUploadingRecipeImageId(null);
-      recipeImageTargetRef.current = null;
-      if (recipeImageInputRef.current) recipeImageInputRef.current.value = '';
     }
-  };
-
-  const handleRecipeImageSelected = async (file?: File) => {
-    const recipe = recipeImageTargetRef.current;
-    if (!recipe || !file) return;
-    await addImageToRecipe(recipe, file);
   };
 
   const handleRecipeImageDrop = (recipe: Recipe, dataTransfer: DataTransfer) => {
@@ -3624,14 +3607,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
         onViewRecipe={handleViewRecipe}
         onLogoClick={handleLogoClick}
         minimal={isItemWindow}
-      />
-
-      <input
-        ref={recipeImageInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(event) => void handleRecipeImageSelected(event.target.files?.[0])}
       />
 
       {showHero && (
@@ -6551,23 +6526,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         </span>
                       )}
                       {activeBulkPanel === null && (
-                        <button
-                          type="button"
-                          disabled={uploadingRecipeImageId === recipe.id}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openRecipeImagePicker(recipe);
-                          }}
-                          className="absolute bottom-2 left-2 z-20 inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90 disabled:opacity-70"
-                          title={ingImg ? 'Agregar otra imagen' : 'Agregar imagen'}
-                          aria-label={ingImg ? `Agregar otra imagen a ${recipe.title}` : `Agregar imagen a ${recipe.title}`}
-                        >
-                          {uploadingRecipeImageId === recipe.id
-                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                            : <ImageIcon className="h-4 w-4" />}
-                        </button>
-                      )}
-                      {activeBulkPanel === null && (
                         <span
                           className="absolute inset-x-1 top-1 z-10 flex items-center gap-0.5"
                           onClick={(event) => event.stopPropagation()}
@@ -6595,7 +6553,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             title={recipe.checked ? "Receta chequeada" : "Marcar receta como chequeada"}
                             aria-label={recipe.checked ? "Marcar como pendiente de revisión" : "Marcar como chequeada"}
                           >
-                            <Check className="h-4 w-4" strokeWidth={3.5} />
+                            <Check className="h-5 w-5" strokeWidth={4} />
                           </button>
                           <button
                             type="button"
@@ -6997,30 +6955,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           Soltar imagen
                         </span>
                       )}
-                      {activeBulkPanel === null && (
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            openRecipeImagePicker(recipe);
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key !== 'Enter' && event.key !== ' ') return;
-                            event.preventDefault();
-                            event.stopPropagation();
-                            openRecipeImagePicker(recipe);
-                          }}
-                          className="absolute bottom-1 left-1 z-20 inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-white/60 bg-white/80 text-gray-600 shadow-sm transition-colors hover:bg-white"
-                          title={listImg ? 'Agregar otra imagen' : 'Agregar imagen'}
-                          aria-label={listImg ? `Agregar otra imagen a ${recipe.title}` : `Agregar imagen a ${recipe.title}`}
-                        >
-                          {uploadingRecipeImageId === recipe.id
-                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            : <ImageIcon className="h-3.5 w-3.5" />}
-                        </span>
-                      )}
                     </span>
                     <span className={`min-w-0 flex-1 ${viewMode === 'detail' ? 'sm:px-3 sm:py-2.5 xl:p-0' : ''}`}>
                       <span className={`block truncate font-medium text-foreground ${viewMode === 'detail' ? 'text-lg' : ''}`}>{recipe.title}</span>
@@ -7288,7 +7222,6 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   onPlayTTS={handlePlayTTS}
                   onShowNutrition={handleShowNutrition}
                   onSaveToCollection={setCollectionRecipe}
-                  onAddImage={openRecipeImagePicker}
                   onDropImage={handleRecipeImageDrop}
                   isAddingImage={uploadingRecipeImageId === recipe.id}
                   isInCollection={collectionRecipeIds.has(recipe.id)}
