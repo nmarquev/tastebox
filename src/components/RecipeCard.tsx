@@ -234,7 +234,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
     ) : null,
     recipe.checked ? (
       <span key="checked" title="Chequeada" className="inline-flex h-7 w-7 items-center justify-center text-[#3f6f1f]">
-        <Check className="h-6 w-6" strokeWidth={3.5} />
+        <Check className="h-[22px] w-[22px]" strokeWidth={3.5} />
       </span>
     ) : null,
   ].filter((feature): feature is JSX.Element => feature !== null);
@@ -418,7 +418,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 onToggleFeature(recipe, 'checked', !recipe.checked);
               }}
             >
-              <Check className="recipe-checked-icon h-8 w-8" strokeWidth={4} />
+              <Check className="recipe-checked-icon" style={{ width: 22, height: 22 }} strokeWidth={4} />
             </Button>
           )}
           {onSaveToCollection && (

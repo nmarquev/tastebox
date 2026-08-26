@@ -1049,7 +1049,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           }`}
           onClick={() => onToggleFeature(localRecipe, 'checked', !localRecipe.checked)}
         >
-          <Check className="h-8 w-8" strokeWidth={4} />
+          <Check style={{ width: 22, height: 22 }} strokeWidth={4} />
         </Button>
       )}
 
