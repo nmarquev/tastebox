@@ -6565,7 +6565,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               event.stopPropagation();
                               void handleToggleFeature(recipe, 'checked', !recipe.checked);
                             }}
-                            className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/60 bg-white/75 shadow-sm transition-colors hover:bg-white/90 ${recipe.checked ? 'text-[#3f6f1f]' : 'text-gray-600'}`}
+                            className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/60 bg-white/75 shadow-sm transition-colors hover:bg-white/90 ${recipe.checked ? 'text-[#2cbc63]' : 'text-gray-600'}`}
                             title={recipe.checked ? "Receta chequeada" : "Marcar receta como chequeada"}
                             aria-label={recipe.checked ? "Marcar como pendiente de revisión" : "Marcar como chequeada"}
                           >
@@ -6773,7 +6773,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <Heart className="h-4 w-4 fill-red-500 text-red-500" aria-label="Favorita" />
                           )}
                           {recipe.checked && (
-                            <Check className="h-[18px] w-[18px] text-[#3f6f1f]" strokeWidth={3.5} aria-label="Chequeada" />
+                            <Check className="h-[18px] w-[18px] text-[#2cbc63]" strokeWidth={3.5} aria-label="Chequeada" />
                           )}
                         </span>
                       )}
@@ -7056,7 +7056,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <Heart className="h-5 w-5 fill-red-500 text-red-500" aria-label="Favorita" />
                           )}
                           {recipe.checked && (
-                            <Check className="h-[18px] w-[18px] text-[#3f6f1f]" strokeWidth={3.5} aria-label="Chequeada" />
+                            <Check className="h-[18px] w-[18px] text-[#2cbc63]" strokeWidth={3.5} aria-label="Chequeada" />
                           )}
                         </span>
                       )}

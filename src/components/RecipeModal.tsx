@@ -1044,7 +1044,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           title={localRecipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
           className={`order-2 h-9 w-9 border p-0 ${
             localRecipe.checked
-              ? 'border-white/60 bg-white/80 text-[#3f6f1f] hover:bg-white/90'
+              ? 'border-white/60 bg-white/80 text-[#2cbc63] hover:bg-white/90'
               : 'border-white/60 bg-white/80 text-gray-500 hover:bg-white/90'
           }`}
           onClick={() => onToggleFeature(localRecipe, 'checked', !localRecipe.checked)}
@@ -1652,7 +1652,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 )}
                 {localRecipe.checked && (
                   <div className="flex items-center gap-2" title="Receta chequeada">
-                    <span className="feat-ico text-[#6f9f32]"><Check className="h-5 w-5" strokeWidth={3} /></span>
+                    <span className="feat-ico text-[#2cbc63]"><Check className="h-5 w-5" strokeWidth={3} /></span>
                     <span>Chequeada</span>
                   </div>
                 )}
