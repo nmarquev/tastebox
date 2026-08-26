@@ -6543,7 +6543,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                       {activeBulkPanel === null && (
                         <span
-                          className="absolute inset-x-1 top-1 z-10 flex items-center gap-0.5"
+                          className="absolute inset-x-1 top-1 z-10 flex items-center justify-end gap-1"
                           onClick={(event) => event.stopPropagation()}
                           onKeyDown={(event) => event.stopPropagation()}
                         >
@@ -6553,7 +6553,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               event.stopPropagation();
                               handleToggleFavorite(recipe);
                             }}
-                            className="inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
+                            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
                             title={recipe.featured ? "Quitar de Favoritos" : "Agregar a Favoritos"}
                             aria-label={recipe.featured ? "Quitar de Favoritos" : "Agregar a Favoritos"}
                           >
@@ -6565,7 +6565,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               event.stopPropagation();
                               void handleToggleFeature(recipe, 'checked', !recipe.checked);
                             }}
-                            className={`inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 shadow-sm transition-colors hover:bg-white/90 ${recipe.checked ? 'text-[#3f6f1f]' : 'text-gray-600'}`}
+                            className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/60 bg-white/75 shadow-sm transition-colors hover:bg-white/90 ${recipe.checked ? 'text-[#3f6f1f]' : 'text-gray-600'}`}
                             title={recipe.checked ? "Receta chequeada" : "Marcar receta como chequeada"}
                             aria-label={recipe.checked ? "Marcar como pendiente de revisión" : "Marcar como chequeada"}
                           >
@@ -6577,7 +6577,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               event.stopPropagation();
                               setCollectionRecipe(recipe);
                             }}
-                            className="inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
+                            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
                             title="Guardar en una colección"
                             aria-label="Guardar en una colección"
                           >
@@ -6588,7 +6588,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               <button
                                 type="button"
                                 onClick={(event) => event.stopPropagation()}
-                                className="inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
+                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
                                 title="Características"
                                 aria-label="Características"
                               >
@@ -6633,7 +6633,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                                 event.stopPropagation();
                                 window.open(recipe.sourceUrl, '_blank', 'noopener,noreferrer');
                               }}
-                              className="inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
+                              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
                               title={`Ver receta original en ${getSourceFromUrl(recipe.sourceUrl)}`}
                               aria-label="Ver receta original"
                             >
@@ -6645,7 +6645,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               <button
                                 type="button"
                                 onClick={(event) => event.stopPropagation()}
-                                className="inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
+                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/60 bg-white/75 text-gray-600 shadow-sm transition-colors hover:bg-white/90"
                                 title="Más opciones"
                                 aria-label="Más opciones"
                               >
