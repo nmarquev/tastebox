@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -168,6 +169,8 @@ export const EditRecipeModal = ({
   const [initialImageCount, setInitialImageCount] = useState(recipe?.images?.length ?? 0);
   const [collections, setCollections] = useState<RecipeCollection[]>([]);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [isCreatingCollection, setIsCreatingCollection] = useState(false);
   // Colecciones de referencia (baseline) para detectar si el usuario cambió la colección.
   const [initialCollectionIds, setInitialCollectionIds] = useState<string[]>([]);
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
@@ -533,6 +536,7 @@ export const EditRecipeModal = ({
       setBulkEditingInstructions(false);
       setBulkInstructionSection('__none__');
       setDraggedInstructionIndex(null);
+      setNewCollectionName('');
       setInstructionDropIndex(null);
       lastSelectedInstructionIndex.current = null;
       setExistingImages(recipe.images || []);
@@ -1232,6 +1236,42 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
     setValue('suggestions', '', { shouldDirty: true });
   };
 
+  const handleCreateCollection = async () => {
+    const name = newCollectionName.trim();
+    if (!name || isCreatingCollection) return;
+
+    const existing = collections.find(collection =>
+      collection.name.localeCompare(name, 'es', { sensitivity: 'base' }) === 0
+    );
+    if (existing) {
+      setSelectedCollectionIds(current =>
+        current.includes(existing.id) ? current : [...current, existing.id]
+      );
+      setNewCollectionName('');
+      return;
+    }
+
+    setIsCreatingCollection(true);
+    try {
+      const created = await api.collections.create(name);
+      setCollections(current =>
+        [...current, created]
+          .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))
+      );
+      setSelectedCollectionIds(current => [...current, created.id]);
+      setNewCollectionName('');
+      toast({ title: 'Colección creada', description: `Se creó y seleccionó “${created.name}”.` });
+    } catch (error) {
+      toast({
+        title: 'No se pudo crear la colección',
+        description: error instanceof Error ? error.message : 'Intentá nuevamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCreatingCollection(false);
+    }
+  };
+
   const handleClose = () => {
     console.log('Closing modal...');
 
@@ -1723,40 +1763,56 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                         </button>
                       )}
                     </div>
-                    <MultiSelectCombobox
-                      options={collections.map(c => c.name)}
-                      selected={selectedCollectionIds.map(id => collections.find(c => c.id === id)?.name).filter(Boolean) as string[]}
-                      onChange={(next) => {
-                        const ids = next
-                          .map(name => collections.find(c => c.name === name)?.id)
-                          .filter(Boolean) as string[];
-                        setSelectedCollectionIds(ids);
+                    <Input
+                      value={newCollectionName}
+                      onChange={(event) => setNewCollectionName(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter') return;
+                        event.preventDefault();
+                        void handleCreateCollection();
                       }}
-                      onCreate={async (name) => {
-                        try {
-                          const created = await api.collections.create(name);
-                          setCollections(prev => [...prev, created]);
-                          setSelectedCollectionIds(prev => [...prev, created.id]);
-                          toast({ title: 'Colección creada', description: `Se creó "${created.name}".` });
-                        } catch (error: any) {
-                          toast({ title: 'No se pudo crear la colección', description: error?.message || 'Intentá nuevamente', variant: 'destructive' });
-                        }
-                      }}
-                      placeholder={isLoadingCollections ? 'Cargando colecciones...' : 'Elegí una o más colecciones'}
-                      searchPlaceholder="Buscar o crear colección..."
-                      closeOnSelect
-                      allowCreate
-                      createLabel="Crear colección"
-                      openDownward
-                      listClassName="max-h-[min(20rem,calc(100dvh-15rem))]"
-                      onDeleteOption={(value) => {
-                        const collection = collections.find(c => c.name === value);
-                        setCollections(prev => prev.filter(c => c.name !== value));
-                        if (collection) {
-                          setSelectedCollectionIds(prev => prev.filter(id => id !== collection.id));
-                        }
-                      }}
+                      placeholder="Escribí una nueva colección y presioná Enter"
+                      disabled={isLoadingCollections || isCreatingCollection}
+                      className="h-9 text-sm"
                     />
+                    <div className="max-h-44 overflow-y-auto rounded-md border border-border/60 bg-background p-2">
+                      {isLoadingCollections ? (
+                        <div className="flex items-center gap-2 px-1 py-2 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Cargando colecciones...
+                        </div>
+                      ) : collections.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                          {collections.map(collection => {
+                            const checked = selectedCollectionIds.includes(collection.id);
+                            return (
+                              <label
+                                key={collection.id}
+                                className={`flex min-w-0 cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors ${checked ? 'border-primary/60 bg-primary/10' : 'border-border/50 hover:bg-muted/60'}`}
+                              >
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={() => setSelectedCollectionIds(current =>
+                                    checked
+                                      ? current.filter(id => id !== collection.id)
+                                      : [...current, collection.id]
+                                  )}
+                                  aria-label={`${checked ? 'Quitar de' : 'Agregar a'} la colección ${collection.name}`}
+                                />
+                                <span className="truncate" title={collection.name}>{collection.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="px-1 py-2 text-xs text-muted-foreground">
+                          Todavía no hay colecciones. Escribí un nombre arriba para crear la primera.
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Podés seleccionar una o varias colecciones.
+                    </p>
                   </div>
                 </div>
 

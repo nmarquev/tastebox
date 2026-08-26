@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -101,6 +103,8 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
   const [countryOptions, setCountryOptions] = useState<string[]>([]);
   const [dishTypeOptions, setDishTypeOptions] = useState<string[]>([]);
   const [collections, setCollections] = useState<Array<{ id: string; name: string }>>([]);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [isCreatingCollection, setIsCreatingCollection] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -354,6 +358,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
     setUrlsText('');
     setResults([]);
     setCommon(EMPTY_COMMON);
+    setNewCollectionName('');
     setConfirmed(false);
     setKeepCommonChoice('keep');
     setStep(1);
@@ -369,6 +374,45 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
       duration: SUCCESS_TOAST_DURATION_MS,
       className: 'w-auto p-3 pr-8 text-sm',
     });
+  };
+
+  const handleCreateCollection = async () => {
+    const name = newCollectionName.trim();
+    if (!name || isCreatingCollection) return;
+
+    const existing = collections.find(collection =>
+      collection.name.localeCompare(name, 'es', { sensitivity: 'base' }) === 0
+    );
+    if (existing) {
+      setCommon(current => ({ ...current, collectionId: existing.id }));
+      setNewCollectionName('');
+      return;
+    }
+
+    setIsCreatingCollection(true);
+    try {
+      const created = await api.collections.create(name);
+      setCollections(current =>
+        [...current, { id: created.id, name: created.name }]
+          .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))
+      );
+      setCommon(current => ({ ...current, collectionId: created.id }));
+      setNewCollectionName('');
+      toast({
+        title: 'Colección creada',
+        description: `Se creó y seleccionó “${created.name}”.`,
+        duration: SUCCESS_TOAST_DURATION_MS,
+      });
+    } catch (error) {
+      toast({
+        title: 'No se pudo crear la colección',
+        description: error instanceof Error ? error.message : 'Intentá nuevamente.',
+        variant: 'destructive',
+        duration: IMPORT_ERROR_TOAST_DURATION_MS,
+      });
+    } finally {
+      setIsCreatingCollection(false);
+    }
   };
 
   // Paso 1: pega la última dirección copiada del portapapeles en el cuadro de URLs.
@@ -590,19 +634,53 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
                       singleSelect closeOnSelect allowCreate createLabel="Agregar"
                     />
                   </div>
-                  <div>
-                    <Label>Colección</Label>
-                    <MultiSelectCombobox
-                      options={collections.map(c => c.name)}
-                      selected={(() => { const c = collections.find(c => c.id === common.collectionId); return c ? [c.name] : []; })()}
-                      onChange={(next) => {
-                        const found = collections.find(c => c.name === next[0]);
-                        setCommon(c => ({ ...c, collectionId: found ? found.id : '' }));
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="new-bulk-collection">Colección</Label>
+                    <Input
+                      id="new-bulk-collection"
+                      value={newCollectionName}
+                      onChange={(event) => setNewCollectionName(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter') return;
+                        event.preventDefault();
+                        void handleCreateCollection();
                       }}
-                      placeholder="Elegí una colección"
-                      searchPlaceholder="Buscar colección..."
-                      singleSelect closeOnSelect
+                      placeholder="Escribí una nueva colección y presioná Enter"
+                      disabled={isCreatingCollection}
+                      className="h-9 text-sm"
                     />
+                    <div className="max-h-40 overflow-y-auto rounded-md border border-border/60 bg-background p-2">
+                      {collections.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
+                          {collections.map(collection => {
+                            const checked = common.collectionId === collection.id;
+                            return (
+                              <label
+                                key={collection.id}
+                                className={`flex min-w-0 cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors ${checked ? 'border-primary/60 bg-primary/10' : 'border-border/50 hover:bg-muted/60'}`}
+                              >
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={() => setCommon(current => ({
+                                    ...current,
+                                    collectionId: checked ? '' : collection.id,
+                                  }))}
+                                  aria-label={`Seleccionar colección ${collection.name}`}
+                                />
+                                <span className="truncate" title={collection.name}>{collection.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="px-1 py-2 text-xs text-muted-foreground">
+                          Todavía no hay colecciones. Escribí un nombre arriba para crear la primera.
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Elegí una colección para todas las recetas del lote.
+                    </p>
                   </div>
                 </div>
 
