@@ -40,6 +40,7 @@ model Recipe {
   prepTime     Int? // in minutes (opcional)
   cookTime     Int? // in minutes
   servings     Int? // opcional
+  servingsText String? // rendimiento textual cuando no son porciones (p. ej. "520 g")
   difficulty   String? // "Fácil" | "Medio" | "Difícil" (opcional)
   recipeType   String?
   dishType     String? // Plato principal | Entrada | Postre | Bebida | Desayuno y Merienda | personalizado

@@ -184,6 +184,7 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
           prepTime: recipe.prepTime,
           cookTime: recipe.cookTime,
           servings: recipe.servings,
+          servingsText: recipe.servingsText,
           // Campos en común (si se eligieron) sobre los extraídos:
           // Dificultad: solo lo que el usuario indique en el Paso 2 (no autocompletar con la IA).
           difficulty: (common.difficulty || recipe.difficulty || undefined) as any,

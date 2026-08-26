@@ -44,6 +44,7 @@ export const TextImportModal = ({ isOpen, onClose, onRecipeSaved }: TextImportMo
       prepTime: recipe.prepTime,
       cookTime: recipe.cookTime,
       servings: recipe.servings,
+      servingsText: recipe.servingsText,
       difficulty: undefined,
       tags: recipe.tags || [],
       ingredients: recipe.ingredients || [],

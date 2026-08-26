@@ -55,7 +55,7 @@ interface RecipeFormData {
   createdAt: string;
   prepTime: number;
   cookTime?: number;
-  servings: number;
+  servingsText: string;
   difficulty: "Fácil" | "Medio" | "Difícil";
   recipeType: string;
   dishType: string;
@@ -562,7 +562,7 @@ export const EditRecipeModal = ({
         createdAt: toDateInputValue(recipe.createdAt),
         prepTime: recipe.prepTime,
         cookTime: recipe.cookTime,
-        servings: recipe.servings,
+        servingsText: recipe.servingsText || (recipe.servings ? String(recipe.servings) : ''),
         difficulty: recipe.difficulty,
         recipeType: recipe.recipeType || '',
         dishType: recipe.dishType || '',
@@ -894,7 +894,7 @@ Título: ${data.title}
 Descripción: ${data.description || 'Sin descripción'}
 Tiempo de preparación: ${data.prepTime || 'No especificado'} minutos
 Tiempo de coccion: ${data.cookTime || 'No especificado'} minutos
-Porciones: ${data.servings || 'No especificado'}
+Porciones/Rinde: ${data.servingsText || 'No especificado'}
 Dificultad: ${data.difficulty || 'No especificada'}
 
 Ingredientes:
@@ -973,7 +973,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
 
   const handleCalculateNutrition = async () => {
     const currentIngredients = watch('ingredients');
-    const currentServings = watch('servings');
+    const currentServings = watch('servingsText');
     const validIngredients = currentIngredients?.filter(ingredient => ingredient.name?.trim()) ?? [];
 
     if (validIngredients.length === 0) {
@@ -1088,6 +1088,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
       ];
 
       const shouldSaveThermomixSettings = data.thermomix === true;
+      const servingsText = data.servingsText.trim();
+      const numericServingsMatch = servingsText.match(/^(\d+)\s*(?:porciones?|personas?|raciones?)?$/i);
 
       // Create recipe data structure
       const recipeData = {
@@ -1105,7 +1107,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         images: allImages,
         prepTime: Number.isFinite(data.prepTime as number) ? data.prepTime : undefined,
         cookTime: Number.isFinite(data.cookTime as number) ? data.cookTime : undefined,
-        servings: Number.isFinite(data.servings as number) ? data.servings : undefined,
+        servings: numericServingsMatch ? Number(numericServingsMatch[1]) : null,
+        servingsText: numericServingsMatch ? null : servingsText || null,
         difficulty: normalizeDifficulty(data.difficulty),
         recipeType: data.recipeType,
         dishType: data.dishType?.trim() || undefined,
@@ -1608,8 +1611,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   <Input id="cookTime" type="number" {...register('cookTime', { valueAsNumber: true })} />
                 </div>
                 <div>
-                  <Label htmlFor="servings">Porciones</Label>
-                  <Input id="servings" type="number" {...register('servings', { valueAsNumber: true })} />
+                  <Label htmlFor="servings">Porciones / Rinde</Label>
+                  <Input id="servings" type="text" {...register('servingsText')} placeholder="Ej. 4 porciones o 520 g" />
                 </div>
               </div>
 

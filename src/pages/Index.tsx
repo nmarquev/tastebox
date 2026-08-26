@@ -6723,9 +6723,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <Clock className="h-4 w-4" />{recipe.cookTime} min
                           </span>
                         )}
-                        {!!recipe.servings && recipe.servings > 0 && (
-                          <span className="flex items-center gap-1 whitespace-nowrap" title="Porciones">
-                            <User className="h-4 w-4" />{recipe.servings}
+                        {!!(recipe.servingsText || (recipe.servings && recipe.servings > 0)) && (
+                          <span className="flex items-center gap-1 whitespace-nowrap" title={recipe.servingsText ? 'Rinde' : 'Porciones'}>
+                            <User className="h-4 w-4" />{recipe.servingsText || recipe.servings}
                           </span>
                         )}
                       </span>
@@ -7004,9 +7004,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <Clock className="h-5 w-5" />{recipe.cookTime} min
                           </span>
                         )}
-                        {!!recipe.servings && recipe.servings > 0 && (
-                          <span className="flex items-center gap-1 whitespace-nowrap" title="Porciones">
-                            <User className="h-5 w-5" />{recipe.servings}
+                        {!!(recipe.servingsText || (recipe.servings && recipe.servings > 0)) && (
+                          <span className="flex items-center gap-1 whitespace-nowrap" title={recipe.servingsText ? 'Rinde' : 'Porciones'}>
+                            <User className="h-5 w-5" />{recipe.servingsText || recipe.servings}
                           </span>
                         )}
                       </span>

@@ -38,6 +38,7 @@ export interface Recipe {
   prepTime?: number | null;
   cookTime?: number | null;
   servings?: number | null;
+  servingsText?: string | null;
   difficulty?: "Fácil" | "Medio" | "Difícil" | null;
   tags: string[];
   ingredients: Ingredient[];
@@ -85,7 +86,8 @@ export interface ImportRecipeResponse {
     suggestions?: string;
     prepTime: number;
     cookTime?: number;
-    servings: number;
+    servings?: number | null;
+    servingsText?: string;
     difficulty: "Fácil" | "Medio" | "Difícil";
     recipeType?: string;
     dishType?: string;

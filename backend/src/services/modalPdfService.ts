@@ -82,8 +82,8 @@ export class ModalPdfService {
         <div class="meta-item">
           <div class="meta-icon">👥</div>
           <div class="meta-content">
-            <div class="meta-label">Porciones</div>
-            <div class="meta-value">${recipe.servings}</div>
+            <div class="meta-label">${recipe.servingsText ? 'Rinde' : 'Porciones'}</div>
+            <div class="meta-value">${recipe.servingsText || recipe.servings}</div>
           </div>
         </div>
       </div>

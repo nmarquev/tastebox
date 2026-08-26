@@ -364,7 +364,7 @@ export class PdfKitService {
         const stats = [
           { icon: 'prep', label: 'Preparacion', value: `${recipe.prepTime ?? 0} min` },
           { icon: 'total', label: 'Total', value: `${recipe.cookTime ?? 0} min` },
-          { icon: 'servings', label: 'Porciones', value: `${recipe.servings ?? '-'}` },
+          { icon: 'servings', label: recipe.servingsText ? 'Rinde' : 'Porciones', value: `${recipe.servingsText || recipe.servings || '-'}` },
         ];
 
         // Características: solo las activas, una al lado de la otra (con wrap si no entran).

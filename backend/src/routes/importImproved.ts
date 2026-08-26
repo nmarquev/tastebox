@@ -332,6 +332,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       prepTime: recipeData.prepTime,
       cookTime: recipeData.cookTime,
       servings: recipeData.servings,
+      servingsText: recipeData.servingsText,
       difficulty: recipeData.difficulty,
       recipeType: recipeData.recipeType,
       country: recipeData.country,

@@ -1150,6 +1150,45 @@ export function extractCookidooNutrition(html: string): Record<string, number> |
   return Object.keys(out).length ? out : null;
 }
 
+// Cookidoo usa recipeYield tanto para porciones como para rendimiento por peso o
+// volumen. Un valor como "520 g" no significa 520 porciones: se conserva textual.
+export function extractCookidooServingsText(html: string): string | undefined {
+  if (!html) return undefined;
+
+  const candidates: string[] = [];
+  const visit = (node: unknown) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    const value = node as Record<string, unknown>;
+    if (value.recipeYield !== undefined) {
+      const yields = Array.isArray(value.recipeYield) ? value.recipeYield : [value.recipeYield];
+      yields.forEach(item => {
+        if (typeof item === 'string' || typeof item === 'number') candidates.push(String(item));
+      });
+    }
+    Object.values(value).forEach(visit);
+  };
+
+  const blocks = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+  blocks.forEach(block => {
+    const json = block.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '').trim();
+    try { visit(JSON.parse(json)); } catch { /* JSON-LD malformado: probar fallbacks */ }
+  });
+
+  const fallback = html.match(/(?:recipeYield|recipe-yield|yield)["']?\s*(?:content\s*=|[:=])\s*["']([^"']+)["']/i)?.[1];
+  if (fallback) candidates.push(fallback);
+
+  for (const candidate of candidates) {
+    const text = cleanHtmlFromText(decodeNumericHtmlEntities(candidate)).replace(/\s+/g, ' ').trim();
+    const match = text.match(/^(\d+(?:[.,]\d+)?)\s*(g|gr|gramos?|kg|kilos?|kilogramos?|ml|mililitros?|l|litros?)\b/i);
+    if (match) return `${match[1]} ${match[2]}`;
+  }
+  return undefined;
+}
+
 export function extractCookidooCountry(html: string): string | undefined {
   if (!html) return undefined;
 
@@ -2779,6 +2818,7 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
 
       // País (Cookidoo: componente <rdp-country>) e idioma (JSON-LD inLanguage).
       const country = isCookidooRecipe ? extractCookidooCountry(html) : undefined;
+      const servingsText = isCookidooRecipe ? extractCookidooServingsText(html) : undefined;
       const difficulty = isCookidooRecipe
         ? extractCookidooDifficulty(html) || validatedData.difficulty
         : validatedData.difficulty;
@@ -2868,7 +2908,8 @@ Solo responde {"error": true} si definitivamente no hay ninguna receta en la pá
         instructions: instructions.filter(inst => inst.description && typeof inst.step === 'number').sort((a, b) => a.step - b.step) as any[],
         prepTime: validatedData.prepTime,
         cookTime: cookidooSummary.cookTime,
-        servings: validatedData.servings,
+        servings: servingsText ? undefined : validatedData.servings,
+        servingsText,
         difficulty,
         recipeType: deriveCategoryFromTitleAndIngredients(cleanTitle, ingredients, validatedData.recipeType),
         country,

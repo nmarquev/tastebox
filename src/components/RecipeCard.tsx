@@ -621,10 +621,10 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 <span><span className="hidden @sm:inline">Total </span>{recipe.cookTime} min</span>
               </div>
             )}
-            {!!recipe.servings && recipe.servings > 0 && (
-              <div className="flex items-center gap-1 whitespace-nowrap" title="Porciones">
+            {!!(recipe.servingsText || (recipe.servings && recipe.servings > 0)) && (
+              <div className="flex items-center gap-1 whitespace-nowrap" title={recipe.servingsText ? 'Rinde' : 'Porciones'}>
                 <User className={infoIconClass} />
-                <span><span className="hidden @sm:inline">Porciones </span>{recipe.servings}</span>
+                <span><span className="hidden @sm:inline">{recipe.servingsText ? 'Rinde ' : 'Porciones '}</span>{recipe.servingsText || recipe.servings}</span>
               </div>
             )}
           </div>

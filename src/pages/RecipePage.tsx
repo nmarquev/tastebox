@@ -88,6 +88,7 @@ const RecipePage = () => {
         prepTime: recipe.prepTime,
         cookTime: recipe.cookTime,
         servings: recipe.servings,
+        servingsText: recipe.servingsText,
         difficulty: recipe.difficulty,
         images: recipe.images,
         ingredients: recipe.ingredients,

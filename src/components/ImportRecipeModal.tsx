@@ -96,6 +96,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           prepTime: recipe.prepTime,
           cookTime: recipe.cookTime,
           servings: recipe.servings,
+          servingsText: recipe.servingsText,
           difficulty: recipe.difficulty,
           tags: recipe.tags,
           ingredients: normalizedIngredients,
@@ -473,7 +474,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
                     </div>
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4" />
-                      <span>{importedRecipe.servings} personas</span>
+                      <span>{importedRecipe.servingsText || `${importedRecipe.servings} personas`}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <ChefHat className="h-4 w-4" />

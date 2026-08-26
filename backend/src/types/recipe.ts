@@ -40,7 +40,8 @@ export interface Recipe {
   images: RecipeImage[];
   prepTime: number;
   cookTime?: number;
-  servings: number;
+  servings?: number | null;
+  servingsText?: string | null;
   difficulty: "Fácil" | "Medio" | "Difícil";
   tags: string[];
   ingredients: Ingredient[];
@@ -82,7 +83,8 @@ export interface RecipeImportResponse {
   }>;
   prepTime: number;
   cookTime?: number;
-  servings: number;
+  servings?: number | null;
+  servingsText?: string;
   difficulty?: "Fácil" | "Medio" | "Difícil"; // vacío si la receta no lo indica
   recipeType?: string;
   dishType?: string;

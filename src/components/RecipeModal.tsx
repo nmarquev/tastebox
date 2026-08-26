@@ -1569,10 +1569,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                     <span>Total {localRecipe.cookTime} min</span>
                   </div>
                 )}
-                {!!localRecipe.servings && localRecipe.servings > 0 && (
-                  <div className="flex items-center gap-2" title="Porciones">
+                {!!(localRecipe.servingsText || (localRecipe.servings && localRecipe.servings > 0)) && (
+                  <div className="flex items-center gap-2" title={localRecipe.servingsText ? 'Rinde' : 'Porciones'}>
                     <User className="h-4 w-4" />
-                    <span>Porciones {localRecipe.servings}</span>
+                    <span>{localRecipe.servingsText ? 'Rinde' : 'Porciones'} {localRecipe.servingsText || localRecipe.servings}</span>
                   </div>
                 )}
               </div>

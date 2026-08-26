@@ -62,7 +62,7 @@ export const printRecipeList = async (recipes: Recipe[], options: PrintListOptio
     const stats: string[] = [];
     if (recipe.prepTime && recipe.prepTime > 0) stats.push(`${ICONS.prep} ${recipe.prepTime} min`);
     if (recipe.cookTime && recipe.cookTime > 0) stats.push(`${ICONS.clock} ${recipe.cookTime} min`);
-    if (recipe.servings && recipe.servings > 0) stats.push(`${ICONS.user} ${recipe.servings}`);
+    if (recipe.servingsText || (recipe.servings && recipe.servings > 0)) stats.push(`${ICONS.user} ${recipe.servingsText || recipe.servings}`);
 
     const icons: string[] = [];
     if (recipe.thermomix) icons.push(`<img src="${origin}/thermomix-logo.png" style="width:16px;height:16px;object-fit:contain" />`);

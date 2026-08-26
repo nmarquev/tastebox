@@ -92,7 +92,7 @@ export const printRecipeCards = async (recipes: Recipe[], options: PrintCardsOpt
     const statCell = (icon: string, text: string): string => `<span class="stat-cell">${icon}<span>${escapeHtml(text)}</span></span>`;
     if (recipe.prepTime && recipe.prepTime > 0) stats.push(statCell(ICONS.prep, `${recipe.prepTime} min`));
     if (recipe.cookTime && recipe.cookTime > 0) stats.push(statCell(ICONS.clock, `${recipe.cookTime} min`));
-    if (recipe.servings && recipe.servings > 0) stats.push(statCell(ICONS.user, `${recipe.servings}`));
+    if (recipe.servingsText || (recipe.servings && recipe.servings > 0)) stats.push(statCell(ICONS.user, `${recipe.servingsText || recipe.servings}`));
 
     const icons: string[] = [];
     const iconCell = (icon: string): string => `<span class="icon-cell">${icon}</span>`;

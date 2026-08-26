@@ -19,6 +19,7 @@ const emptyRecipe: Recipe = {
   prepTime: null,
   cookTime: null,
   servings: null,
+  servingsText: '',
   difficulty: null,
   tags: [],
   ingredients: [],

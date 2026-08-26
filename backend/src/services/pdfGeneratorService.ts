@@ -226,8 +226,8 @@ export class PdfGeneratorService {
             <div class="meta-value">${recipe.cookTime} min</div>
           </div>` : ''}
           <div class="meta-item">
-            <div class="meta-label">PORCIONES</div>
-            <div class="meta-value">${recipe.servings}</div>
+            <div class="meta-label">${recipe.servingsText ? 'RINDE' : 'PORCIONES'}</div>
+            <div class="meta-value">${recipe.servingsText || recipe.servings}</div>
           </div>
           <div class="meta-item">
             <div class="meta-label">DIFICULTAD</div>
