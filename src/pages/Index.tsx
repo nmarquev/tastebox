@@ -6839,17 +6839,17 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             />
                           </div>
                           <div className="grid min-w-0 grid-cols-2 items-end gap-2">
-                            <Button type="button" variant="outline" size="sm" onClick={() => setIngredientsEditDraft(null)} disabled={savingIngredientsEdit} className="min-w-0 w-full px-2 text-xs">
-                              <X className="mr-1 h-4 w-4" /> Cancelar
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIngredientsEditDraft(null)} disabled={savingIngredientsEdit} className="min-w-0 w-full px-1.5 text-[11px]">
+                              <X className="mr-0.5 h-3.5 w-3.5" /> Cancelar
                             </Button>
                             <Button
                               type="button"
                               size="sm"
                               onClick={() => void saveIngredientsInlineEdit()}
                               disabled={savingIngredientsEdit || !ingredientsHasChanges}
-                              className={`min-w-0 w-full px-2 text-xs ${ingredientsHasChanges ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-secondary/35 text-secondary-foreground"}`}
+                              className={`min-w-0 w-full px-1.5 text-[11px] ${ingredientsHasChanges ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-secondary/35 text-secondary-foreground"}`}
                             >
-                              {savingIngredientsEdit ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+                              {savingIngredientsEdit ? <Loader2 className="mr-0.5 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-0.5 h-3.5 w-3.5" />}
                               Guardar
                             </Button>
                           </div>
