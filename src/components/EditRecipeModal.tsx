@@ -181,6 +181,9 @@ export const EditRecipeModal = ({
   const [languageOptions, setLanguageOptions] = useState<string[]>([]);
   const [countryOptions, setCountryOptions] = useState<string[]>([]);
   const [dishTypeOptions, setDishTypeOptions] = useState<string[]>([]);
+  const [newDishTypeName, setNewDishTypeName] = useState('');
+  const [isCreatingDishType, setIsCreatingDishType] = useState(false);
+  const [isDishTypePickerOpen, setIsDishTypePickerOpen] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [tagOptions, setTagOptions] = useState<string[]>([]);
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
@@ -540,6 +543,8 @@ export const EditRecipeModal = ({
       setDraggedInstructionIndex(null);
       setNewCollectionName('');
       setIsCollectionPickerOpen(false);
+      setNewDishTypeName('');
+      setIsDishTypePickerOpen(false);
       setInstructionDropIndex(null);
       lastSelectedInstructionIndex.current = null;
       setExistingImages(recipe.images || []);
@@ -1239,6 +1244,43 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
     setValue('suggestions', '', { shouldDirty: true });
   };
 
+  const handleCreateDishType = async () => {
+    const name = newDishTypeName.trim();
+    if (!name || isCreatingDishType) return;
+
+    const currentTypes = (getValues('dishType') || '').split(',').map(value => value.trim()).filter(Boolean);
+    const existing = dishTypeOptions.find(option =>
+      option.localeCompare(name, 'es', { sensitivity: 'base' }) === 0
+    );
+    if (existing) {
+      if (!currentTypes.includes(existing)) {
+        setValue('dishType', [...currentTypes, existing].join(', '), { shouldDirty: true });
+      }
+      setNewDishTypeName('');
+      return;
+    }
+
+    setIsCreatingDishType(true);
+    try {
+      const created = await api.dishTypes.create(name);
+      setDishTypeOptions(current =>
+        Array.from(new Set([...current, created.name]))
+          .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+      );
+      setValue('dishType', [...currentTypes, created.name].join(', '), { shouldDirty: true });
+      setNewDishTypeName('');
+      toast({ title: 'Tipo de comida creado', description: `Se creó y seleccionó “${created.name}”.` });
+    } catch (error) {
+      toast({
+        title: 'No se pudo crear el tipo de comida',
+        description: error instanceof Error ? error.message : 'Intentá nuevamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCreatingDishType(false);
+    }
+  };
+
   const handleCreateCollection = async () => {
     const name = newCollectionName.trim();
     if (!name || isCreatingCollection) return;
@@ -1285,6 +1327,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
   if (!recipe) return null;
 
   const totalImages = existingImages.length + uploadedImages.length;
+  const selectedDishTypes = (watch('dishType') || '').split(',').map(value => value.trim()).filter(Boolean);
   const thermomixValue = watch('thermomix') as unknown;
   const showThermomixInstructionFields = thermomixValue === true || thermomixValue === 'true';
 
@@ -1730,32 +1773,80 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                         </button>
                       )}
                     </div>
-                    <MultiSelectCombobox
-                      options={dishTypeOptions}
-                      selected={(watch('dishType') || '').split(',').map(s => s.trim()).filter(Boolean)}
-                      onChange={(next) => setValue('dishType', next.join(', '), { shouldDirty: true })}
-                      placeholder="Elegí uno o más tipos de comida"
-                      searchPlaceholder="Buscar o escribir tipo..."
-                      closeOnSelect
-                      allowCreate
-                      createLabel="Agregar"
-                      openDownward
-                      listClassName="max-h-[min(20rem,calc(100dvh-15rem))]"
-                      onCreate={async (name) => {
-                        try {
-                          const created = await api.dishTypes.create(name);
-                          setDishTypeOptions(prev => Array.from(new Set([...prev, created.name])).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })));
-                          toast({ title: 'Tipo de comida creado', description: `Se creó "${created.name}".` });
-                        } catch (error: any) {
-                          toast({ title: 'No se pudo crear el tipo de comida', description: error?.message || 'Intentá nuevamente', variant: 'destructive' });
-                        }
-                      }}
-                      onDeleteOption={(value) => {
-                        setDishTypeOptions(prev => prev.filter(option => option !== value));
-                        const next = (watch('dishType') || '').split(',').map(s => s.trim()).filter(Boolean).filter(option => option !== value);
-                        setValue('dishType', next.join(', '), { shouldDirty: true });
-                      }}
-                    />
+                    <Popover open={isDishTypePickerOpen} onOpenChange={setIsDishTypePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={isDishTypePickerOpen}
+                          className="h-10 w-full justify-between px-3 font-normal"
+                        >
+                          <span className={selectedDishTypes.length ? 'truncate' : 'truncate text-muted-foreground'}>
+                            {selectedDishTypes.length === 0
+                              ? 'Elegí uno o más tipos de comida'
+                              : selectedDishTypes.length === 1
+                                ? selectedDishTypes[0]
+                                : `${selectedDishTypes.length} tipos de comida seleccionados`}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        side="bottom"
+                        collisionPadding={12}
+                        className="w-[--radix-popover-trigger-width] space-y-2 p-2"
+                      >
+                        <Input
+                          value={newDishTypeName}
+                          onChange={(event) => setNewDishTypeName(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter') return;
+                            event.preventDefault();
+                            void handleCreateDishType();
+                          }}
+                          placeholder="Escribí un nuevo tipo y presioná Enter"
+                          disabled={isCreatingDishType}
+                          className="h-9 text-sm"
+                          autoFocus
+                        />
+                        <div className="max-h-56 overflow-y-auto rounded-md border border-border/60 bg-background p-2">
+                          {dishTypeOptions.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-1.5 md:grid-cols-3 lg:grid-cols-4">
+                              {dishTypeOptions.map(option => {
+                                const checked = selectedDishTypes.includes(option);
+                                return (
+                                  <label
+                                    key={option}
+                                    className={`flex min-w-0 cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors ${checked ? 'border-primary/60 bg-primary/10' : 'border-border/50 hover:bg-muted/60'}`}
+                                  >
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={() => {
+                                        const next = checked
+                                          ? selectedDishTypes.filter(value => value !== option)
+                                          : [...selectedDishTypes, option];
+                                        setValue('dishType', next.join(', '), { shouldDirty: true });
+                                      }}
+                                      aria-label={`${checked ? 'Quitar' : 'Agregar'} el tipo de comida ${option}`}
+                                    />
+                                    <span className="truncate" title={option}>{option}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="px-1 py-2 text-xs text-muted-foreground">
+                              Todavía no hay tipos de comida. Escribí un nombre arriba para crear el primero.
+                            </p>
+                          )}
+                        </div>
+                        <p className="px-1 text-[11px] text-muted-foreground">
+                          Podés seleccionar uno o varios tipos de comida.
+                        </p>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
