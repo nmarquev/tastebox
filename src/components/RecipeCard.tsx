@@ -233,8 +233,8 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
       </span>
     ) : null,
     recipe.checked ? (
-      <span key="checked" title="Chequeada" className="inline-flex h-7 w-7 items-center justify-center text-[#6f9f32]">
-        <Check className="h-[18px] w-[18px]" strokeWidth={3} />
+      <span key="checked" title="Chequeada" className="inline-flex h-7 w-7 items-center justify-center text-[#3f6f1f]">
+        <Check className="h-[22px] w-[22px]" strokeWidth={3.5} />
       </span>
     ) : null,
   ].filter((feature): feature is JSX.Element => feature !== null);
@@ -325,7 +325,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
           </div>
         )}
         {!minimal && !selectionMode && (
-        <div className={`absolute top-3 right-3 flex items-center justify-end gap-1.5 ${compact ? 'top-2 right-2 gap-1 [&_button]:h-6 [&_button]:w-6 [&_svg]:!h-3.5 [&_svg]:!w-3.5 [&_img]:!h-4 [&_img]:!w-4' : ''}`}>
+        <div className={`absolute top-3 right-3 flex items-center justify-end gap-1.5 ${compact ? 'top-2 right-2 gap-1 [&_button]:h-6 [&_button]:w-6 [&_svg:not(.recipe-checked-icon)]:!h-3.5 [&_svg:not(.recipe-checked-icon)]:!w-3.5 [&_img]:!h-4 [&_img]:!w-4' : ''}`}>
           {onToggleFavorite && (
             <Button
               variant="secondary"
@@ -410,7 +410,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
               title={recipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
               className={`order-2 h-8 w-8 border p-0 ${
                 recipe.checked
-                  ? 'border-white/60 bg-white/50 text-[#6f9f32] hover:bg-white/70'
+                  ? 'border-white/60 bg-white/50 text-[#3f6f1f] hover:bg-white/70'
                   : 'border-white/60 bg-white/50 text-gray-500 hover:bg-white/70'
               }`}
               onClick={(event) => {
@@ -418,7 +418,7 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                 onToggleFeature(recipe, 'checked', !recipe.checked);
               }}
             >
-              <Check className="h-6 w-6" strokeWidth={4} />
+              <Check className="recipe-checked-icon h-7 w-7" strokeWidth={4} />
             </Button>
           )}
           {onSaveToCollection && (
