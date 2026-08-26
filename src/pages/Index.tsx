@@ -6838,18 +6838,18 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               allowCreate createLabel="Agregar"
                             />
                           </div>
-                          <div className="grid min-w-0 grid-cols-2 items-end gap-2">
-                            <Button type="button" variant="outline" size="sm" onClick={() => setIngredientsEditDraft(null)} disabled={savingIngredientsEdit} className="min-w-0 w-full px-1.5 text-[11px]">
-                              <X className="mr-0.5 h-3.5 w-3.5" /> Cancelar
+                          <div className="grid min-w-0 grid-cols-2 items-end gap-1 lg:gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIngredientsEditDraft(null)} disabled={savingIngredientsEdit} className="min-w-0 w-full px-1 text-[10px] lg:px-1.5 lg:text-[11px]">
+                              <X className="mr-0.5 h-3 w-3 lg:h-3.5 lg:w-3.5" /> Cancelar
                             </Button>
                             <Button
                               type="button"
                               size="sm"
                               onClick={() => void saveIngredientsInlineEdit()}
                               disabled={savingIngredientsEdit || !ingredientsHasChanges}
-                              className={`min-w-0 w-full px-1.5 text-[11px] ${ingredientsHasChanges ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-secondary/35 text-secondary-foreground"}`}
+                              className={`min-w-0 w-full px-1 text-[10px] lg:px-1.5 lg:text-[11px] ${ingredientsHasChanges ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-secondary/35 text-secondary-foreground"}`}
                             >
-                              {savingIngredientsEdit ? <Loader2 className="mr-0.5 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-0.5 h-3.5 w-3.5" />}
+                              {savingIngredientsEdit ? <Loader2 className="mr-0.5 h-3 w-3 animate-spin lg:h-3.5 lg:w-3.5" /> : <Check className="mr-0.5 h-3 w-3 lg:h-3.5 lg:w-3.5" />}
                               Guardar
                             </Button>
                           </div>
