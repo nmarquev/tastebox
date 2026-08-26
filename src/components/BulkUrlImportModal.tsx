@@ -74,7 +74,7 @@ const getImportSourceValue = (label: string) =>
   importSourceOptions.find(option => option.label.toLocaleLowerCase('es') === label.toLocaleLowerCase('es'))?.value || label;
 
 // Máximo de recetas que se pueden importar en un lote.
-const MAX_URLS = 20;
+const MAX_URLS = 50;
 
 const EMPTY_COMMON: CommonFields = {
   source: '', importedFrom: '', difficulty: '', language: '', country: '', dishType: '', collectionId: '',
@@ -236,6 +236,16 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
     const urls = parseUrls(urlsText);
     if (urls.length === 0) {
       toast({ title: 'Sin URLs válidas', description: 'Pegá al menos una URL (http:// o https://), una por línea.', variant: 'destructive', duration: IMPORT_ERROR_TOAST_DURATION_MS });
+      return;
+    }
+
+    if (urls.length > MAX_URLS) {
+      toast({
+        title: `El máximo de links son ${MAX_URLS}`,
+        description: `Ingresaste ${urls.length}. Quitá ${urls.length - MAX_URLS} para continuar.`,
+        variant: 'destructive',
+        duration: IMPORT_ERROR_TOAST_DURATION_MS,
+      });
       return;
     }
 
