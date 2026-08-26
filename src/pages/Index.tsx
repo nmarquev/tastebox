@@ -6584,7 +6584,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             </PopoverTrigger>
                             <PopoverContent
                               align="start"
-                              className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5"
+                              collisionPadding={8}
+                              className="max-h-[var(--radix-popover-content-available-height)] w-56 touch-pan-y overflow-y-auto overscroll-contain p-1.5"
                               onClick={(event) => event.stopPropagation()}
                             >
                               <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
@@ -7080,7 +7081,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                           </PopoverTrigger>
                           <PopoverContent
                             align="end"
-                            className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5"
+                            collisionPadding={8}
+                            className="max-h-[var(--radix-popover-content-available-height)] w-56 touch-pan-y overflow-y-auto overscroll-contain p-1.5"
                             onClick={(event) => event.stopPropagation()}
                             onKeyDown={(event) => event.stopPropagation()}
                           >

@@ -358,7 +358,12 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
                   <ChefHat className="!h-5 !w-5 text-gray-500" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5" onClick={(e) => e.stopPropagation()}>
+              <PopoverContent
+                align="end"
+                collisionPadding={8}
+                className="max-h-[var(--radix-popover-content-available-height)] w-56 touch-pan-y overflow-y-auto overscroll-contain p-1.5"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Características</p>
                 <div className="space-y-0.5">
                   {FEATURE_TOGGLES.map(({ field, label, icon }) => {
