@@ -143,6 +143,19 @@ const sameValues = (left: string[], right: string[]) => {
     && normalizedLeft.every((value, index) => value === normalizedRight[index]);
 };
 
+const groupIngredientsBySection = <T extends { section?: string }>(ingredients: T[]) => {
+  const groups = new Map<string, T[]>();
+
+  ingredients.forEach((ingredient) => {
+    const section = ingredient.section?.trim() || '';
+    const sectionIngredients = groups.get(section) || [];
+    sectionIngredients.push(ingredient);
+    groups.set(section, sectionIngredients);
+  });
+
+  return Array.from(groups.entries());
+};
+
 const normalizeRecipeTitle = (title?: string | null) =>
   (title || '')
     .normalize('NFD')
@@ -6859,22 +6872,33 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                       )}
                     </div>
                     {/* Derecha: ingredientes con fuente mas pequena */}
-                    <span className="hidden shrink-0 sm:block sm:w-60 md:w-72">
+                    <div className="hidden shrink-0 sm:block sm:w-60 md:w-72">
                       {recipe.ingredients && recipe.ingredients.length > 0 ? (
-                        <ul className="space-y-1 text-[11px] leading-snug text-muted-foreground">
-                          {recipe.ingredients.map((ing, idx) => (
-                            <li key={idx} className="flex gap-1.5 font-normal">
-                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                              <span className="font-normal">
-                                {[ing.amount, ing.unit, ing.name].filter(Boolean).join(' ')}
-                              </span>
-                            </li>
+                        <div className="space-y-2">
+                          {groupIngredientsBySection(recipe.ingredients).map(([section, ingredients]) => (
+                            <div key={section || 'sin-seccion'}>
+                              {section && (
+                                <p className="mb-1 text-[11px] font-semibold leading-snug text-primary">
+                                  {section}
+                                </p>
+                              )}
+                              <ul className="space-y-1 text-[11px] leading-snug text-muted-foreground">
+                                {ingredients.map((ing, idx) => (
+                                  <li key={ing.id || idx} className="flex gap-1.5 font-normal">
+                                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
+                                    <span className="font-normal">
+                                      {[ing.amount, ing.unit, ing.name].filter(Boolean).join(' ')}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       ) : (
                         <span className="text-[11px] text-muted-foreground">Sin ingredientes</span>
                       )}
-                    </span>
+                    </div>
                     {activeBulkPanel === null && (
                       <div className="hidden shrink-0 flex-col items-center gap-1.5 sm:flex">
                         <button
