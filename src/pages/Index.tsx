@@ -6556,7 +6556,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             title={recipe.checked ? "Receta chequeada" : "Marcar receta como chequeada"}
                             aria-label={recipe.checked ? "Marcar como pendiente de revisión" : "Marcar como chequeada"}
                           >
-                            <Check className="h-[22px] w-[22px]" strokeWidth={4} />
+                            <Check className="h-6 w-6" strokeWidth={4} />
                           </button>
                           <button
                             type="button"
@@ -6760,7 +6760,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <Heart className="h-4 w-4 fill-red-500 text-red-500" aria-label="Favorita" />
                           )}
                           {recipe.checked && (
-                            <Check className="h-5 w-5 text-[#3f6f1f]" strokeWidth={3.5} aria-label="Chequeada" />
+                            <Check className="h-6 w-6 text-[#3f6f1f]" strokeWidth={3.5} aria-label="Chequeada" />
                           )}
                         </span>
                       )}
@@ -7032,7 +7032,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <Heart className="h-5 w-5 fill-red-500 text-red-500" aria-label="Favorita" />
                           )}
                           {recipe.checked && (
-                            <Check className="h-6 w-6 text-[#3f6f1f]" strokeWidth={3.5} aria-label="Chequeada" />
+                            <Check className="h-7 w-7 text-[#3f6f1f]" strokeWidth={3.5} aria-label="Chequeada" />
                           )}
                         </span>
                       )}

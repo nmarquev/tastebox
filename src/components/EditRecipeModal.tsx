@@ -1825,8 +1825,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   </div>
                 </div>
 
-                {/* c-f: Características (switches sí/no con ícono) — 4 por renglón, 2 renglones */}
-                <div className="grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
+                {/* Características: tres opciones por fila desde tablet; dos en mobile. */}
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2">
                   {([
                     { field: 'thermomix', label: 'Thermomix', icon: <img src="/thermomix-logo.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
                     { field: 'airFryer', label: 'Air Fryer', icon: <img src="/air-fryer.transparent.png" alt="" aria-hidden="true" className="h-4 w-4 object-contain" /> },
