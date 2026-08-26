@@ -995,7 +995,11 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               <ChefHat className="!h-5 !w-5 text-gray-500" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="max-h-[calc(100vh-2rem)] w-56 overflow-y-auto p-1.5">
+          <PopoverContent
+            align="end"
+            collisionPadding={8}
+            className="max-h-[var(--radix-popover-content-available-height)] w-56 touch-pan-y overflow-y-auto overscroll-contain p-1.5"
+          >
             <p className="px-1 pb-1 text-sm font-semibold text-muted-foreground">Caracteristicas</p>
             <div className="space-y-0.5">
               {DETAIL_FEATURE_TOGGLES.map(({ field, label, icon }) => {
@@ -1040,12 +1044,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           title={localRecipe.checked ? 'Receta chequeada' : 'Marcar receta como chequeada'}
           className={`order-2 h-9 w-9 border p-0 ${
             localRecipe.checked
-              ? 'border-white/60 bg-white/80 text-[#6f9f32] hover:bg-white/90'
+              ? 'border-white/60 bg-white/80 text-[#3f6f1f] hover:bg-white/90'
               : 'border-white/60 bg-white/80 text-gray-500 hover:bg-white/90'
           }`}
           onClick={() => onToggleFeature(localRecipe, 'checked', !localRecipe.checked)}
         >
-          <Check className="h-5 w-5" strokeWidth={3} />
+          <Check className="h-8 w-8" strokeWidth={4} />
         </Button>
       )}
 
