@@ -6569,7 +6569,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             title={recipe.checked ? "Receta chequeada" : "Marcar receta como chequeada"}
                             aria-label={recipe.checked ? "Marcar como pendiente de revisión" : "Marcar como chequeada"}
                           >
-                            <Check className="h-[22px] w-[22px]" strokeWidth={4} />
+                            <Check className="h-5 w-5" strokeWidth={4} />
                           </button>
                           <button
                             type="button"
@@ -6773,7 +6773,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <Heart className="h-4 w-4 fill-red-500 text-red-500" aria-label="Favorita" />
                           )}
                           {recipe.checked && (
-                            <Check className="h-[22px] w-[22px] text-[#3f6f1f]" strokeWidth={3.5} aria-label="Chequeada" />
+                            <Check className="h-5 w-5 text-[#3f6f1f]" strokeWidth={3.5} aria-label="Chequeada" />
                           )}
                         </span>
                       )}
@@ -6839,7 +6839,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             />
                           </div>
                           <div className="grid min-w-0 grid-cols-2 items-end gap-2">
-                            <Button type="button" variant="outline" size="sm" onClick={() => setIngredientsEditDraft(null)} disabled={savingIngredientsEdit} className="min-w-0 w-full px-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIngredientsEditDraft(null)} disabled={savingIngredientsEdit} className="min-w-0 w-full px-2 text-xs">
                               <X className="mr-1 h-4 w-4" /> Cancelar
                             </Button>
                             <Button
@@ -6847,7 +6847,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               size="sm"
                               onClick={() => void saveIngredientsInlineEdit()}
                               disabled={savingIngredientsEdit || !ingredientsHasChanges}
-                              className={`min-w-0 w-full px-2 ${ingredientsHasChanges ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-secondary/35 text-secondary-foreground"}`}
+                              className={`min-w-0 w-full px-2 text-xs ${ingredientsHasChanges ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-secondary/35 text-secondary-foreground"}`}
                             >
                               {savingIngredientsEdit ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
                               Guardar
@@ -7056,7 +7056,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             <Heart className="h-5 w-5 fill-red-500 text-red-500" aria-label="Favorita" />
                           )}
                           {recipe.checked && (
-                            <Check className="h-[22px] w-[22px] text-[#3f6f1f]" strokeWidth={3.5} aria-label="Chequeada" />
+                            <Check className="h-5 w-5 text-[#3f6f1f]" strokeWidth={3.5} aria-label="Chequeada" />
                           )}
                         </span>
                       )}
