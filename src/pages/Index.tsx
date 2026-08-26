@@ -6825,8 +6825,8 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               allowCreate createLabel="Agregar"
                             />
                           </div>
-                          <div className="flex items-end justify-end gap-2">
-                            <Button type="button" variant="outline" size="sm" onClick={() => setIngredientsEditDraft(null)} disabled={savingIngredientsEdit}>
+                          <div className="grid min-w-0 grid-cols-2 items-end gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIngredientsEditDraft(null)} disabled={savingIngredientsEdit} className="min-w-0 w-full px-2">
                               <X className="mr-1 h-4 w-4" /> Cancelar
                             </Button>
                             <Button
@@ -6834,7 +6834,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                               size="sm"
                               onClick={() => void saveIngredientsInlineEdit()}
                               disabled={savingIngredientsEdit || !ingredientsHasChanges}
-                              className={ingredientsHasChanges ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-secondary/35 text-secondary-foreground"}
+                              className={`min-w-0 w-full px-2 ${ingredientsHasChanges ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-secondary/35 text-secondary-foreground"}`}
                             >
                               {savingIngredientsEdit ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
                               Guardar
