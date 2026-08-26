@@ -5,6 +5,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNutritionCalculator } from '@/hooks/useNutritionCalculator';
 import { api, RecipeCollection } from '@/services/api';
 import { Recipe } from '@/types/recipe';
-import { Beef, CakeSlice, CandyOff, Loader2, Plus, X, Upload, Edit, Calculator, Globe, Check, ClipboardList, ClipboardPaste, Heart, WheatOff, Leaf, Utensils, ChevronUp, ChevronDown, AudioLines, Trash2 } from 'lucide-react';
+import { Beef, CakeSlice, CandyOff, Loader2, Plus, X, Upload, Edit, Calculator, Globe, Check, ClipboardList, ClipboardPaste, Heart, WheatOff, Leaf, Utensils, ChevronUp, ChevronDown, ChevronsUpDown, AudioLines, Trash2 } from 'lucide-react';
 import { resolveImageUrl } from '@/utils/api';
 import { getRecipeSource } from '@/utils/siteUtils';
 import { normalizeIngredient, normalizeIngredientText } from '@/utils/ingredientText';
@@ -171,6 +172,7 @@ export const EditRecipeModal = ({
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
+  const [isCollectionPickerOpen, setIsCollectionPickerOpen] = useState(false);
   // Colecciones de referencia (baseline) para detectar si el usuario cambió la colección.
   const [initialCollectionIds, setInitialCollectionIds] = useState<string[]>([]);
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
@@ -537,6 +539,7 @@ export const EditRecipeModal = ({
       setBulkInstructionSection('__none__');
       setDraggedInstructionIndex(null);
       setNewCollectionName('');
+      setIsCollectionPickerOpen(false);
       setInstructionDropIndex(null);
       lastSelectedInstructionIndex.current = null;
       setExistingImages(recipe.images || []);
@@ -1716,8 +1719,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
             </TabsContent>
 
               <TabsContent value="classification" className="m-0 mt-4 space-y-4 rounded-lg bg-muted/20 px-3 pb-1 pt-4 sm:px-6 sm:pt-6">
-                {/* 1: Tipo de comida / Colección */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1: Tipo de comida / 2: Colección */}
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label>Tipo de comida</Label>
@@ -1763,85 +1766,84 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                         </button>
                       )}
                     </div>
-                    <Input
-                      value={newCollectionName}
-                      onChange={(event) => setNewCollectionName(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key !== 'Enter') return;
-                        event.preventDefault();
-                        void handleCreateCollection();
-                      }}
-                      placeholder="Escribí una nueva colección y presioná Enter"
-                      disabled={isLoadingCollections || isCreatingCollection}
-                      className="h-9 text-sm"
-                    />
-                    <div className="max-h-44 overflow-y-auto rounded-md border border-border/60 bg-background p-2">
-                      {isLoadingCollections ? (
-                        <div className="flex items-center gap-2 px-1 py-2 text-xs text-muted-foreground">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          Cargando colecciones...
+                    <Popover open={isCollectionPickerOpen} onOpenChange={setIsCollectionPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={isCollectionPickerOpen}
+                          disabled={isLoadingCollections}
+                          className="h-10 w-full justify-between px-3 font-normal"
+                        >
+                          <span className={selectedCollectionIds.length ? 'truncate' : 'truncate text-muted-foreground'}>
+                            {isLoadingCollections
+                              ? 'Cargando colecciones...'
+                              : selectedCollectionIds.length === 0
+                                ? 'Elegí una o más colecciones'
+                                : selectedCollectionIds.length === 1
+                                  ? collections.find(collection => collection.id === selectedCollectionIds[0])?.name || '1 colección seleccionada'
+                                  : `${selectedCollectionIds.length} colecciones seleccionadas`}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        side="bottom"
+                        collisionPadding={12}
+                        className="w-[--radix-popover-trigger-width] space-y-2 p-2"
+                      >
+                        <Input
+                          value={newCollectionName}
+                          onChange={(event) => setNewCollectionName(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter') return;
+                            event.preventDefault();
+                            void handleCreateCollection();
+                          }}
+                          placeholder="Escribí una nueva colección y presioná Enter"
+                          disabled={isCreatingCollection}
+                          className="h-9 text-sm"
+                          autoFocus
+                        />
+                        <div className="max-h-56 overflow-y-auto rounded-md border border-border/60 bg-background p-2">
+                          {collections.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-1.5 md:grid-cols-3 lg:grid-cols-4">
+                              {collections.map(collection => {
+                                const checked = selectedCollectionIds.includes(collection.id);
+                                return (
+                                  <label
+                                    key={collection.id}
+                                    className={`flex min-w-0 cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors ${checked ? 'border-primary/60 bg-primary/10' : 'border-border/50 hover:bg-muted/60'}`}
+                                  >
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={() => setSelectedCollectionIds(current =>
+                                        checked
+                                          ? current.filter(id => id !== collection.id)
+                                          : [...current, collection.id]
+                                      )}
+                                      aria-label={`${checked ? 'Quitar de' : 'Agregar a'} la colección ${collection.name}`}
+                                    />
+                                    <span className="truncate" title={collection.name}>{collection.name}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="px-1 py-2 text-xs text-muted-foreground">
+                              Todavía no hay colecciones. Escribí un nombre arriba para crear la primera.
+                            </p>
+                          )}
                         </div>
-                      ) : collections.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                          {collections.map(collection => {
-                            const checked = selectedCollectionIds.includes(collection.id);
-                            return (
-                              <label
-                                key={collection.id}
-                                className={`flex min-w-0 cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors ${checked ? 'border-primary/60 bg-primary/10' : 'border-border/50 hover:bg-muted/60'}`}
-                              >
-                                <Checkbox
-                                  checked={checked}
-                                  onCheckedChange={() => setSelectedCollectionIds(current =>
-                                    checked
-                                      ? current.filter(id => id !== collection.id)
-                                      : [...current, collection.id]
-                                  )}
-                                  aria-label={`${checked ? 'Quitar de' : 'Agregar a'} la colección ${collection.name}`}
-                                />
-                                <span className="truncate" title={collection.name}>{collection.name}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="px-1 py-2 text-xs text-muted-foreground">
-                          Todavía no hay colecciones. Escribí un nombre arriba para crear la primera.
+                        <p className="px-1 text-[11px] text-muted-foreground">
+                          Podés seleccionar una o varias colecciones.
                         </p>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      Podés seleccionar una o varias colecciones.
-                    </p>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
-
-                {/* 2: Categoría */}
-                {CATEGORIES_ENABLED && <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Categoría</Label>
-                    {(watch('recipeType') || '').trim() && (
-                      <button type="button" onClick={() => setValue('recipeType', '', { shouldDirty: true })} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
-                        <X className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
-                  <MultiSelectCombobox
-                    options={categoryOptions}
-                    selected={parseCategories(watch('recipeType'))}
-                    onChange={(next) => setValue('recipeType', joinCategories(next), { shouldDirty: true })}
-                    placeholder="Elegí una o más categorías"
-                    searchPlaceholder="Buscar o escribir categoría..."
-                    closeOnSelect
-                    allowCreate
-                    createLabel="Agregar"
-                    onDeleteOption={(value) => {
-                      setCategoryOptions(prev => prev.filter(option => option !== value));
-                      const next = parseCategories(watch('recipeType')).filter(option => option !== value);
-                      setValue('recipeType', joinCategories(next), { shouldDirty: true });
-                    }}
-                  />
-                </div>}
 
                 {/* 3: Etiquetas */}
                 <div className="space-y-2">
@@ -1880,6 +1882,33 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     ))}
                   </div>
                 </div>
+
+                {/* Categoría queda después de las tres filas principales. */}
+                {CATEGORIES_ENABLED && <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Categoría</Label>
+                    {(watch('recipeType') || '').trim() && (
+                      <button type="button" onClick={() => setValue('recipeType', '', { shouldDirty: true })} title="Borrar todo" aria-label="Borrar todo" className="flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                  <MultiSelectCombobox
+                    options={categoryOptions}
+                    selected={parseCategories(watch('recipeType'))}
+                    onChange={(next) => setValue('recipeType', joinCategories(next), { shouldDirty: true })}
+                    placeholder="Elegí una o más categorías"
+                    searchPlaceholder="Buscar o escribir categoría..."
+                    closeOnSelect
+                    allowCreate
+                    createLabel="Agregar"
+                    onDeleteOption={(value) => {
+                      setCategoryOptions(prev => prev.filter(option => option !== value));
+                      const next = parseCategories(watch('recipeType')).filter(option => option !== value);
+                      setValue('recipeType', joinCategories(next), { shouldDirty: true });
+                    }}
+                  />
+                </div>}
 
                 {/* Características: tres opciones por fila en tablet; dos en mobile. */}
                 <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2">
