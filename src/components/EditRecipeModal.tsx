@@ -303,6 +303,22 @@ export const EditRecipeModal = ({
     lastSelectedInstructionIndex.current = null;
   };
 
+  const handleRemoveInstruction = (index: number) => {
+    if (instructionFields.length === 1) {
+      handleClearInstructions();
+      return;
+    }
+    removeInstruction(index);
+    setSelectedInstructionIndexes(previous => new Set(
+      Array.from(previous)
+        .filter(selectedIndex => selectedIndex !== index)
+        .map(selectedIndex => selectedIndex > index ? selectedIndex - 1 : selectedIndex)
+    ));
+    setDraggedInstructionIndex(null);
+    setInstructionDropIndex(null);
+    lastSelectedInstructionIndex.current = null;
+  };
+
   const handleInstructionDrop = (targetIndex: number) => {
     const sourceIndex = draggedInstructionIndex;
     setDraggedInstructionIndex(null);
@@ -2209,7 +2225,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                         : 'rounded-lg border p-4'}
                     >
                       {bulkEditingInstructions ? (
-                        <div className="grid gap-3 md:grid-cols-[2rem_1.5rem_minmax(0,1fr)_minmax(12rem,0.38fr)] md:items-end">
+                        <div className="grid grid-cols-[2rem_1.5rem_minmax(0,1fr)_2rem] gap-3 md:grid-cols-[2rem_1.5rem_minmax(0,1fr)_minmax(12rem,0.38fr)_2rem] md:items-end">
                           <label className="flex h-9 cursor-pointer items-center text-sm font-medium">
                             <input
                               type="checkbox"
@@ -2238,14 +2254,14 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                           >
                             {index + 1}
                           </span>
-                          <div className="min-w-0">
+                          <div className="col-span-2 min-w-0 md:col-span-1">
                             <Input
                               {...register(`instructions.${index}.description`)}
                               aria-label={`Paso ${index + 1}`}
                               className="h-9"
                             />
                           </div>
-                          <div className="min-w-0">
+                          <div className="col-start-3 min-w-0 md:col-start-auto">
                             <CreatableCombobox
                               value={instruction?.section || ''}
                               options={ingredientSectionOptions}
@@ -2264,6 +2280,17 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                               onDeleteOption={handleDeleteSharedSection}
                             />
                           </div>
+                          <Button
+                            type="button"
+                            onClick={() => handleRemoveInstruction(index)}
+                            size="sm"
+                            variant="destructive"
+                            className="h-6 w-6 self-center p-0 md:self-end"
+                            title="Eliminar paso"
+                            aria-label={`Eliminar paso ${index + 1}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
                       ) : (
                         <>
@@ -2272,7 +2299,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                             {instructionFields.length > 1 && (
                               <Button
                                 type="button"
-                                onClick={() => removeInstruction(index)}
+                                onClick={() => handleRemoveInstruction(index)}
                                 size="sm"
                                 variant="destructive"
                                 className="-translate-y-1 !h-[22px] !w-[22px] !p-0"
