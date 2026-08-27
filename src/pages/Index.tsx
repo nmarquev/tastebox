@@ -3688,7 +3688,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         : `Mostrando ${filteredRecipes.length} de ${allFilteredRecipes.length} receta${allFilteredRecipes.length !== 1 ? 's' : ''}`}
             </p>
             </div>
-            <div className="ml-auto flex shrink-0 items-center sm:hidden" aria-label="Tema y fuente">
+            <div className="ml-auto flex shrink-0 items-center xl:hidden" aria-label="Tema y fuente">
               <ThemeSwitcher />
               <FontThemeSwitcher />
             </div>
@@ -3698,7 +3698,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9 shrink-0 sm:hidden"
+                  className="h-9 w-9 shrink-0 xl:hidden"
                   title="Agregar receta"
                   aria-label="Agregar receta"
                 >
@@ -3753,7 +3753,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
             )}
           </div>
-          <div className={`grid w-full min-w-0 gap-2 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-[1fr_auto_auto]' : 'grid-cols-3 sm:grid-cols-4 xl:grid-cols-[1fr_auto_auto_auto]'}`}>
+          <div className={`grid w-full min-w-0 gap-2 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'grid-cols-2 sm:grid-cols-2 xl:grid-cols-[1fr_auto_auto]' : 'grid-cols-3 sm:grid-cols-3 xl:grid-cols-[1fr_auto_auto_auto]'}`}>
             {/* Search input (multi-palabra: escrib? y Enter agrega una palabra clave) */}
             <div className={`${inGallery ? 'col-span-2' : 'col-span-3'} flex min-w-0 flex-col gap-1 sm:col-span-full xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2 ${inGallery ? '' : 'xl:row-span-2'}`}>
               <div className="flex min-w-0 flex-col gap-2.5">
@@ -3795,11 +3795,12 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   variant="outline"
                   size="icon"
                   onClick={() => void handlePasteSearch()}
-                  className="h-10 w-10 shrink-0 transition-all duration-200 hover:scale-105 hover:shadow-md"
+                  className="h-10 w-10 shrink-0 gap-2 px-0 transition-all duration-200 hover:scale-105 hover:shadow-md sm:w-auto sm:px-3 xl:w-10 xl:px-0"
                   title="Pegar texto del portapapeles"
                   aria-label="Pegar texto del portapapeles en Buscar"
                 >
                   <ClipboardPaste className="h-4 w-4" />
+                  <span className="hidden sm:inline xl:hidden">Pegar</span>
                 </Button>
                 </div>
                 {!showCollectionsGallery && !showDishTypesGallery && !showCategoriesGallery && !showSourcesGallery && !showTagsGallery && (
@@ -3859,43 +3860,10 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               )}
             </div>
 
-            {/* En tablet: acceso directo a todas las formas de agregar recetas. */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={`hidden h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md sm:col-start-1 sm:flex xl:hidden ${inGallery ? 'sm:row-start-3' : 'sm:row-start-2'}`}
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  <span className="ml-2">Agregar receta</span>
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onSelect={() => openTabletRecipeAction('nueva')}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Nueva receta
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openTabletRecipeAction('importar')}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Importar receta de URL
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openTabletRecipeAction('importar-texto')}>
-                  <ClipboardPaste className="mr-2 h-4 w-4" />
-                  Importar receta de texto
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openTabletRecipeAction('busqueda-inteligente')}>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Buscador inteligente
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             {/* Column selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className={`col-start-1 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md sm:col-start-2 xl:col-start-2 xl:row-start-1 xl:w-auto ${inGallery ? 'row-start-3' : 'row-start-2'}`}>
+                <Button variant="outline" size="sm" className={`col-start-1 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-2 xl:row-start-1 xl:w-auto ${inGallery ? 'row-start-3' : 'row-start-2'}`}>
                   {viewMode === 'list' || viewMode === 'detail' || viewMode === 'ingredients' ? <List className="h-4 w-4" /> : getColumnIcon(gridColumns)}
                   <span className="ml-2">Ver</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
@@ -3970,7 +3938,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             {/* Sort selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className={`col-start-2 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md sm:col-start-3 xl:col-start-3 xl:row-start-1 xl:w-auto ${inGallery ? 'row-start-3' : 'row-start-2'}`}>
+                <Button variant="outline" size="sm" className={`col-start-2 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md xl:col-start-3 xl:row-start-1 xl:w-auto ${inGallery ? 'row-start-3' : 'row-start-2'}`}>
                   <ArrowUpDown className="h-4 w-4" />
                   <span className="ml-2">Ordenar</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
@@ -4180,7 +4148,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 setActiveBulkPanel(null);
                 setSelectedRecipeIds(new Set());
               }}
-              className={`${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'flex'} col-start-3 row-start-2 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md sm:col-start-4 sm:row-start-2 xl:col-start-4 xl:row-start-1 xl:w-auto`}
+              className={`${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'flex'} col-start-3 row-start-2 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md sm:col-start-3 sm:row-start-2 xl:col-start-4 xl:row-start-1 xl:w-auto`}
             >
               <Filter className="h-4 w-4 mr-2" />
               Filtrar
