@@ -3648,7 +3648,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
             <h2 className="truncate whitespace-nowrap text-lg font-bold text-foreground xl:text-2xl">
               {showDuplicateRecipes
                 ? 'Recetas repetidas'
@@ -3686,6 +3686,38 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         : `Mostrando ${filteredRecipes.length} de ${allFilteredRecipes.length} receta${allFilteredRecipes.length !== 1 ? 's' : ''}`}
             </p>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="ml-auto h-9 w-9 shrink-0 sm:hidden"
+                  title="Agregar receta"
+                  aria-label="Agregar receta"
+                >
+                  <Plus className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => openTabletRecipeAction('nueva')}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Nueva receta
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openTabletRecipeAction('importar')}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Importar receta de URL
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openTabletRecipeAction('importar-texto')}>
+                  <ClipboardPaste className="mr-2 h-4 w-4" />
+                  Importar receta de texto
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openTabletRecipeAction('busqueda-inteligente')}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Buscador inteligente
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             </div>
             {!showCollectionsGallery && !showCategoriesGallery && !showSourcesGallery && !showDishTypesGallery && !showTagsGallery && !showAuthorsGallery && activeFilterChips.length > 0 && (
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -3715,9 +3747,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </div>
             )}
           </div>
-          <div className={`grid w-full min-w-0 grid-cols-2 gap-2 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'sm:grid-cols-3 xl:grid-cols-[1fr_auto_auto]' : 'sm:grid-cols-4 xl:grid-cols-[1fr_auto_auto_auto]'}`}>
+          <div className={`grid w-full min-w-0 gap-2 pt-1.5 ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-[1fr_auto_auto]' : 'grid-cols-3 sm:grid-cols-4 xl:grid-cols-[1fr_auto_auto_auto]'}`}>
             {/* Search input (multi-palabra: escrib? y Enter agrega una palabra clave) */}
-            <div className={`col-span-2 flex min-w-0 flex-col gap-1 sm:col-span-full xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2 ${inGallery ? '' : 'xl:row-span-2'}`}>
+            <div className={`${inGallery ? 'col-span-2' : 'col-span-3'} flex min-w-0 flex-col gap-1 sm:col-span-full xl:col-span-1 xl:col-start-1 xl:row-start-1 xl:ml-2 ${inGallery ? '' : 'xl:row-span-2'}`}>
               <div className="flex min-w-0 flex-col gap-2.5">
                 <div className="flex min-w-0 items-stretch gap-1.5">
                 <div className={`toolbar-search-field relative min-w-0 flex-1 rounded-md border border-input bg-background transition-all duration-200 hover:shadow-md ${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'w-full xl:w-[284px]' : 'w-full xl:w-[284px]'}`}>
@@ -4142,7 +4174,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 setActiveBulkPanel(null);
                 setSelectedRecipeIds(new Set());
               }}
-              className={`${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'hidden sm:flex'} col-start-1 row-start-3 h-10 w-full transition-all duration-200 hover:scale-105 hover:shadow-md sm:col-start-4 sm:row-start-2 xl:col-start-4 xl:row-start-1 xl:w-auto`}
+              className={`${showCollectionsGallery || showDishTypesGallery || showCategoriesGallery || showSourcesGallery || showTagsGallery ? 'hidden' : 'flex'} col-start-3 row-start-2 h-10 w-full whitespace-nowrap px-2 transition-all duration-200 hover:scale-105 hover:shadow-md sm:col-start-4 sm:row-start-2 xl:col-start-4 xl:row-start-1 xl:w-auto`}
             >
               <Filter className="h-4 w-4 mr-2" />
               Filtrar
