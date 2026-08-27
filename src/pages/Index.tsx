@@ -3702,7 +3702,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   title="Agregar receta"
                   aria-label="Agregar receta"
                 >
-                  <Plus className="h-5 w-5" />
+                  <Plus className="h-5 w-5" strokeWidth={3} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
