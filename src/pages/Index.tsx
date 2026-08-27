@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { FontThemeSwitcher } from "@/components/FontThemeSwitcher";
 import { RecipeCard, Recipe } from "@/components/RecipeCard";
 import { CollectionsSidebar } from "@/components/CollectionsSidebar";
 import { resolveImageUrl } from "@/utils/api";
@@ -3686,13 +3688,17 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                         : `Mostrando ${filteredRecipes.length} de ${allFilteredRecipes.length} receta${allFilteredRecipes.length !== 1 ? 's' : ''}`}
             </p>
             </div>
+            <div className="ml-auto flex shrink-0 items-center sm:hidden" aria-label="Tema y fuente">
+              <ThemeSwitcher />
+              <FontThemeSwitcher />
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="ml-auto h-9 w-9 shrink-0 sm:hidden"
+                  className="h-9 w-9 shrink-0 sm:hidden"
                   title="Agregar receta"
                   aria-label="Agregar receta"
                 >
