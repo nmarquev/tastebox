@@ -513,6 +513,11 @@ export const MainNav = () => {
               BUSCAR
             </button>
 
+            <Link to="/app" onClick={closeMobileMenu} className={mobileMenuItemClass}>
+              <ChefHat className="h-5 w-5" />
+              TODAS LAS RECETAS
+            </Link>
+
             {menuItems.map((item) => (
               <Link key={item.label} to={item.to} onClick={closeMobileMenu} className={mobileMenuItemClass}>
                 {item.label}
