@@ -21,7 +21,6 @@ import { getRecipeSource } from '@/utils/siteUtils';
 import { normalizeIngredient, normalizeIngredientText } from '@/utils/ingredientText';
 import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
 import { CreatableCombobox } from '@/components/CreatableCombobox';
-import { TagAutocompleteInput } from '@/components/TagAutocompleteInput';
 import { Switch } from '@/components/ui/switch';
 import { AvocadoIcon } from '@/components/icons/AvocadoIcon';
 import { RecipePreparedIcon } from '@/components/icons/RecipePreparedIcon';
@@ -186,7 +185,7 @@ export const EditRecipeModal = ({
   const [isDishTypePickerOpen, setIsDishTypePickerOpen] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [tagOptions, setTagOptions] = useState<string[]>([]);
-  const [tagDialogOpen, setTagDialogOpen] = useState(false);
+  const [isTagPickerOpen, setIsTagPickerOpen] = useState(false);
   const [tagDeleteTarget, setTagDeleteTarget] = useState<string | null>(null);
   const [isDeletingTag, setIsDeletingTag] = useState(false);
   const [bulkEditingIngredients, setBulkEditingIngredients] = useState(false);
@@ -545,6 +544,7 @@ export const EditRecipeModal = ({
       setIsCollectionPickerOpen(false);
       setNewDishTypeName('');
       setIsDishTypePickerOpen(false);
+      setIsTagPickerOpen(false);
       setInstructionDropIndex(null);
       lastSelectedInstructionIndex.current = null;
       setExistingImages(recipe.images || []);
@@ -683,19 +683,7 @@ export const EditRecipeModal = ({
     return () => { cancelled = true; };
   }, [isOpen]);
 
-  const handleAddTag = (tagToAdd = newTag) => {
-    const normalizedTag = tagToAdd.trim();
-    if (normalizedTag && !tags.some(tag => tag.toLocaleLowerCase('es') === normalizedTag.toLocaleLowerCase('es'))) {
-      setValue('tags', [...tags, normalizedTag], { shouldDirty: true });
-    }
-    if (normalizedTag) setNewTag('');
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setValue('tags', tags.filter(tag => tag !== tagToRemove), { shouldDirty: true });
-  };
-
-  // Marcar/desmarcar una etiqueta desde el diálogo de etiquetas.
+  // Marcar/desmarcar una etiqueta desde el selector de etiquetas.
   const toggleTag = (tag: string) => {
     const t = tag.trim();
     if (!t) return;
@@ -706,8 +694,14 @@ export const EditRecipeModal = ({
   const handleCreateTag = () => {
     const t = newTag.trim();
     if (!t) return;
-    if (!tags.includes(t)) setValue('tags', [...tags, t], { shouldDirty: true });
-    setTagOptions(prev => prev.includes(t) ? prev : [...prev, t].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })));
+    const existing = tagOptions.find(option => option.localeCompare(t, 'es', { sensitivity: 'base' }) === 0);
+    const tagToSelect = existing || t;
+    if (!tags.some(tag => tag.localeCompare(tagToSelect, 'es', { sensitivity: 'base' }) === 0)) {
+      setValue('tags', [...tags, tagToSelect], { shouldDirty: true });
+    }
+    if (!existing) {
+      setTagOptions(prev => [...prev, t].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })));
+    }
     setNewTag('');
   };
 
@@ -1949,32 +1943,85 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       </button>
                     )}
                   </div>
-                  <div className="mb-2 flex gap-2">
-                    <div className="min-w-0 flex-1">
-                      <TagAutocompleteInput
+                  <Popover open={isTagPickerOpen} onOpenChange={setIsTagPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isTagPickerOpen}
+                        className="h-10 w-full justify-between px-3 font-normal"
+                      >
+                        <span className={tags.length ? 'truncate' : 'truncate text-muted-foreground'}>
+                          {tags.length === 0
+                            ? 'Elegí una o más etiquetas'
+                            : tags.length === 1
+                              ? tags[0]
+                              : `${tags.length} etiquetas seleccionadas`}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      side="bottom"
+                      collisionPadding={12}
+                      className="w-[--radix-popover-trigger-width] space-y-2 p-2"
+                    >
+                      <Input
                         value={newTag}
-                        selectedTags={tags}
-                        options={tagOptions}
-                        showAddButton={false}
-                        onValueChange={setNewTag}
-                        onAdd={handleAddTag}
-                        onDeleteOption={setTagDeleteTarget}
+                        onChange={(event) => setNewTag(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Enter') return;
+                          event.preventDefault();
+                          handleCreateTag();
+                        }}
+                        placeholder="Escribí una nueva etiqueta y presioná Enter"
+                        className="h-9 text-sm"
+                        autoFocus
                       />
-                    </div>
-                    <Button type="button" onClick={() => { setNewTag(''); setTagDialogOpen(true); }} size="sm" title="Elegir etiquetas">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        {tag}
-                        <button type="button" onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
+                      <div className="max-h-64 overflow-y-auto rounded-md border border-border/60 bg-background p-2">
+                        {tagOptions.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-3 lg:grid-cols-4">
+                            {tagOptions.map((tag, index) => {
+                              const checked = tags.includes(tag);
+                              const checkboxId = `recipe-tag-${index}`;
+                              return (
+                                <div
+                                  key={tag}
+                                  className={`flex min-w-0 items-center gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors ${checked ? 'border-primary/60 bg-primary/10' : 'border-border/50 hover:bg-muted/60'}`}
+                                >
+                                  <Checkbox
+                                    id={checkboxId}
+                                    checked={checked}
+                                    onCheckedChange={() => toggleTag(tag)}
+                                    aria-label={`${checked ? 'Quitar' : 'Agregar'} la etiqueta ${tag}`}
+                                  />
+                                  <label htmlFor={checkboxId} className="min-w-0 flex-1 cursor-pointer truncate" title={tag}>{tag}</label>
+                                  <button
+                                    type="button"
+                                    onClick={() => setTagDeleteTarget(tag)}
+                                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                    aria-label={`Eliminar ${tag}`}
+                                    title="Eliminar etiqueta"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="px-1 py-2 text-xs text-muted-foreground">
+                            Todavía no hay etiquetas. Escribí un nombre arriba para crear la primera.
+                          </p>
+                        )}
+                      </div>
+                      <p className="px-1 text-[11px] text-muted-foreground">
+                        Podés seleccionar una o varias etiquetas.
+                      </p>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Categoría queda después de las tres filas principales. */}
@@ -2742,94 +2789,6 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
             )}
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
-
-    {/* Diálogo para elegir/crear etiquetas */}
-    <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Etiquetas</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          {/* Nueva etiqueta (primera opción) */}
-          <div className="flex items-center gap-2">
-            <Input
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              placeholder="Nueva etiqueta"
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateTag(); } }}
-              autoFocus
-            />
-            <Button type="button" size="sm" onClick={handleCreateTag} disabled={!newTag.trim()}>
-              <Plus className="mr-1 h-4 w-4" />
-              Agregar
-            </Button>
-          </div>
-              <p className="text-xs text-muted-foreground">Para agregar una etiqueta, pulsá el +</p>
-
-          {/* Lista de etiquetas existentes (orden alfabético) para marcar */}
-          <div className="max-h-60 overflow-y-auto rounded-md border divide-y">
-            {tagOptions.length === 0 && (
-              <p className="px-3 py-4 text-sm text-muted-foreground">Todavía no hay etiquetas. Creá una arriba.</p>
-            )}
-            {tagOptions.map((tag) => {
-              const checked = tags.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => toggleTag(tag)}
-                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50 ${checked ? 'bg-accent/40' : ''}`}
-                >
-                  <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${checked ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 text-transparent'}`}>
-                    <Check className="h-3.5 w-3.5" />
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">{tag}</span>
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setTagDeleteTarget(tag);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key !== 'Enter' && event.key !== ' ') return;
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setTagDeleteTarget(tag);
-                    }}
-                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    aria-label={`Eliminar ${tag}`}
-                    title="Eliminar de la lista"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Etiquetas marcadas (se van agregando abajo) */}
-          <div>
-            <p className="mb-1 text-xs font-medium text-muted-foreground">Seleccionadas ({tags.length})</p>
-            <div className="flex flex-wrap gap-1">
-              {tags.length === 0 && <span className="text-xs text-muted-foreground">Ninguna todavía.</span>}
-              {tags.map((tag, index) => (
-                <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                  {tag}
-                  <button type="button" onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <Button type="button" onClick={() => setTagDialogOpen(false)}>Listo</Button>
-        </div>
       </DialogContent>
     </Dialog>
 
