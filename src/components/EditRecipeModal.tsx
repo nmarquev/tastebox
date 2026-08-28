@@ -1610,67 +1610,6 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                 </div>
               </div>
 
-              {/* Nutrition Section */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <Label className="text-lg font-semibold">Información Nutricional</Label>
-                  <Button
-                    type="button"
-                    onClick={handleCalculateNutrition}
-                    disabled={isCalculating}
-                    variant="outline"
-                    size="sm"
-                  >
-                    {isCalculating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Calculando...
-                      </>
-                    ) : (
-                      <>
-                        <Calculator className="h-4 w-4 mr-2" />
-                        Calcular Nutrientes
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {/* g.1: Calorías / Proteína / Carbohidratos / Grasa */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <Label htmlFor="calories">Calorías</Label>
-                    <Input id="calories" type="text" inputMode="decimal" {...register('calories')} placeholder="kcal" />
-                  </div>
-                    <div>
-                      <Label htmlFor="protein">Proteína</Label>
-                    <Input id="protein" type="text" inputMode="decimal" {...register('protein')} placeholder="g" />
-                  </div>
-                  <div>
-                    <Label htmlFor="carbohydrates">Carbohidratos</Label>
-                    <Input id="carbohydrates" type="text" inputMode="decimal" {...register('carbohydrates')} placeholder="g" />
-                  </div>
-                  <div>
-                    <Label htmlFor="fat">Grasa</Label>
-                    <Input id="fat" type="text" inputMode="decimal" {...register('fat')} placeholder="g" />
-                  </div>
-                </div>
-                {/* g.2: Fibra / Azúcar / Sodio (mismo ancho que la fila de Calorías) */}
-                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="fiber">Fibra</Label>
-                    <Input id="fiber" type="text" inputMode="decimal" {...register('fiber')} placeholder="g" />
-                  </div>
-                  <div>
-                    <Label htmlFor="sugar">Azúcar</Label>
-                    <Input id="sugar" type="text" inputMode="decimal" {...register('sugar')} placeholder="g" />
-                  </div>
-                  <div>
-                    <Label htmlFor="sodium">Sodio</Label>
-                    <Input id="sodium" type="text" inputMode="decimal" {...register('sodium')} placeholder="mg" />
-                  </div>
-                </div>
-              </div>
-
               {/* h: Imágenes (máximo 3) */}
               <div>
                 <Label>Imágenes (máximo 3)</Label>
@@ -1755,6 +1694,65 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     </Button>
                   </div>
                 )}
+              </div>
+
+              {/* Información nutricional al final de la receta. */}
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <Label className="text-lg font-semibold">Información Nutricional</Label>
+                  <Button
+                    type="button"
+                    onClick={handleCalculateNutrition}
+                    disabled={isCalculating}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {isCalculating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Calculando...
+                      </>
+                    ) : (
+                      <>
+                        <Calculator className="mr-2 h-4 w-4" />
+                        Calcular Nutrientes
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <div>
+                    <Label htmlFor="calories">Calorías</Label>
+                    <Input id="calories" type="text" inputMode="decimal" {...register('calories')} placeholder="kcal" />
+                  </div>
+                  <div>
+                    <Label htmlFor="protein">Proteína</Label>
+                    <Input id="protein" type="text" inputMode="decimal" {...register('protein')} placeholder="g" />
+                  </div>
+                  <div>
+                    <Label htmlFor="carbohydrates">Carbohidratos</Label>
+                    <Input id="carbohydrates" type="text" inputMode="decimal" {...register('carbohydrates')} placeholder="g" />
+                  </div>
+                  <div>
+                    <Label htmlFor="fat">Grasa</Label>
+                    <Input id="fat" type="text" inputMode="decimal" {...register('fat')} placeholder="g" />
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <div>
+                    <Label htmlFor="fiber">Fibra</Label>
+                    <Input id="fiber" type="text" inputMode="decimal" {...register('fiber')} placeholder="g" />
+                  </div>
+                  <div>
+                    <Label htmlFor="sugar">Azúcar</Label>
+                    <Input id="sugar" type="text" inputMode="decimal" {...register('sugar')} placeholder="g" />
+                  </div>
+                  <div>
+                    <Label htmlFor="sodium">Sodio</Label>
+                    <Input id="sodium" type="text" inputMode="decimal" {...register('sodium')} placeholder="mg" />
+                  </div>
+                </div>
               </div>
             </TabsContent>
 
@@ -1842,6 +1840,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                         <p className="px-1 text-[11px] text-muted-foreground">
                           Podés seleccionar uno o varios tipos de comida.
                         </p>
+                        <div className="flex justify-end border-t border-border/60 pt-2">
+                          <Button type="button" variant="outline" size="sm" className="h-7 px-3 text-xs" onClick={() => setIsDishTypePickerOpen(false)}>
+                            Cerrar
+                          </Button>
+                        </div>
                       </PopoverContent>
                     </Popover>
                   </div>
@@ -1928,6 +1931,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                         <p className="px-1 text-[11px] text-muted-foreground">
                           Podés seleccionar una o varias colecciones.
                         </p>
+                        <div className="flex justify-end border-t border-border/60 pt-2">
+                          <Button type="button" variant="outline" size="sm" className="h-7 px-3 text-xs" onClick={() => setIsCollectionPickerOpen(false)}>
+                            Cerrar
+                          </Button>
+                        </div>
                       </PopoverContent>
                     </Popover>
                   </div>
@@ -2020,6 +2028,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       <p className="px-1 text-[11px] text-muted-foreground">
                         Podés seleccionar una o varias etiquetas.
                       </p>
+                      <div className="flex justify-end border-t border-border/60 pt-2">
+                        <Button type="button" variant="outline" size="sm" className="h-7 px-3 text-xs" onClick={() => setIsTagPickerOpen(false)}>
+                          Cerrar
+                        </Button>
+                      </div>
                     </PopoverContent>
                   </Popover>
                 </div>
