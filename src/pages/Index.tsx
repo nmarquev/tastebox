@@ -1739,6 +1739,7 @@ const Index = () => {
     try {
       const updated = await api.collections.update(editCollectionTarget.id, { name });
       setCollections(prev => prev.map(col => (col.id === updated.id ? { ...col, name: updated.name, updatedAt: updated.updatedAt } : col)));
+      await loadRecipes();
       setEditCollectionTarget(null);
       setEditCollectionName('');
       toast({ title: "Coleccion actualizada", description: `Se renombro a "${updated.name}".` });
@@ -1820,7 +1821,7 @@ const Index = () => {
         await api.categories.create(newName);
         if (target.cover) await api.categories.updateCover(newName, target.cover);
         const affected = recipes.filter(recipe => parseCategories(recipe.recipeType).some(category => sameName(category, oldName)));
-        await Promise.all(affected.map(recipe => api.recipes.update(recipe.id, {
+        await Promise.all(affected.map(recipe => api.recipes.bulkUpdate([recipe.id], {
           recipeType: replaceNameInList(parseCategories(recipe.recipeType), oldName, newName).join('|'),
         })));
         await api.categories.remove(oldName);
@@ -1834,7 +1835,7 @@ const Index = () => {
         const affected = recipes.filter(recipe =>
           (recipe.dishType || '').split(',').some(value => sameName(value, oldName))
         );
-        await Promise.all(affected.map(recipe => api.recipes.update(recipe.id, {
+        await Promise.all(affected.map(recipe => api.recipes.bulkUpdate([recipe.id], {
           dishType: replaceNameInList((recipe.dishType || '').split(',').map(value => value.trim()).filter(Boolean), oldName, newName).join(', '),
         })));
         await api.dishTypes.remove(oldName);
@@ -1859,8 +1860,8 @@ const Index = () => {
         await api.tags.create(newName);
         if (target.cover) await api.tags.updateCover(newName, target.cover);
         const affected = recipes.filter(recipe => (recipe.tags || []).some(tag => sameName(tag, oldName)));
-        await Promise.all(affected.map(recipe => api.recipes.update(recipe.id, {
-          tags: replaceNameInList(recipe.tags || [], oldName, newName),
+        await Promise.all(affected.map(recipe => api.recipes.bulkUpdate([recipe.id], {
+          replaceTags: replaceNameInList(recipe.tags || [], oldName, newName),
         })));
         await api.tags.remove(oldName);
         if (filters.tags?.some(value => sameName(value, oldName))) {
