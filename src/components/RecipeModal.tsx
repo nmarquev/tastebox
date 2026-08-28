@@ -1899,8 +1899,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,1fr)_15rem]">
-            {/* Ingredientes a la izquierda; la columna nutricional queda fija a la derecha. */}
+          <div>
             <div className="min-w-0 space-y-4">
               <h3 className="font-semibold text-xl">Ingredientes ({localRecipe.ingredients?.length || 0})</h3>
               {localRecipe.ingredients && localRecipe.ingredients.length > 0 ? (
@@ -1937,45 +1936,22 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 <p className="text-muted-foreground">No hay ingredientes especificados</p>
               )}
             </div>
-
-            {/* Información nutricional a la derecha desde tablet en adelante. */}
-            <div className={`${(localRecipe.language || '').trim() && !isSpanishLanguage(localRecipe.language) ? 'flex' : 'hidden sm:flex'} justify-center sm:justify-end`}>
-              <div className="sticky top-4">
-                <div className="hidden sm:block">
-                  <NutritionLabel
-                    nutrition={{
-                      calories: localRecipe.calories,
-                      protein: localRecipe.protein,
-                      carbohydrates: localRecipe.carbohydrates,
-                      fat: localRecipe.fat,
-                      saturatedFat: localRecipe.saturatedFat,
-                      fiber: localRecipe.fiber,
-                      sugar: localRecipe.sugar,
-                      sodium: localRecipe.sodium
-                    }}
-                    servings={localRecipe.servings}
-                    showCalculateButton={!hasNutritionData(localRecipe)}
-                    onCalculate={handleCalculateNutrition}
-                    isCalculating={isCalculating}
-                  />
-                </div>
-                {(localRecipe.language || '').trim() && !isSpanishLanguage(localRecipe.language) && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full sm:mt-3"
-                    onClick={handleTranslateRecipe}
-                    disabled={isTranslating}
-                  >
-                    {isTranslating
-                      ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      : <Languages className="mr-2 h-4 w-4" />}
-                    Traducir receta
-                  </Button>
-                )}
-              </div>
-            </div>
           </div>
+
+          {(localRecipe.language || '').trim() && !isSpanishLanguage(localRecipe.language) && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={handleTranslateRecipe}
+              disabled={isTranslating}
+            >
+              {isTranslating
+                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                : <Languages className="mr-2 h-4 w-4" />}
+              Traducir receta
+            </Button>
+          )}
 
           {/* Preparación - solo si la receta tiene instrucciones */}
           {localRecipe.instructions && localRecipe.instructions.length > 0 && (
@@ -2031,6 +2007,26 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               </ul>
             </div>
           )}
+
+          {/* Información nutricional siempre al final del detalle de la receta. */}
+          <div className="flex justify-center sm:justify-start">
+            <NutritionLabel
+              nutrition={{
+                calories: localRecipe.calories,
+                protein: localRecipe.protein,
+                carbohydrates: localRecipe.carbohydrates,
+                fat: localRecipe.fat,
+                saturatedFat: localRecipe.saturatedFat,
+                fiber: localRecipe.fiber,
+                sugar: localRecipe.sugar,
+                sodium: localRecipe.sodium
+              }}
+              servings={localRecipe.servings}
+              showCalculateButton={!hasNutritionData(localRecipe)}
+              onCalculate={handleCalculateNutrition}
+              isCalculating={isCalculating}
+            />
+          </div>
         </div>
 
         {/* Flechitas para ir al principio / al final del contenido */}
