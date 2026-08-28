@@ -3901,13 +3901,15 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                   <Grid3X3 className="h-4 w-4 mr-2" />
                   Iconos grandes
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => { setViewMode('grid'); setGridColumns(1); }}
-                  className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 1 ? "bg-accent" : ""}`}
-                >
-                  <Square className="h-4 w-4 mr-2" />
-                  Fila
-                </DropdownMenuItem>
+                {!showCollectionsGallery && !showDishTypesGallery && !showSourcesGallery && (
+                  <DropdownMenuItem
+                    onClick={() => { setViewMode('grid'); setGridColumns(1); }}
+                    className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 1 ? "bg-accent" : ""}`}
+                  >
+                    <Square className="h-4 w-4 mr-2" />
+                    Fila
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={() => { setViewMode('grid'); setGridColumns(3); }}
                   className={`hidden sm:flex ${viewMode === 'grid' && gridColumns === 3 ? "bg-accent" : ""}`}
