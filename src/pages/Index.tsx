@@ -84,6 +84,12 @@ type EditableGalleryTarget = {
   cover?: string | null;
 };
 
+type DishTypeRenameConfirmation = {
+  target: EditableGalleryTarget;
+  newName: string;
+  affectedCount: number;
+};
+
 const DEFAULT_SEARCH_SCOPE: SearchScope = 'title';
 
 const matchesWholePhrase = (text: string, query: string) => {
@@ -304,6 +310,7 @@ const Index = () => {
   const [editGalleryTarget, setEditGalleryTarget] = useState<EditableGalleryTarget | null>(null);
   const [editGalleryName, setEditGalleryName] = useState('');
   const [editingGallery, setEditingGallery] = useState(false);
+  const [dishTypeRenameConfirmation, setDishTypeRenameConfirmation] = useState<DishTypeRenameConfirmation | null>(null);
   const [bulkDeleteCollectionsOpen, setBulkDeleteCollectionsOpen] = useState(false);
   // Gestion de tipos de comida desde la galeria (menu de tres puntitos).
   const [deleteDishTypeTarget, setDeleteDishTypeTarget] = useState<string | null>(null);
@@ -1778,13 +1785,14 @@ const Index = () => {
       });
   };
 
-  const submitEditGallery = async () => {
-    if (!editGalleryTarget || editingGallery) return;
+  const submitEditGallery = async (confirmedDishTypeUpdate = false, confirmedTarget?: EditableGalleryTarget, confirmedName?: string) => {
+    const target = confirmedTarget || editGalleryTarget;
+    if (!target || editingGallery) return;
 
-    const oldName = editGalleryTarget.name;
-    const newName = editGalleryName.trim();
+    const oldName = target.name;
+    const newName = (confirmedName ?? editGalleryName).trim();
     if (!newName) {
-      toast({ title: "Nombre requerido", description: `Ingresa un nombre para la ${EDITABLE_GALLERY_LABELS[editGalleryTarget.kind]}.`, variant: "destructive" });
+      toast({ title: "Nombre requerido", description: `Ingresa un nombre para la ${EDITABLE_GALLERY_LABELS[target.kind]}.`, variant: "destructive" });
       return;
     }
 
@@ -1794,11 +1802,23 @@ const Index = () => {
       return;
     }
 
+    if (target.kind === 'dishType' && !confirmedDishTypeUpdate) {
+      const affectedCount = recipes.filter(recipe =>
+        (recipe.dishType || '').split(',').some(value => sameName(value, oldName))
+      ).length;
+      if (affectedCount > 0) {
+        setDishTypeRenameConfirmation({ target, newName, affectedCount });
+        setEditGalleryTarget(null);
+        setEditGalleryName('');
+        return;
+      }
+    }
+
     setEditingGallery(true);
     try {
-      if (editGalleryTarget.kind === 'category') {
+      if (target.kind === 'category') {
         await api.categories.create(newName);
-        if (editGalleryTarget.cover) await api.categories.updateCover(newName, editGalleryTarget.cover);
+        if (target.cover) await api.categories.updateCover(newName, target.cover);
         const affected = recipes.filter(recipe => parseCategories(recipe.recipeType).some(category => sameName(category, oldName)));
         await Promise.all(affected.map(recipe => api.recipes.update(recipe.id, {
           recipeType: replaceNameInList(parseCategories(recipe.recipeType), oldName, newName).join('|'),
@@ -1808,11 +1828,15 @@ const Index = () => {
           handleFiltersChange({ ...filters, recipeTypes: replaceNameInList(filters.recipeTypes, oldName, newName) });
         }
         await Promise.all([reloadCategories(), loadRecipes()]);
-      } else if (editGalleryTarget.kind === 'dishType') {
+      } else if (target.kind === 'dishType') {
         await api.dishTypes.create(newName);
-        if (editGalleryTarget.cover) await api.dishTypes.updateCover(newName, editGalleryTarget.cover);
-        const affected = recipes.filter(recipe => sameName(recipe.dishType, oldName));
-        await Promise.all(affected.map(recipe => api.recipes.update(recipe.id, { dishType: newName })));
+        if (target.cover) await api.dishTypes.updateCover(newName, target.cover);
+        const affected = recipes.filter(recipe =>
+          (recipe.dishType || '').split(',').some(value => sameName(value, oldName))
+        );
+        await Promise.all(affected.map(recipe => api.recipes.update(recipe.id, {
+          dishType: replaceNameInList((recipe.dishType || '').split(',').map(value => value.trim()).filter(Boolean), oldName, newName).join(', '),
+        })));
         await api.dishTypes.remove(oldName);
         if (sameName(filters.dishType, oldName) || filters.dishTypes?.some(value => sameName(value, oldName))) {
           handleFiltersChange({
@@ -1822,10 +1846,10 @@ const Index = () => {
           });
         }
         await Promise.all([reloadDishTypes(), loadRecipes()]);
-      } else if (editGalleryTarget.kind === 'source') {
+      } else if (target.kind === 'source') {
         await api.sources.update(oldName, {
           name: newName,
-          coverImage: editGalleryTarget.cover || undefined,
+          coverImage: target.cover || undefined,
         });
         if (filters.sources?.some(value => sameName(value, oldName))) {
           handleFiltersChange({ ...filters, sources: replaceNameInList(filters.sources, oldName, newName) });
@@ -1833,7 +1857,7 @@ const Index = () => {
         await Promise.all([reloadSources(), loadRecipes()]);
       } else {
         await api.tags.create(newName);
-        if (editGalleryTarget.cover) await api.tags.updateCover(newName, editGalleryTarget.cover);
+        if (target.cover) await api.tags.updateCover(newName, target.cover);
         const affected = recipes.filter(recipe => (recipe.tags || []).some(tag => sameName(tag, oldName)));
         await Promise.all(affected.map(recipe => api.recipes.update(recipe.id, {
           tags: replaceNameInList(recipe.tags || [], oldName, newName),
@@ -7543,6 +7567,38 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
             >
               {editingGallery ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit className="mr-2 h-4 w-4" />}
               Guardar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!dishTypeRenameConfirmation}
+        onOpenChange={(open) => { if (!open && !editingGallery) setDishTypeRenameConfirmation(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Actualizar recetas asociadas</AlertDialogTitle>
+            <AlertDialogDescription>
+              {dishTypeRenameConfirmation
+                ? `El tipo de comida “${dishTypeRenameConfirmation.target.name}” está asociado a ${dishTypeRenameConfirmation.affectedCount} receta${dishTypeRenameConfirmation.affectedCount !== 1 ? 's' : ''}. ¿Querés cambiarlo por “${dishTypeRenameConfirmation.newName}” también en ${dishTypeRenameConfirmation.affectedCount !== 1 ? 'esas recetas' : 'esa receta'}?`
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={editingGallery}>No, cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={editingGallery}
+              onClick={(event) => {
+                event.preventDefault();
+                const confirmation = dishTypeRenameConfirmation;
+                if (!confirmation) return;
+                setDishTypeRenameConfirmation(null);
+                void submitEditGallery(true, confirmation.target, confirmation.newName);
+              }}
+            >
+              {editingGallery ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit className="mr-2 h-4 w-4" />}
+              Sí, actualizar recetas
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
