@@ -135,6 +135,8 @@ const normalizeSnapshotValue = (value: unknown): unknown => {
 
 const getFormSnapshot = (value: unknown) => JSON.stringify(normalizeSnapshotValue(value));
 
+const selectedValuesBadgeClassName = 'max-w-full whitespace-normal break-words border-transparent bg-primary/75 text-xs text-primary-foreground shadow-sm';
+
 const normalizeDifficulty = (value?: string | null) => {
   if (!value) return undefined;
   const normalized = value
@@ -1324,6 +1326,9 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
 
   const totalImages = existingImages.length + uploadedImages.length;
   const selectedDishTypes = (watch('dishType') || '').split(',').map(value => value.trim()).filter(Boolean);
+  const selectedCollectionNames = collections
+    .filter(collection => selectedCollectionIds.includes(collection.id))
+    .map(collection => collection.name);
   const thermomixValue = watch('thermomix') as unknown;
   const showThermomixInstructionFields = thermomixValue === true || thermomixValue === 'true';
 
@@ -1846,6 +1851,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                         </div>
                       </PopoverContent>
                     </Popover>
+                    {selectedDishTypes.length > 0 && (
+                      <Badge className={selectedValuesBadgeClassName}>
+                        {selectedDishTypes.join(', ')}
+                      </Badge>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -1937,6 +1947,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                         </div>
                       </PopoverContent>
                     </Popover>
+                    {selectedCollectionNames.length > 0 && (
+                      <Badge className={selectedValuesBadgeClassName}>
+                        {selectedCollectionNames.join(', ')}
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
@@ -2034,6 +2049,11 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       </div>
                     </PopoverContent>
                   </Popover>
+                  {tags.length > 0 && (
+                    <Badge className={selectedValuesBadgeClassName}>
+                      {tags.join(', ')}
+                    </Badge>
+                  )}
                 </div>
 
                 {/* Categoría queda después de las tres filas principales. */}
