@@ -192,6 +192,7 @@ export const EditRecipeModal = ({
   const [tagOptions, setTagOptions] = useState<string[]>([]);
   const [isTagPickerOpen, setIsTagPickerOpen] = useState(false);
   const [tagDeleteTarget, setTagDeleteTarget] = useState<string | null>(null);
+  const [pendingExitAction, setPendingExitAction] = useState<Exclude<AfterSaveAction, 'stay'> | null>(null);
   const [isDeletingTag, setIsDeletingTag] = useState(false);
   const [bulkEditingIngredients, setBulkEditingIngredients] = useState(false);
   const [selectedIngredientIndexes, setSelectedIngredientIndexes] = useState<Set<number>>(new Set());
@@ -1305,12 +1306,16 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
     }
   };
 
-  const handleExit = (afterSave: Exclude<AfterSaveAction, 'stay'>) => {
+  const leaveEditor = (action: Exclude<AfterSaveAction, 'stay'>) => {
+    if (action === 'next') queue?.onNext();
+    else if (action === 'close') onClose();
+    else onImportAnother?.();
+  };
+
+  const saveAndExit = (afterSave: Exclude<AfterSaveAction, 'stay'>) => {
     if (submitInProgressRef.current) return;
     if (!hasChanges) {
-      if (afterSave === 'next') queue?.onNext();
-      else if (afterSave === 'close') onClose();
-      else onImportAnother?.();
+      leaveEditor(afterSave);
       return;
     }
     void handleSubmit(
@@ -1320,6 +1325,12 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         toast({ title: 'No se pudo guardar', description: 'Completá el título de la receta.', variant: 'destructive' });
       }
     )();
+  };
+
+  const handleExit = (action: Exclude<AfterSaveAction, 'stay'>) => {
+    if (submitInProgressRef.current || pendingExitAction) return;
+    if (hasChanges) setPendingExitAction(action);
+    else leaveEditor(action);
   };
 
   if (!recipe) return null;
@@ -2834,7 +2845,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               </Button>
             )}
             {!queue && (
-              <Button type="button" size="sm" onClick={() => handleExit('close')} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
+              <Button type="button" size="sm" onClick={() => saveAndExit('close')} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
                 Guardar
               </Button>
             )}
@@ -2842,6 +2853,34 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         </form>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={!!pendingExitAction} onOpenChange={(open) => { if (!open) setPendingExitAction(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Desea guardar los cambios?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Hay cambios en la receta que todavía no se guardaron.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <Button type="button" variant="outline" onClick={() => {
+            const action = pendingExitAction;
+            setPendingExitAction(null);
+            if (action) leaveEditor(action);
+          }}>
+            No guardar
+          </Button>
+          <AlertDialogAction onClick={() => {
+            const action = pendingExitAction;
+            setPendingExitAction(null);
+            if (action) saveAndExit(action);
+          }}>
+            Guardar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     <AlertDialog open={!!tagDeleteTarget} onOpenChange={(open) => { if (!open && !isDeletingTag) setTagDeleteTarget(null); }}>
       <AlertDialogContent>
