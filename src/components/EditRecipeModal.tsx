@@ -1608,18 +1608,19 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               <div>
                 <Label>Imágenes (máximo 3)</Label>
 
-                {/* h.1: las imágenes y el espacio libre forman una sola zona de arrastre. */}
-                <div
-                  onDragOver={(event) => { event.preventDefault(); if (totalImages < 3) setIsDraggingImage(true); }}
-                  onDragLeave={(event) => {
-                    const bounds = event.currentTarget.getBoundingClientRect();
-                    if (event.clientX <= bounds.left || event.clientX >= bounds.right || event.clientY <= bounds.top || event.clientY >= bounds.bottom) {
-                      setIsDraggingImage(false);
-                    }
-                  }}
-                  onDrop={handleImageDrop}
-                  className={`mt-2 rounded-lg border-2 border-dashed p-3 transition-colors ${isDraggingImage ? 'border-primary bg-primary/5' : 'border-gray-300'}`}
-                >
+                <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start">
+                  {/* h.1: las imágenes y el espacio libre forman una sola zona de arrastre. */}
+                  <div
+                    onDragOver={(event) => { event.preventDefault(); if (totalImages < 3) setIsDraggingImage(true); }}
+                    onDragLeave={(event) => {
+                      const bounds = event.currentTarget.getBoundingClientRect();
+                      if (event.clientX <= bounds.left || event.clientX >= bounds.right || event.clientY <= bounds.top || event.clientY >= bounds.bottom) {
+                        setIsDraggingImage(false);
+                      }
+                    }}
+                    onDrop={handleImageDrop}
+                    className={`w-full rounded-lg border-2 border-dashed p-2 transition-colors sm:min-w-0 sm:max-w-[540px] sm:flex-1 ${isDraggingImage ? 'border-primary bg-primary/5' : 'border-gray-300'}`}
+                  >
                   {totalImages > 0 && <div className="grid grid-cols-3 gap-2">
                     {existingImages.map((img, index) => (
                       <div key={`ex-${index}`} className="relative">
@@ -1646,7 +1647,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                       </div>
                     ))}
                   </div>}
-                  <div className={`flex items-center justify-center gap-2 text-center ${totalImages > 0 ? 'pt-3' : 'min-h-28 flex-col'}`}>
+                  <div className={`flex items-center justify-center gap-2 text-center ${totalImages > 0 ? 'pt-2' : 'min-h-28 flex-col'}`}>
                     {addingWebImage ? <Loader2 className="h-5 w-5 animate-spin text-gray-400" /> : <Upload className="h-5 w-5 text-gray-400" />}
                     <span className="text-xs text-gray-600">
                       {totalImages >= 3 ? 'Máximo 3 imágenes' : 'Arrastrá una imagen aquí o sobre las imágenes existentes'}
@@ -1654,27 +1655,28 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   </div>
                 </div>
 
-                {/* input oculto para subir desde la PC */}
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="image-upload"
-                  disabled={totalImages >= 3}
-                />
+                  {/* input oculto para subir desde la PC */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="image-upload"
+                    disabled={totalImages >= 3}
+                  />
 
-                {/* h.2: botones para agregar imágenes sin arrastrar. */}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" size="sm" className="text-xs" disabled={totalImages >= 3} onClick={() => document.getElementById('image-upload')?.click()}>
-                    <Upload className="mr-2 h-3.5 w-3.5" />
-                    Subir imagen desde Mi PC
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" className="text-xs" disabled={totalImages >= 3 || addingWebImage} onClick={() => setShowWebImageInput(v => !v)}>
-                    {addingWebImage ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Globe className="mr-2 h-3.5 w-3.5" />}
-                    Subir imagen de la web
-                  </Button>
+                  {/* h.2: botones a la derecha del área de imágenes. */}
+                  <div className="flex w-full flex-col gap-2 sm:w-52 sm:shrink-0">
+                    <Button type="button" variant="outline" size="sm" className="w-full justify-start text-xs" disabled={totalImages >= 3} onClick={() => document.getElementById('image-upload')?.click()}>
+                      <Upload className="mr-2 h-3.5 w-3.5" />
+                      Subir imagen desde Mi PC
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" className="w-full justify-start text-xs" disabled={totalImages >= 3 || addingWebImage} onClick={() => setShowWebImageInput(v => !v)}>
+                      {addingWebImage ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Globe className="mr-2 h-3.5 w-3.5" />}
+                      Subir imagen de la web
+                    </Button>
+                  </div>
                 </div>
                 {showWebImageInput && totalImages < 3 && (
                   <div className="mt-2 flex items-center gap-2">
