@@ -43,6 +43,8 @@ interface EditRecipeModalProps {
   onImportAnother?: () => void;
 }
 
+type AfterSaveAction = 'stay' | 'close' | 'next' | 'importAnother';
+
 interface RecipeFormData {
   title: string;
   description: string;
@@ -1032,13 +1034,18 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
     return base.toISOString();
   };
 
-  const onSubmit = async (data: RecipeFormData, closeAfterSave = false) => {
+  const onSubmit = async (data: RecipeFormData, afterSave: AfterSaveAction = queue ? 'next' : 'stay') => {
     if (!recipe || submitInProgressRef.current) return;
 
-    // Sin cambios no hay nada que persistir. Guardar también permite cerrar el editor.
+    const finish = () => {
+      if (afterSave === 'next') queue?.onNext();
+      else if (afterSave === 'close') onClose();
+      else if (afterSave === 'importAnother') onImportAnother?.();
+    };
+
+    // Sin cambios, salir o avanzar no requiere una petición al servidor.
     if (!hasChanges) {
-      if (queue) queue.onNext();
-      else if (closeAfterSave) onClose();
+      finish();
       return;
     }
 
@@ -1183,33 +1190,23 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
           duration: RECIPE_SAVE_TOAST_DURATION_MS,
         });
 
-        // En edición secuencial pasamos a la siguiente receta. En edición normal
-        // reseteamos el baseline por si el editor permanece abierto.
-        if (queue) {
-          queue.onNext();
-        } else {
-          const persistedImages = (updatedRecipe.images || existingImages);
-          setExistingImages(persistedImages);
-          setUploadedImages([]);
-          setInitialImageCount(persistedImages.length);
-          setInitialCollectionIds(selectedCollectionIds);
-          reset(data);
-          initialFormSnapshot.current = getFormSnapshot(getValues());
-        }
+        const persistedImages = (updatedRecipe.images || existingImages);
+        setExistingImages(persistedImages);
+        setUploadedImages([]);
+        setInitialImageCount(persistedImages.length);
+        setInitialCollectionIds(selectedCollectionIds);
+        reset(data);
+        initialFormSnapshot.current = getFormSnapshot(getValues());
       } else {
         // Receta sin ID (aún no persistida): actualiza el estado local.
         console.log('📝 Updating local recipe data (no ID yet)');
         onRecipeUpdated(recipeData as any);
-        if (queue) {
-          queue.onNext();
-        } else {
-          setUploadedImages([]);
-          setInitialImageCount(existingImages.length);
-          reset(data);
-          initialFormSnapshot.current = getFormSnapshot(data);
-        }
+        setUploadedImages([]);
+        setInitialImageCount(existingImages.length);
+        reset(data);
+        initialFormSnapshot.current = getFormSnapshot(data);
       }
-      if (closeAfterSave && !queue) onClose();
+      finish();
     } catch (error) {
       console.error('Update recipe error:', error);
       toast({
@@ -1305,11 +1302,21 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
     }
   };
 
-  const handleClose = () => {
-    console.log('Closing modal...');
-
-    // Simply close the modal - let the parent handle cleanup
-    onClose();
+  const handleExit = (afterSave: Exclude<AfterSaveAction, 'stay'>) => {
+    if (submitInProgressRef.current) return;
+    if (!hasChanges) {
+      if (afterSave === 'next') queue?.onNext();
+      else if (afterSave === 'close') onClose();
+      else onImportAnother?.();
+      return;
+    }
+    void handleSubmit(
+      data => onSubmit(data, afterSave),
+      () => {
+        setActiveTab('info');
+        toast({ title: 'No se pudo guardar', description: 'Completá el título de la receta.', variant: 'destructive' });
+      }
+    )();
   };
 
   if (!recipe) return null;
@@ -1324,7 +1331,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
 
   return (
     <>
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleExit('close')}>
       <DialogContent
         style={dragContentStyle}
         className="flex h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-4xl flex-col gap-0 p-0 sm:h-[90vh]"
@@ -2789,8 +2796,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               Pegar texto
             </Button>
             {queue && queue.position < queue.total - 1 && (
-              <Button type="button" size="sm" variant="outline" onClick={() => queue.onNext()} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
-                Omitir
+              <Button type="button" size="sm" variant="outline" onClick={() => handleExit('next')} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
+                Siguiente
               </Button>
             )}
             <Button type="submit" size="sm" disabled={isLoading || !hasChanges} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
@@ -2806,12 +2813,12 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               )}
             </Button>
             {!queue && onImportAnother && (
-              <Button type="button" size="sm" variant="secondary" onClick={onImportAnother} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
+              <Button type="button" size="sm" variant="secondary" onClick={() => handleExit('importAnother')} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
                 Importar otra receta
               </Button>
             )}
             {!queue && (
-              <Button type="button" size="sm" onClick={() => void handleSubmit(data => onSubmit(data, true))()} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
+              <Button type="button" size="sm" onClick={() => handleExit('close')} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
                 Guardar
               </Button>
             )}

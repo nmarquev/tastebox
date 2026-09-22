@@ -700,7 +700,7 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           onClose={() => setIsEditing(false)}
           recipe={importedRecipe as any}
           onRecipeUpdated={(updatedRecipe) => {
-            // No cerramos el editor al actualizar; queda abierto hasta "Finalizar".
+            // El editor controla el guardado antes de salir.
             // Guard: si llegara algo nulo, NO lo asignamos (desmontaría el editor y lo cerraría).
             if (updatedRecipe) setImportedRecipe(updatedRecipe as any);
           }}

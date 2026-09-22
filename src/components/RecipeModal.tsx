@@ -2060,7 +2060,7 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
           recipe={localRecipe}
           onCollectionsUpdated={onCollectionsUpdated}
           onRecipeUpdated={(updatedRecipe) => {
-            // No cerramos el editor al actualizar; queda abierto hasta "Finalizar".
+            // El editor controla el guardado antes de salir.
             setLocalRecipe(updatedRecipe);
 
             // Notify parent component
