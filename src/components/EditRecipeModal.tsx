@@ -1040,13 +1040,13 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
     return base.toISOString();
   };
 
-  const onSubmit = async (data: RecipeFormData) => {
+  const onSubmit = async (data: RecipeFormData, closeAfterSave = false) => {
     if (!recipe || submitInProgressRef.current) return;
 
-    // Sin cambios: no se actualiza. En modo cola pasa a la siguiente; en edición normal
-    // el botón está deshabilitado, así que esto no debería dispararse (no cerramos).
+    // Sin cambios no hay nada que persistir. Guardar también permite cerrar el editor.
     if (!hasChanges) {
       if (queue) queue.onNext();
+      else if (closeAfterSave) onClose();
       return;
     }
 
@@ -1191,9 +1191,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
           duration: RECIPE_SAVE_TOAST_DURATION_MS,
         });
 
-        // En edición secuencial pasamos a la siguiente receta; si no, la ventana
-        // queda abierta (se cierra con "Finalizar"). Reseteamos el baseline para que
-        // el botón vuelva a "Ver receta" hasta que se modifique algo de nuevo.
+        // En edición secuencial pasamos a la siguiente receta. En edición normal
+        // reseteamos el baseline por si el editor permanece abierto.
         if (queue) {
           queue.onNext();
         } else {
@@ -1206,8 +1205,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
           initialFormSnapshot.current = getFormSnapshot(getValues());
         }
       } else {
-        // Receta sin ID (aún no persistida): solo actualiza el estado local y deja
-        // la ventana abierta (se cierra con "Finalizar"), igual que el caso con ID.
+        // Receta sin ID (aún no persistida): actualiza el estado local.
         console.log('📝 Updating local recipe data (no ID yet)');
         onRecipeUpdated(recipeData as any);
         if (queue) {
@@ -1219,6 +1217,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
           initialFormSnapshot.current = getFormSnapshot(data);
         }
       }
+      if (closeAfterSave && !queue) onClose();
     } catch (error) {
       console.error('Update recipe error:', error);
       toast({
@@ -1359,7 +1358,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} onFocus={trackFocusField} className="flex flex-col flex-1 min-h-0">
+        <form onSubmit={handleSubmit(data => onSubmit(data))} onFocus={trackFocusField} className="flex flex-col flex-1 min-h-0">
           {/* Fixed Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
             <div className="flex-shrink-0 px-3 pt-3 sm:px-6 sm:pt-4">
@@ -2796,8 +2795,8 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               </Button>
             )}
             {!queue && (
-              <Button type="button" size="sm" onClick={handleClose} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
-                Finalizar
+              <Button type="button" size="sm" onClick={() => void handleSubmit(data => onSubmit(data, true))()} disabled={isLoading} className="min-w-0 px-2 text-[11px] sm:px-3 sm:text-sm">
+                Guardar
               </Button>
             )}
           </div>
