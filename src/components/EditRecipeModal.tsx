@@ -568,8 +568,8 @@ export const EditRecipeModal = ({
         difficulty: recipe.difficulty,
         recipeType: recipe.recipeType || '',
         dishType: recipe.dishType || '',
-        country: recipe.country || '',
-        language: recipe.language || '',
+        country: recipe.country?.trim() || (mode === 'create' ? 'Argentina' : ''),
+        language: recipe.language?.trim() || (mode === 'create' ? 'Español' : ''),
         glutenFree: recipe.glutenFree || false,
         sugarFree: recipe.sugarFree || false,
         keto: recipe.keto || false,
@@ -643,7 +643,7 @@ export const EditRecipeModal = ({
     if (!isOpen) return;
     let cancelled = false;
     const sortEs = (arr: string[]) => Array.from(new Set(arr)).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
-    const DEFAULT_LANGUAGES = ['Espanol', 'Ingles', 'Portugues', 'Italiano', 'Frances', 'Aleman'];
+    const DEFAULT_LANGUAGES = ['Español', 'Inglés', 'Portugués', 'Italiano', 'Francés', 'Alemán'];
     const DEFAULT_COUNTRIES = ['Argentina', 'Espana', 'Mexico', 'Chile', 'Uruguay', 'Colombia', 'Peru', 'Estados Unidos', 'Italia', 'Francia'];
     Promise.all([
       api.recipes.getAll().catch(() => [] as Recipe[]),
@@ -733,15 +733,8 @@ export const EditRecipeModal = ({
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    const totalImages = existingImages.length + uploadedImages.length;
-
-    files.forEach(file => {
-      if (totalImages < 3 && file.type.startsWith('image/')) {
-        const preview = URL.createObjectURL(file);
-        setUploadedImages(prev => [...prev, { file, preview }]);
-      }
-    });
+    addImageFiles(Array.from(event.target.files || []));
+    event.target.value = '';
   };
 
   const handleRemoveExistingImage = (index: number) => {
@@ -759,9 +752,6 @@ export const EditRecipeModal = ({
       slots--;
     }
     if (toAdd.length) setUploadedImages(prev => [...prev, ...toAdd]);
-    if (files.length > slots && existingImages.length + uploadedImages.length + toAdd.length >= 3) {
-      // sin mensaje extra; el recuadro ya indica el máximo
-    }
   };
 
   // Agregar una imagen desde una URL de la web (se descarga y optimiza en el servidor).
@@ -1618,15 +1608,26 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               <div>
                 <Label>Imágenes (máximo 3)</Label>
 
-                {/* h.1: mostrar las imágenes (actuales + nuevas) */}
-                {(existingImages.length > 0 || uploadedImages.length > 0) && (
-                  <div className="mt-2 grid grid-cols-3 gap-2">
+                {/* h.1: las imágenes y el espacio libre forman una sola zona de arrastre. */}
+                <div
+                  onDragOver={(event) => { event.preventDefault(); if (totalImages < 3) setIsDraggingImage(true); }}
+                  onDragLeave={(event) => {
+                    const bounds = event.currentTarget.getBoundingClientRect();
+                    if (event.clientX <= bounds.left || event.clientX >= bounds.right || event.clientY <= bounds.top || event.clientY >= bounds.bottom) {
+                      setIsDraggingImage(false);
+                    }
+                  }}
+                  onDrop={handleImageDrop}
+                  className={`mt-2 rounded-lg border-2 border-dashed p-3 transition-colors ${isDraggingImage ? 'border-primary bg-primary/5' : 'border-gray-300'}`}
+                >
+                  {totalImages > 0 && <div className="grid grid-cols-3 gap-2">
                     {existingImages.map((img, index) => (
                       <div key={`ex-${index}`} className="relative">
                         <img
                           src={resolveImageUrl(img.url)}
                           alt={img.altText || `Imagen ${index + 1}`}
-                          className="w-full h-24 object-cover rounded"
+                          className="aspect-square w-full rounded object-cover"
+                          draggable={false}
                           loading="lazy"
                           crossOrigin="anonymous"
                         />
@@ -1637,15 +1638,21 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     ))}
                     {uploadedImages.map((img, index) => (
                       <div key={`up-${index}`} className="relative">
-                        <img src={img.preview} alt={`Preview ${index + 1}`} className="w-full h-24 object-cover rounded" />
+                        <img src={img.preview} alt={`Preview ${index + 1}`} className="aspect-square w-full rounded object-cover" draggable={false} />
                         <button type="button" onClick={() => handleRemoveNewImage(index)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1">
                           <X className="h-3 w-3" />
                         </button>
                         <div className="absolute bottom-1 left-1 bg-primary text-primary-foreground px-1 rounded text-xs">Nueva</div>
                       </div>
                     ))}
+                  </div>}
+                  <div className={`flex items-center justify-center gap-2 text-center ${totalImages > 0 ? 'pt-3' : 'min-h-28 flex-col'}`}>
+                    {addingWebImage ? <Loader2 className="h-5 w-5 animate-spin text-gray-400" /> : <Upload className="h-5 w-5 text-gray-400" />}
+                    <span className="text-xs text-gray-600">
+                      {totalImages >= 3 ? 'Máximo 3 imágenes' : 'Arrastrá una imagen aquí o sobre las imágenes existentes'}
+                    </span>
                   </div>
-                )}
+                </div>
 
                 {/* input oculto para subir desde la PC */}
                 <input
@@ -1658,29 +1665,16 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   disabled={totalImages >= 3}
                 />
 
-                {/* h.2: recuadro para arrastrar + dos botones */}
-                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-stretch">
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); if (totalImages < 3) setIsDraggingImage(true); }}
-                    onDragLeave={() => setIsDraggingImage(false)}
-                    onDrop={handleImageDrop}
-                    className={`relative flex h-28 flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-3 text-center transition-colors ${isDraggingImage ? 'border-primary bg-primary/5' : 'border-gray-300'} ${totalImages >= 3 ? 'opacity-50' : ''}`}
-                  >
-                    {addingWebImage ? <Loader2 className="h-6 w-6 animate-spin text-gray-400" /> : <Upload className="h-6 w-6 text-gray-400" />}
-                    <span className="text-xs text-gray-600">
-                      {totalImages >= 3 ? 'Máximo 3 imágenes' : 'Arrastrá aquí la imagen desde la página web o desde Mi PC'}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-stretch justify-center gap-2">
-                    <Button type="button" variant="outline" size="sm" className="text-xs" disabled={totalImages >= 3} onClick={() => document.getElementById('image-upload')?.click()}>
-                      <Upload className="mr-2 h-3.5 w-3.5" />
-                      Subir imagen desde Mi PC
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="text-xs" disabled={totalImages >= 3 || addingWebImage} onClick={() => setShowWebImageInput(v => !v)}>
-                      {addingWebImage ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Globe className="mr-2 h-3.5 w-3.5" />}
-                      Subir imagen de la web
-                    </Button>
-                  </div>
+                {/* h.2: botones para agregar imágenes sin arrastrar. */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" size="sm" className="text-xs" disabled={totalImages >= 3} onClick={() => document.getElementById('image-upload')?.click()}>
+                    <Upload className="mr-2 h-3.5 w-3.5" />
+                    Subir imagen desde Mi PC
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="text-xs" disabled={totalImages >= 3 || addingWebImage} onClick={() => setShowWebImageInput(v => !v)}>
+                    {addingWebImage ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Globe className="mr-2 h-3.5 w-3.5" />}
+                    Subir imagen de la web
+                  </Button>
                 </div>
                 {showWebImageInput && totalImages < 3 && (
                   <div className="mt-2 flex items-center gap-2">
@@ -2705,7 +2699,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   id="suggestions"
                   {...register('suggestions')}
                   placeholder="Tips, consejos o notas para preparar la receta"
-                  rows={3}
+                  rows={9}
                 />
                 <Button
                   type="button"

@@ -375,8 +375,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         difficulty: data.difficulty,
         recipeType: data.recipeType,
         dishType: data.dishType,
-        country: data.country,
-        language: data.language?.trim() || null,
+        country: data.country?.trim() || 'Argentina',
+        language: data.language?.trim() || 'Español',
         sourceUrl: data.sourceUrl,
         // Si no se indicó fuente, derivarla de la URL (primera palabra del dominio); si no hay URL, queda null.
         source: data.source?.trim()

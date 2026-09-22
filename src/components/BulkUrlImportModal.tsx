@@ -195,11 +195,11 @@ export const BulkUrlImportModal = ({ isOpen, onClose, onRecipeSaved, onEditRecip
           source: common.source || (recipe as any).source || undefined,
           author: recipe.author,
           importedFrom: (common.importedFrom || recipe.importedFrom) as any,
-          // País e idioma: solo lo que el usuario indique en el Paso 2 (no autocompletar con la IA).
+          // Priorizar los datos comunes y conservar los extraídos de la fuente.
           recipeType: undefined,
           dishType: common.dishType || undefined,
           country: common.country || recipe.country || undefined,
-          language: common.language || undefined,
+          language: common.language || recipe.language || undefined,
           featured: common.featured || undefined,
           cooked: common.cooked || undefined,
           thermomix: common.thermomix || recipe.thermomix,

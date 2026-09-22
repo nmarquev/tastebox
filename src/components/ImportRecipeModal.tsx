@@ -104,10 +104,10 @@ export const ImportRecipeModal = ({ isOpen, onClose, onImportSuccess, onViewReci
           sourceUrl: recipe.sourceUrl,
           author: recipe.author,
           importedFrom: recipe.importedFrom,
-          // Categoría, país e idioma: no autocompletar con lo que adivina la IA.
+          // Conservar los datos extraídos; el guardado aplica valores por defecto si faltan.
           recipeType: undefined,
           country: recipe.country,
-          language: undefined,
+          language: recipe.language,
           thermomix: recipe.thermomix,
           airFryer: recipe.airFryer,
           glutenFree: recipe.glutenFree,
