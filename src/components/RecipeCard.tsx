@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { VideoLinkButton } from "@/components/VideoLinkButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Beef, CakeSlice, CandyOff, Check, Clock, User, ChefHat, Edit, Trash2, MoreVertical, Heart, Bookmark, Send, Printer, Download, ExternalLink, ArrowUpRightFromSquare, Calculator, Timer, WheatOff, Leaf, X, Loader2, Utensils } from "lucide-react";
@@ -559,6 +560,9 @@ export const RecipeCard = ({ recipe, onView, onEdit, onDelete, onToggleFavorite,
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        )}
+        {recipe.video && !selectionMode && (
+          <VideoLinkButton sourceUrl={recipe.sourceUrl} className="absolute bottom-2 left-2 z-10" />
         )}
       </div>
 

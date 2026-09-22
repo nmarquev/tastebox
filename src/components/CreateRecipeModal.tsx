@@ -25,6 +25,7 @@ const emptyRecipe: Recipe = {
   ingredients: [],
   instructions: [],
   sourceUrl: '',
+  video: false,
   source: '',
   author: '',
   recipeType: '',

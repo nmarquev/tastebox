@@ -16,6 +16,7 @@ import { BulkUrlImportModal } from "@/components/BulkUrlImportModal";
 import { BulkEditModal } from "@/components/BulkEditModal";
 import { CreateRecipeModal } from "@/components/CreateRecipeModal";
 import { EditRecipeModal } from "@/components/EditRecipeModal";
+import { VideoLinkButton } from "@/components/VideoLinkButton";
 import { DeleteRecipeDialog } from "@/components/DeleteRecipeDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6733,6 +6734,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </span>
+                      )}
+                      {recipe.video && activeBulkPanel === null && (
+                        <VideoLinkButton sourceUrl={recipe.sourceUrl} className="absolute bottom-1 left-1 z-10" />
                       )}
                     </span>
                     {/* Medio: titulo, fuente, iconos, tipo y categorias */}

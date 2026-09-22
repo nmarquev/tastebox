@@ -51,6 +51,7 @@ interface RecipeFormData {
   suggestions: string;
   importedFrom?: string;
   sourceUrl: string;
+  video: boolean;
   source: string;
   author: string;
   createdAt: string;
@@ -561,6 +562,7 @@ export const EditRecipeModal = ({
         suggestions: recipe.suggestions || '',
         importedFrom: recipe.importedFrom,
         sourceUrl: recipe.sourceUrl || '',
+        video: recipe.video || false,
         source: recipe.source || '',
         author: recipe.author || '',
         createdAt: toDateInputValue(recipe.createdAt),
@@ -1091,6 +1093,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
         suggestions: data.suggestions?.trim() || null,
         importedFrom: data.importedFrom || undefined,
         sourceUrl: data.sourceUrl || undefined,
+        video: data.video,
         source: data.source?.trim() || undefined,
         author: data.author?.trim() || undefined,
         // La fecha se guarda con fecha + hora. El input solo muestra la fecha, así que
@@ -1492,7 +1495,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* c: Fuente / URL */}
+                {/* Fuente / Origen */}
                 <div>
                   <Label>Fuente</Label>
                   <MultiSelectCombobox
@@ -1512,12 +1515,6 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   />
                 </div>
                 <div>
-                  <Label htmlFor="sourceUrl">URL</Label>
-                  <Input id="sourceUrl" {...register('sourceUrl')} placeholder="Ingresá la URL de la receta" />
-                </div>
-
-                {/* d: Origen / Dificultad */}
-                <div>
                   <Label>Origen</Label>
                   <CreatableCombobox
                     options={originOptions}
@@ -1536,6 +1533,30 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                     }}
                   />
                 </div>
+
+                {/* URL / Video */}
+                <div>
+                  <Label htmlFor="sourceUrl">URL</Label>
+                  <Input id="sourceUrl" {...register('sourceUrl')} placeholder="Ingresá la URL de la receta" />
+                </div>
+                <div>
+                  <Label htmlFor="recipe-video">Video</Label>
+                  <Select value={watch('video') ? 'si' : 'no'} onValueChange={(value) => setValue('video', value === 'si', { shouldDirty: true })}>
+                    <SelectTrigger id="recipe-video">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no">No</SelectItem>
+                      <SelectItem value="si">Sí</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Fecha / Dificultad */}
+                <div>
+                  <Label htmlFor="createdAt">Fecha</Label>
+                  <Input id="createdAt" type="date" {...register('createdAt')} />
+                </div>
                 <div>
                   <Label>Dificultad</Label>
                   <Select value={watch('difficulty')} onValueChange={(value) => setValue('difficulty', value as any, { shouldDirty: true })}>
@@ -1550,7 +1571,7 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   </Select>
                 </div>
 
-                {/* e: Idioma / País */}
+                {/* Idioma / País */}
                 <div>
                   <Label>Idioma</Label>
                   <MultiSelectCombobox
@@ -1588,11 +1609,6 @@ El resultado debe ser fluido, claro y agradable de escuchar.`;
                   />
                 </div>
 
-                {/* Fecha: solo se muestra la fecha; al guardar se conserva fecha + hora. */}
-                <div>
-                  <Label htmlFor="createdAt">Fecha</Label>
-                  <Input id="createdAt" type="date" {...register('createdAt')} />
-                </div>
               </div>
 
               {/* f: Tiempo de preparación / Tiempo total / Porciones */}

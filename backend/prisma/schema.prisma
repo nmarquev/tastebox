@@ -47,6 +47,7 @@ model Recipe {
   country      String? // País de la receta
   language     String? // Idioma de la receta
   sourceUrl    String? // URL de la receta (si la tiene)
+  video        Boolean  @default(false) // La URL de la receta enlaza a un video
   source       String? // Fuente: de quién es la receta (nombre/sitio), texto libre
   author       String? // Autor visible; por defecto se deriva de la fuente
   importedFrom String? // www | instagram | youtube | doc

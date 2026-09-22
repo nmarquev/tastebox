@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Recipe } from "@/types/recipe";
+import { VideoLinkButton } from "@/components/VideoLinkButton";
 import { Beef, CakeSlice, Calculator, CandyOff, Clock, User, ChefHat, Send, Printer, Download, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ExternalLink, Play, Pause, Edit, Timer, WheatOff, Leaf, Heart, Bookmark, Trash2, Check, X, ArrowUpRightFromSquare, Languages, Loader2, Utensils, MoreVertical, Upload } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { resolveImageUrl } from "@/utils/api";
@@ -1266,6 +1267,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
               />
 
               {imageActionButtons}
+              {localRecipe.video && (
+                <VideoLinkButton sourceUrl={localRecipe.sourceUrl} className="absolute bottom-2 left-2 z-10" />
+              )}
               <div className="hidden">
                 {onToggleFavorite && (
                   <Button
@@ -1389,6 +1393,9 @@ Genera un script natural y conversacional explicando la receta paso a paso. Comi
                 }}
               />
               {imageActionButtons}
+              {localRecipe.video && (
+                <VideoLinkButton sourceUrl={localRecipe.sourceUrl} className="absolute bottom-2 left-2 z-10" />
+              )}
               <div className="hidden">
                 {onToggleFavorite && (
                   <Button

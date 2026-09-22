@@ -44,6 +44,7 @@ export interface Recipe {
   ingredients: Ingredient[];
   instructions: Instruction[];
   sourceUrl?: string;
+  video?: boolean;
   source?: string;
   author?: string;
   importedFrom?: string;

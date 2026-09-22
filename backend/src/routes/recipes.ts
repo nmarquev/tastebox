@@ -47,6 +47,7 @@ const createRecipeSchema = z.object({
   country: z.string().optional().nullable(),
   language: z.string().optional().nullable(),
   sourceUrl: z.string().optional(),
+  video: z.boolean().optional(),
   source: z.string().nullable().optional(),
   author: z.string().nullable().optional(),
   createdAt: z.coerce.date().optional(),
@@ -116,6 +117,7 @@ const updateRecipeSchema = z.object({
   country: z.string().optional().nullable(),
   language: z.string().optional().nullable(),
   sourceUrl: z.string().optional(),
+  video: z.boolean().optional(),
   source: z.string().nullable().optional(),
   author: z.string().nullable().optional(),
   createdAt: z.coerce.date().optional(),
@@ -378,6 +380,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         country: data.country?.trim() || 'Argentina',
         language: data.language?.trim() || 'Español',
         sourceUrl: data.sourceUrl,
+        video: data.video ?? false,
         // Si no se indicó fuente, derivarla de la URL (primera palabra del dominio); si no hay URL, queda null.
         source: data.source?.trim()
           || (data.sourceUrl && /^https?:\/\//i.test(data.sourceUrl) ? getSourceFromUrl(data.sourceUrl) : null),
@@ -734,6 +737,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
         // '' → null; si no se envió el campo, queda undefined (no se modifica).
         language: data.language !== undefined ? (data.language?.trim() || null) : undefined,
         sourceUrl: data.sourceUrl,
+        video: data.video,
         source: data.source !== undefined ? (data.source?.trim() || null) : undefined,
         author: data.author?.trim()
           || existingRecipe.author
